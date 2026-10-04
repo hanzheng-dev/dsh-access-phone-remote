@@ -137,8 +137,12 @@ node src/doctor.js      # 或 npm run doctor
 |---|---|---|
 | **`AGENTS.md`** | **AI** | **部署剧本（核心）** |
 | `docs/PITFALLS.md` | 都行 | **70 条实测坑** |
+| `docs/TROUBLESHOOT.md` | AI | 排障决策树（按症状走） |
+| `docs/ONBOARDING.md` | 人 | 上手引导 |
+| `docs/FOR-AI-EXTEND.md` | AI | 扩展指南（**含「不改代码加功能」**） |
 | `docs/ARCHITECTURE.md` | 人 | 架构说明 |
 | `docs/SECURITY.md` | 人 | 安全说明 |
+| [`android/README.md`](android/README.md) | 人 | 安卓客户端（APK）—— 构建与配置 |
 | `llms.txt` | AI 爬虫 | 索引 |
 
 ---
