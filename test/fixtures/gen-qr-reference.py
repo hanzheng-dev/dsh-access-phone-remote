@@ -42,6 +42,6 @@ for text in TESTS:
     out[text] = {"version": version, "size": n, "masks": masks}
     print(f"v{version} size={n}  {text[:50]}")
 
-with open(r"D:\dsj-open\test\_qr_ref2.json", "w", encoding="utf-8") as f:
+with open(r"qr-reference.json", "w", encoding="utf-8") as f:
     json.dump(out, f)
 print("\n已写入 _qr_ref2.json")

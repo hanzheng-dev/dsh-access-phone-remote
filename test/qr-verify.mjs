@@ -14,7 +14,7 @@ const sandbox = {}
 new Function('globalThis', qrSrc)(sandbox)
 const QRLite = sandbox.QRLite
 
-const ref = JSON.parse(readFileSync(join(__dirname, '_qr_ref2.json'), 'utf8'))
+const ref = JSON.parse(readFileSync(join(__dirname, 'fixtures/qr-reference.json'), 'utf8'))
 
 let pass = 0, fail = 0
 
