@@ -5,12 +5,13 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node test/integration.mjs && node test/qr-verify.mjs",
+    "test": "node test/integration.mjs && node test/qr-verify.mjs && node test/discover-test.mjs",
     "check": "node --check src/server.js && node --check src/config.js && node --check src/store.js && node --check src/commands.js && node --check src/routes/auth.js && node --check src/routes/push.js && node --check src/routes/file.js && node --check src/routes/loc.js && node --check src/routes/addresses.js",
     "test:plugin": "node plugin/test/static.mjs",
     "test:qr": "node test/qr-verify.mjs",
     "doctor": "node src/doctor.js",
-    "test:stress": "node test/stress.mjs"
+    "test:stress": "node test/stress.mjs",
+    "test:discover": "node test/discover-test.mjs"
   },
   "keywords": [
     "hub",
