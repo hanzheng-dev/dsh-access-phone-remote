@@ -35,6 +35,17 @@ const DEFAULTS = {
     jsKey: '',
     jsSecurityCode: '',
   },
+  // ⭐ 自定义动作：让用户不改代码就能加按钮（见 docs/FOR-AI-EXTEND.md）
+  //   ⚠️ 默认关闭 —— 开启后配置里的命令会被执行，只在你自己的机器上用
+  customActions: {
+    enabled: false,
+    list: [
+      // 示例（删掉注释即可用；JSON 不支持注释，这里是文档）：
+      // { "id": "lock_screen", "label": "锁屏", "group": "控制",
+      //   "command": "rundll32.exe user32.dll,LockWorkStation",
+      //   "desc": "锁定电脑屏幕" }
+    ],
+  },
 };
 
 function readJson(file) {

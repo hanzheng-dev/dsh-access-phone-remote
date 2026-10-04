@@ -95,4 +95,77 @@ const COMMANDS = [
   },
 ];
 
-module.exports = { COMMANDS };
+// ============================================================
+//  ⭐ 自定义动作（配置化扩展）
+// ============================================================
+//
+//  为什么有这个：
+//    加一个按钮，不该需要改 JavaScript、理解代码结构、再重启服务。
+//    普通用户（或他的 AI）改一行 JSON 就该能加。
+//
+//  用法（config.json）：
+//    {
+//      "customActions": {
+//        "enabled": true,
+//        "list": [
+//          {
+//            "id": "lock_screen",
+//            "label": "锁屏",
+//            "group": "控制",
+//            "command": "rundll32.exe user32.dll,LockWorkStation",
+//            "confirm": false,
+//            "desc": "锁定电脑屏幕"
+//          }
+//        ]
+//      }
+//    }
+//
+//  ⚠️ 安全：开启后配置里的命令会被**真的执行**。
+//     这是给你自己电脑用的功能 —— 别把配置文件发给别人，
+//     也别在公网暴露的服务上开。
+function loadCustomActions() {
+  const cfg = config.customActions || {};
+  if (!cfg.enabled) return [];
+  const list = Array.isArray(cfg.list) ? cfg.list : [];
+  const out = [];
+  for (const [i, a] of list.entries()) {
+    if (!a || !a.id || !a.command) continue;
+    const id = String(a.id).replace(/[^\w\-]/g, '_');
+    if (COMMANDS.some((c) => c.id === id)) continue;   // 不覆盖内置
+    out.push({
+      id,
+      label: String(a.label || a.id),
+      group: String(a.group || 'custom'),
+      confirm: !!a.confirm,
+      desc: String(a.desc || `自定义动作（执行：${a.command}）`),
+      custom: true,
+      async run() {
+        const timeout = Math.min(Number(a.timeout) || 20000, 120000);
+        return new Promise((resolve) => {
+          execFile(
+            'cmd',
+            ['/d', '/s', '/c', String(a.command)],
+            { encoding: 'utf8', timeout, maxBuffer: 4 * 1024 * 1024, windowsHide: true },
+            (e, stdout, stderr) => {
+              const outText = (stdout || '').trim();
+              const errText = (stderr || '').trim();
+              if (e) {
+                resolve({ ok: false, text: `执行失败：${errText || e.message}` });
+              } else {
+                resolve({ ok: true, text: outText || '（执行完成，无输出）' });
+              }
+            },
+          );
+        });
+      },
+    });
+  }
+  return out;
+}
+
+const CUSTOM = loadCustomActions();
+if (CUSTOM.length) {
+  COMMANDS.push(...CUSTOM);
+}
+
+module.exports = { COMMANDS, loadCustomActions };

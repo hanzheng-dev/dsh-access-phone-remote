@@ -13,5 +13,38 @@
     "webKey": "",
     "jsKey": "",
     "jsSecurityCode": ""
+  },
+
+  "_说明_customActions": "自定义按钮：不用改代码就能加功能。enabled 设为 true 才生效。",
+  "_警告": "开启后 list 里的 command 会被真的执行 —— 这是给你自己电脑用的，别把这份配置发给别人。",
+  "customActions": {
+    "enabled": false,
+    "list": [
+      {
+        "id": "lock_screen",
+        "label": "锁屏",
+        "group": "控制",
+        "desc": "锁定电脑屏幕",
+        "command": "rundll32.exe user32.dll,LockWorkStation",
+        "confirm": false
+      },
+      {
+        "id": "mute",
+        "label": "静音",
+        "group": "控制",
+        "desc": "切换系统静音",
+        "command": "powershell -NoProfile -Command \"(New-Object -ComObject WScript.Shell).SendKeys([char]173)\"",
+        "confirm": false
+      },
+      {
+        "id": "ip",
+        "label": "看本机IP",
+        "group": "查询",
+        "desc": "显示本机所有 IPv4 地址",
+        "command": "powershell -NoProfile -Command \"Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -ne '127.0.0.1'} | Select-Object -ExpandProperty IPAddress\"",
+        "confirm": false,
+        "timeout": 15000
+      }
+    ]
   }
 }
