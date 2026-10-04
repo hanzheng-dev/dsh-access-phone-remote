@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "check": "node -e \"const fs=require('fs'),path=require('path'),cp=require('child_process');const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);const list=walk('src').filter(f=>f.endsWith('.js'));list.forEach(f=>cp.execFileSync(process.execPath,['--check',f],{stdio:'inherit'}));console.log('[check] '+list.length+' files OK');\""
+    "test": "node test/static.mjs && node test/integration.mjs",
+    "check": "node --check src/server.js && node --check src/config.js && node --check src/store.js && node --check src/commands.js && node --check src/routes/auth.js && node --check src/routes/push.js && node --check src/routes/file.js && node --check src/routes/loc.js"
   },
   "keywords": [
     "hub",
