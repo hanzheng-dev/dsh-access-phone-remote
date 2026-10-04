@@ -67,7 +67,10 @@ function createServer() {
 
       // ---------- 通用小路由（不依赖具体业务模块） ----------
       if (p === '/api/ping') {
-        return json(res, 200, { ok: true, service: 'hub', version: 2, ts: Date.now() });
+        // product 字段用来区分「本服务」和「别的 hub」—— 自检脚本靠它判断
+        return json(res, 200, {
+          ok: true, product: 'dsj-open', service: 'hub', version: 2, ts: Date.now(),
+        });
       }
       if (p === '/favicon.ico') {                                  // 浏览器自动请求，别留 404
         res.writeHead(204);

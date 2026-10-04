@@ -40,16 +40,45 @@ node --version
 # 2. 起服务
 node src/server.js
 
-# 3. 看启动日志里的 token，手机浏览器打开
-#    http://<电脑IP>:3099/?t=<token>
+# 3. 终端里会直接出现一个二维码 —— 手机扫一下就连上了
+#    （也会打印地址，形如 http://192.168.1.100:3099/?t=<token>）
 ```
 
+**启动后的终端长这样**：
+
+```
+[07:41:49] ===== dsj-open 启动，监听 0.0.0.0:3099，功能 5 个 =====
+[07:41:49] 本机: http://127.0.0.1:3099/
+[07:41:49] 手机访问: http://<局域网IP>:3099/
+
+  手机扫这个（或复制上面那行）:
+
+    █▀▀▀▀▀█ ▄█ ▄▄▄▀▄  █▀▀▀▀▀█
+    █ ███ █ ▄█▀█ ▄▀ ▀ █ ███ █
+    ...（二维码）
+
+[07:41:49] 其他可用地址: <主机Tailscale-IP>(tailscale)  192.168.56.1(virtual)
+```
+
+**地址会自动挑**：局域网 IP 优先（不用装任何东西），Tailscale 次之，
+虚拟网卡（VirtualBox 等）会标注出来 —— 因为**手机连不上虚拟网卡**。
+
 **手机在外面也能访问** → 用 [Tailscale](https://tailscale.com/)（免费）。
+
+**先自检一下环境**（可选但推荐）：
+
+```bash
+node src/doctor.js      # 或 npm run doctor
+```
+
+它会告诉你：Node 版本够不够、端口通不通、网络地址有哪些、
+高德 key 配了没、缺什么、下一步做什么。
 
 **详细步骤**：
 - 给 AI：`AGENTS.md`
 - 给人：`docs/ARCHITECTURE.md`
-- **遇到问题**：`docs/PITFALLS.md`（**57 条实测坑**）
+- **遇到问题**：`docs/TROUBLESHOOT.md`（按症状走决策树）
+- **坑清单**：`docs/PITFALLS.md`（**69 条实测坑**）
 
 ---
 
@@ -63,7 +92,7 @@ node src/server.js
 
 ### 2. `docs/PITFALLS.md` 是两个月踩出来的
 
-**57 条真实坑**，每条都有**症状 → 根因 → 解法**：
+**69 条真实坑**，每条都有**症状 → 根因 → 解法**：
 
 - `adb tcpip 5555` vs Android「无线调试」的本质区别
 - Tailscale MagicDNS 把自己当 DNS → 手机上不了网
@@ -107,7 +136,7 @@ node src/server.js
 | 文件 | 给谁 | 内容 |
 |---|---|---|
 | **`AGENTS.md`** | **AI** | **部署剧本（核心）** |
-| `docs/PITFALLS.md` | 都行 | **57 条实测坑** |
+| `docs/PITFALLS.md` | 都行 | **69 条实测坑** |
 | `docs/ARCHITECTURE.md` | 人 | 架构说明 |
 | `docs/SECURITY.md` | 人 | 安全说明 |
 | `llms.txt` | AI 爬虫 | 索引 |
