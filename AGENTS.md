@@ -280,7 +280,7 @@ node src/server.js
 |---|---|
 | `README.md` | 项目简介（给人） |
 | **`AGENTS.md`** | **本文件（给 AI 部署用）** |
-| **`docs/PITFALLS.md`** | **69 条实测坑 + 解法** ← 遇到问题先查这个 |
+| **`docs/PITFALLS.md`** | **70 条实测坑 + 解法** ← 遇到问题先查这个 |
 | **`docs/TROUBLESHOOT.md`** | **排障决策树** ← 用户报症状时按树走 |
 | `docs/FOR-AI-EXTEND.md` | 扩展指南（加功能时看） |
 | `docs/ONBOARDING.md` | 上手引导（用户视角） |
@@ -301,7 +301,7 @@ node src/server.js
    │
    ├─ 3. 遇到问题：
    │      ├─ 先查 docs/TROUBLESHOOT.md（按症状走决策树）
-   │      └─ 再查 docs/PITFALLS.md（69 条坑）
+   │      └─ 再查 docs/PITFALLS.md（70 条坑）
    │
    └─ 4. 用户要加功能：
           └─ 读 docs/FOR-AI-EXTEND.md

@@ -78,7 +78,7 @@ node src/doctor.js      # 或 npm run doctor
 - 给 AI：`AGENTS.md`
 - 给人：`docs/ARCHITECTURE.md`
 - **遇到问题**：`docs/TROUBLESHOOT.md`（按症状走决策树）
-- **坑清单**：`docs/PITFALLS.md`（**69 条实测坑**）
+- **坑清单**：`docs/PITFALLS.md`（**70 条实测坑**）
 
 ---
 
@@ -92,7 +92,7 @@ node src/doctor.js      # 或 npm run doctor
 
 ### 2. `docs/PITFALLS.md` 是两个月踩出来的
 
-**69 条真实坑**，每条都有**症状 → 根因 → 解法**：
+**70 条真实坑**，每条都有**症状 → 根因 → 解法**：
 
 - `adb tcpip 5555` vs Android「无线调试」的本质区别
 - Tailscale MagicDNS 把自己当 DNS → 手机上不了网
@@ -136,7 +136,7 @@ node src/doctor.js      # 或 npm run doctor
 | 文件 | 给谁 | 内容 |
 |---|---|---|
 | **`AGENTS.md`** | **AI** | **部署剧本（核心）** |
-| `docs/PITFALLS.md` | 都行 | **69 条实测坑** |
+| `docs/PITFALLS.md` | 都行 | **70 条实测坑** |
 | `docs/ARCHITECTURE.md` | 人 | 架构说明 |
 | `docs/SECURITY.md` | 人 | 安全说明 |
 | `llms.txt` | AI 爬虫 | 索引 |

@@ -196,7 +196,7 @@ dsj-open/
 │   └── index.html      前端页面
 │
 └── docs/
-    ├── PITFALLS.md     ★ 69 条实测坑
+    ├── PITFALLS.md     ★ 70 条实测坑
     ├── ARCHITECTURE.md 本文件
     └── SECURITY.md     安全说明
 ```
@@ -282,6 +282,6 @@ dsj-open/
 
 ## 相关文档
 
-- **`docs/PITFALLS.md`** — 69 条实测坑（**遇到问题先看这个**）
+- **`docs/PITFALLS.md`** — 70 条实测坑（**遇到问题先看这个**）
 - **`docs/SECURITY.md`** — 安全说明
 - **`AGENTS.md`** — 给 AI 的部署剧本
