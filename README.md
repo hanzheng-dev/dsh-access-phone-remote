@@ -63,6 +63,10 @@ node src/server.js
 **地址会自动挑**：局域网 IP 优先（不用装任何东西），Tailscale 次之，
 虚拟网卡（VirtualBox 等）会标注出来 —— 因为**手机连不上虚拟网卡**。
 
+**局域网内零配置**：服务端会持续发 UDP 广播（每 3 秒一次），
+配套的手机 App 在同一 WiFi 下能**自动发现电脑**，连地址都不用填。
+（不想要这个？`config.json` 里把 `discovery.enabled` 设为 `false`。）
+
 **手机在外面也能访问** → 用 [Tailscale](https://tailscale.com/)（免费）。
 
 **先自检一下环境**（可选但推荐）：

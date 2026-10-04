@@ -35,6 +35,11 @@ const DEFAULTS = {
     jsKey: '',
     jsSecurityCode: '',
   },
+  // 局域网自动发现（UDP 广播）—— 手机 App 在同一 WiFi 下自动找到本机
+  discovery: {
+    enabled: true,
+    intervalMs: 3000,
+  },
   // ⭐ 自定义动作：让用户不改代码就能加按钮（见 docs/FOR-AI-EXTEND.md）
   //   ⚠️ 默认关闭 —— 开启后配置里的命令会被执行，只在你自己的机器上用
   customActions: {

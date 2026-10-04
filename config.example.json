@@ -9,12 +9,15 @@
   "uploadsDir": "./uploads",
   "shotsDir": "./shots",
   "docsDir": "./docs",
+  "discovery": {
+    "enabled": true,
+    "intervalMs": 3000
+  },
   "amap": {
     "webKey": "",
     "jsKey": "",
     "jsSecurityCode": ""
   },
-
   "_说明_customActions": "自定义按钮：不用改代码就能加功能。enabled 设为 true 才生效。",
   "_警告": "开启后 list 里的 command 会被真的执行 —— 这是给你自己电脑用的，别把这份配置发给别人。",
   "customActions": {

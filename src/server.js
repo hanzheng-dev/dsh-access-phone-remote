@@ -27,6 +27,7 @@ const push = require('./routes/push');
 const file = require('./routes/file');
 const addresses = require('./routes/addresses');
 const { printTerminalQR } = require('./terminal-qr');
+const discover = require('./discover');
 
 // 启动时载入消息池（读盘，不监听；不存在则空池）
 loadStore();
@@ -188,6 +189,25 @@ if (require.main === module) {
     } catch (e) {
       log(`（二维码生成失败，不影响使用: ${e.message}）`);
       log(`页面首次访问带口令: http://<地址>:${config.port}/?t=<token>（见 .hub-token）`);
+    }
+
+    // ---- 局域网自动发现（UDP 广播）----
+    // 手机 App 在同一 WiFi 下能自动找到本机，省去手输地址
+    try {
+      const dc = config.discovery || {};
+      if (dc.enabled !== false) {
+        const r = discover.start(config, { intervalMs: dc.intervalMs });
+        if (r.started) {
+          log(`局域网自动发现: 已开启（UDP 广播 ${r.port}，每 ${(dc.intervalMs || 3000) / 1000}s 一次）`);
+        } else {
+          log(`局域网自动发现: 未启用（${r.reason}）`);
+        }
+        process.on('exit', () => r.stop());
+      } else {
+        log('局域网自动发现: 配置里关掉了');
+      }
+    } catch (e) {
+      log(`（自动发现启动失败，不影响使用: ${e.message}）`);
     }
   });
 }
