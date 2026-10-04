@@ -1,0 +1,2904 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<!-- ★ 页面版本：hub 吐 HTML 时把下面这个 __DSH_VER__ 换成 index.html 的 mtime+大小。
+     放 <meta> 里、页面从 DOM 读 —— 因为 hub 是**全局替换**，哨兵写在 JS 里会被一起换掉
+     （2026-09-17 追了一小时的坑：判断里的哨兵被换成真版本号 ⇒ 判断恒为 false ⇒ 永不重载）。 -->
+<meta name="app-ver" content="__DSJ_VER__">
+<title>dsj-open</title>
+<script>
+  // ★ 尽早恢复主题（必须是 <head> 里第一个脚本）：
+  //   放到下面那个大脚本里就太晚了 —— 页面会先按浅色画一遍再切深色，**闪一下白**。
+  try { if (localStorage.getItem('dsh_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+</script>
+<style>
+  :root{
+    /* ★★ 2026-09-17 主人改定：**白底 + 背景图 + 黑字**
+       （原话：「把 ds酱 的背景改成白色，这个图 26% 的透明度，然字改黑」）
+       ⇒ 整套配色翻转。深色那套值直接换掉，别留半深半浅的残留。 */
+    --bg:#ffffff;
+    --panel:rgba(255,255,255,.86);      /* 面板半透，让背景图透出来一点 */
+    --panel-solid:#ffffff;
+    --line:rgba(0,0,0,.13);
+    --line-hi:rgba(0,0,0,.30);
+    --fg:#141414;                        /* 正文黑 */
+    --dim:#6b6b6b;                       /* 次要信息（图标、时间戳） */
+    --mid:#3d3d3d;
+    --ok:#1f8a4c;
+    --err:#b4322f;
+  }
+  /* ★ 背景层：主人指定的那张图，**26% 透明度**，铺满、固定、不跟滚动。
+     放在 body::before 而不是 body 上 —— 这样底下还能再压一层半透明白，
+     保证黑字在任何画面上都读得清（纯图 + 黑字在深色区域会糊）。 */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:#fff url('/bg.jpg') center top / cover no-repeat;
+    opacity:.26;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     ★★ 2026-09-17 深色模式（主人：「右边加个深色模式?这样我还能选择，
+        现在白色有点怪怪的，毕竟是按照那个图设计的」）
+     做法：`html.dark` 一套覆盖 —— 变量 + 那些**写死颜色**的规则。
+     ⚠️ 为什么不能只覆盖变量：今天为了白底把 35 处写死的深色值逐个换成了浅色，
+        它们不跟着变量走 ⇒ 深色模式必须**逐条覆盖回来**。
+     ⚠️ 新增样式时**两边都要给**（浅色写在上面、深色写在这里），否则切过去会露馅。
+     ═══════════════════════════════════════════════════════════════════ */
+  html.dark{
+    --bg:#111111;
+    --panel:rgba(26,26,26,.88);
+    --panel-solid:#1e1e1e;
+    --line:rgba(255,255,255,.16);
+    --line-hi:rgba(255,255,255,.32);
+    --fg:#f0f0f0;
+    --dim:#8a8a8a;
+    --mid:#cccccc;
+    --ok:#5fbf7f;
+    --err:#c96a6a;
+  }
+  /* ⚠️ 深色下背景层要**压淡** —— 那张 bg.jpg 现在是纯白，铺在 #111 上会把深色洗成灰
+     （实测：26% 白 ⇒ 背景从 rgb(17) 变成 rgb(79)）。深色下压到 8%，只留一点质感。 */
+  /* ⚠️ 必须给 html 也上底色 —— 浅色时给 html 设了 #fff（让 body 透明后有个底），
+     深色块里忘了覆盖 ⇒ **外面主页永远白底**（主人 2026-09-17 一眼看出来）。 */
+  html.dark{ background:#111111 }
+  html.dark body::before{ background-color:#111;opacity:.08 }
+  /* 主页按钮 —— ⭐ 2026-09-22 op：深色下也是**扁平一块**（原来是 180° 渐变 + 描边） */
+  html.dark .btn{ background:#1f1f1f }
+  html.dark .btn:active{ background:#2a2a2a }
+  /* ⭐ 2026-09-22 晚：第一页抽屉风（深色）—— 格子比背景亮一档 */
+  html.dark #app .btn{ background:#1c1c1c }
+  html.dark #app .btn:active{ background:#262626 }
+  html.dark #app .btn.warn{ background:rgba(255,120,120,.10) }
+  html.dark #app .btn.warn:active{ background:rgba(255,120,120,.17) }
+  html.dark .btn.warn{ background:rgba(255,120,120,.12) }
+  html.dark .btn.warn:active{ background:rgba(255,120,120,.19) }
+  /* 2026-09-19：🍶 酒馆面板里"关闭X"状态的**警示色**（一眼能看出正在跑） */
+  html.dark .btn.danger{ background:rgba(200,80,70,.30);color:#ffc9c9 }
+  html.dark .btn.danger:active{ background:rgba(200,80,70,.42) }
+  /* 正文 / 消息 */
+  /* ★★ 2026-09-20 02:42 主人要"拿坡里黄"（那不勒斯黄）。
+     ⚠️ 深色下用**柔和的奶油黄**（不刺眼）：
+        第 1 版 `#F2D06B` 主人说"**太黄了**" ⇒ 降到 `#E4D6A8`（米黄/奶油，
+        饱和度砍掉一半，还是暖调，但不像荧光）。
+     ⚠️ 这条优先级（html.dark）**高于** 671 行那条 ⇒ 深色模式下生效的是它。 */
+  html.dark .bub.pc b{ color:#E4D6A8 }
+  html.dark .msgfold details{ background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.13) }
+  html.dark .msgfold summary{ color:#a8a8a8 }
+  html.dark .msgfold .fbody{ color:#e0e0e0;border-top-color:rgba(255,255,255,.13) }
+  html.dark .bub.pc code{ background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.13) }
+  html.dark .bub.pc th{ background:rgba(255,255,255,.07) }
+  html.dark .bub.pc a{ color:#6ea8fe;border-bottom-color:#35507a }
+  html.dark .bub.pc pre{ background:rgba(255,255,255,.05) }
+  html.dark .bub.pc .mdblock{ background:rgba(255,255,255,.05) }
+  html.dark .bub.me{ background:rgba(24,36,48,.62);color:#cfe0f5 }
+  html.dark .bub.sys{ color:#666 }
+  /* 折叠块 */
+  html.dark .foldwrap details.fold{ background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.13) }
+  html.dark .foldwrap summary{ color:#9a9a9a }
+  html.dark .foldwrap summary::before{ color:#555 }
+  html.dark .foldwrap .foldbody{ color:#9a9a9a }
+  html.dark .foldwrap.reasoning details.fold{ background:rgba(56,86,150,.20);border-color:rgba(120,160,220,.32) }
+  html.dark .foldwrap.reasoning .foldbody{ color:#8ba0c4 }
+  html.dark .foldwrap.tool details.fold{ background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.11) }
+  html.dark .foldwrap.tool summary{ color:#8f8f8f }
+  html.dark .foldwrap.tool .foldbody{ color:#a8a8a8 }
+  html.dark .foldimg{ background:rgba(255,255,255,.6) }
+  /* 会话选择器 */
+  html.dark .sessrow{ background:linear-gradient(180deg,#222,#1c1c1c) }
+  html.dark .sessrow:active{ background:#2b2b2b }
+  html.dark .sessrow.cur{ border-color:#3f7a52;background:linear-gradient(180deg,#1e2f24,#182420) }
+  html.dark .sessrow-d{ color:#6a6a6a }
+  /* 输入框 / 消息里的按钮 */
+  html.dark #chIn{ background:#1e1e1e }
+  /* ★ 思考档位按钮 —— ⭐ 2026-09-22 晚 主人：「ds会话和op会话的对话框和旁边的聪明程度大小不一样！
+     让对话框这一行统一大小，只不过颜色别变」⇒ 尺寸对齐 op 那套（42 高 / 10 圆角 / 14px 字，
+     和「发送」同规格）；**颜色/边框色一律不动**（浅色 rgba(0,0,0,.18)+#555，深色见下面 124 行）。 */
+  #chEffort{ height:42px; padding:0 10px; font-size:14px; border-radius:10px;
+             background:transparent; border:1px solid rgba(0,0,0,.18); color:#555; cursor:pointer }
+  #chEffort[data-v="max"]{ border-color:rgba(120,90,220,.55); color:#5b46c8; font-weight:600 }
+  #chEffort[data-v="high"]{ border-color:rgba(120,90,220,.35); color:#6b5ad0 }
+  #chEffort[data-v="off"]{ opacity:.62 }
+  html.dark #chEffort{ border-color:rgba(255,255,255,.22); color:#bbb }
+  html.dark #chEffort[data-v="max"]{ border-color:rgba(150,130,255,.6); color:#b9a8ff }
+  html.dark .actrow button{ background:#2f2f2f;border-color:rgba(255,255,255,.32) }
+  html.dark .actrow button:active{ background:#3a3a3a }
+  html.dark .actrow button.warn{ background:#3a2020;border-color:#7a4040;color:#ffc9c9 }
+  html.dark .actrow button.done-ok{ background:#1e3a26;border-color:#3f7a52;color:#9fe6b4 }
+  html.dark .actrow button.done-bad{ background:#3a1e1e;border-color:#7a3f3f;color:#ffb3b3 }
+  /* 对话框 */
+  html.dark .dlg{ background:#1a1a1a }
+  html.dark .dlg-x{ background:#2f2f2f }
+  html.dark .mask{ background:rgba(0,0,0,.72) }
+  html.dark .badge{ background:#c0392b }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  html{background:#fff}
+  body{
+    /* ★ 必须 transparent —— body 要是给自己刷不透明白底，
+       会把 z-index:-1 的 body::before（背景图那一层）整个盖住（今天真踩了） */
+    background:transparent;color:var(--fg);
+    font:15px/1.5 -apple-system,system-ui,"Noto Sans SC",sans-serif;
+    /* ⭐ 2026-09-22 晚：主页 padding（安全区+左右边距）**挪进 #home 了** ——
+       body 现在只剩全屏层（#chat/#relay/#ledger 都是 fixed），自己不再滚动、也不需要边距。 */
+    overscroll-behavior:none;
+  }
+
+
+  /* ---- 主页（开源版：直接就是主页面，不再是抽屉）---- */
+  #home{
+    min-height:100%;
+    padding:env(safe-area-inset-top) 14px calc(20px + env(safe-area-inset-bottom));
+    background:transparent;
+  }
+
+  /* ---- 顶栏 ---- */
+  header{
+    display:flex;align-items:center;gap:10px;
+    padding:16px 2px 14px;
+  }
+  header h1{
+    font-size:17px;font-weight:600;letter-spacing:.06em;margin:0;flex:none;
+  }
+  /* ⭐ 2026-09-23 主人当场定的：代理点**紧跟 DSH 右侧一点点**（不是甩到「已连接」左边）⇒
+     h1 不再 flex:1，改让 `.st` 自己吃剩余空间、把「已连接」和右侧图标顶到最右。 */
+  header .st{margin-left:auto}
+  /* ★ 主页头部的深色/浅色开关 —— 尺寸线宽跟对话页那几个图标保持一致 */
+  header #themeBtn{
+    background:none;border:0;padding:0;margin:0;flex:none;color:var(--dim);
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    font-family:inherit;line-height:1;
+  }
+  header #themeBtn svg{display:block;width:21px;height:21px}
+  header #themeBtn:active{color:var(--fg)}
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    border:1px solid var(--line-hi);background:#333;
+    flex:none;transition:background .3s,border-color .3s;
+  }
+  .dot.on{background:var(--ok);border-color:var(--ok)}
+  .dot.off{background:var(--err);border-color:var(--err)}
+  .st{font-size:12px;color:var(--dim);letter-spacing:.04em}
+
+  /* ---- 分组 ---- */
+  .sec{margin-top:26px}
+  .sec-t{
+    font-size:12px;color:var(--dim);letter-spacing:.14em;
+    padding:0 2px 10px;text-transform:uppercase;
+    /* ⭐ 2026-09-22 晚：标题右侧拖一条细线 —— 板块边界一眼可见（纯线条，仍是平面） */
+    display:flex;align-items:center;gap:10px;
+  }
+  .sec-t::after{content:'';flex:1;height:1px;background:var(--line)}
+
+  /* ---- 按钮网格 ---- */
+  /* ⭐ 2026-09-22 晚：两列 → **三列**（抽屉风，一屏能看 33 项，原来只能看 16 项） */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .grid.one{grid-template-columns:1fr}
+
+  /* ⭐⭐ 2026-09-22 op：**第一页按钮全面改扁平**（主人：「第一页四个板块全是立体按钮，太丑了」）
+     病根：原来是 `linear-gradient` 渐变 + 1px 描边 + `box-shadow`（还有 inset 高光）
+           ⇒ 一套"立体拟物"，和会话页/账本页（平面、无描边、无投影）完全不一套。
+     做法（照账本那三个控件的成法）：
+       · 底色换成**一块浅灰平面**（浅色 #f4f4f2 / 深色 #1f1f1f）
+       · 描边一律 `transparent`（**不是 border:none** —— 保住盒模型，按钮尺寸不位移）
+       · 渐变/投影全去；圆角统一 12px；按下只变底色 + 轻微缩放（不再变描边）
+     ⭐⭐ 2026-09-22 晚 第二版（主人：「第一页里面排版，按钮什么的变一下，还是平面，反正现在不太喜欢」）
+     ⇒ 第一页（`#app` 作用域）改**三列抽屉风**（手机 App 主屏那种）：
+       · 按钮**无底色**、竖排（emoji 上 / 文字下、居中）—— 整页 = 白底 + 图标网格，最轻的平面
+       · 按下才浮出一块浅灰（`:active`）—— 平时干净，点了有反馈
+       · 徽章（"新"）绝对定位到格子右上角（原来挤在文字后面）
+       · 危险按钮（清除/出门/重启hub）仍留淡红底，否则看不出警示
+       · ⚠️ 只改 `#app .btn` —— 对话框/账本/酒馆的 `.btn` 保持老样（那几处是横排灰块）
+       · ⚠️ `#app .btn`（ID 权重）压得住 `html.dark .btn` ⇒ 深色覆盖必须带 `#app` 前缀 */
+  .btn{
+    -webkit-appearance:none;appearance:none;
+    background:#f4f4f2;
+    border:1px solid transparent;
+    border-radius:12px;
+    color:var(--fg);
+    padding:16px 13px;
+    font:inherit;font-size:14.5px;
+    text-align:left;
+    display:flex;align-items:center;gap:9px;
+    box-shadow:none;
+    transition:background .12s,transform .06s;
+  }
+  .btn:active{background:#e9e9e6;transform:scale(.99)}
+  .btn .ico{font-size:18px;flex:none;line-height:1}
+  .btn .tx{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .btn.warn{background:rgba(180,50,47,.09)}
+  .btn.warn:active{background:rgba(180,50,47,.15)}
+  /* 2026-09-19：🍶 酒馆面板里"关闭X"状态的**警示色**（红底白字，手机上一眼看出正在跑） */
+  .btn.danger{background:#ffd9d4;color:#a02820;font-weight:600}
+  .btn.danger:active{background:#ffc7c0}
+  .btn[disabled]{opacity:.42}
+
+  /* ---- 第一页专用：三列抽屉风（覆盖上面 .btn 基类）---- */
+  #app .btn{
+    position:relative;
+    background:#f6f6f4;
+    border-radius:10px;
+    padding:11px 6px 10px;
+    font-size:12px;
+    text-align:center;
+    flex-direction:column;justify-content:center;gap:5px;
+  }
+  #app .btn:active{background:#eaeae8;transform:scale(.97)}
+  #app .btn .ico{font-size:23px}
+  #app .btn .tx{flex:none;width:100%;text-align:center}
+  #app .btn .badge{position:absolute;top:5px;right:6px;margin:0}
+  #app .btn.warn{background:rgba(180,50,47,.06)}
+  #app .btn.warn:active{background:rgba(180,50,47,.13)}
+  .btn.warn{background:rgba(180,50,47,.09)}
+  .btn.warn:active{background:rgba(180,50,47,.15)}
+  /* 2026-09-19：🍶 酒馆面板里"关闭X"状态的**警示色**（红底白字，手机上一眼看出正在跑） */
+  .btn.danger{background:#ffd9d4;color:#a02820;font-weight:600}
+  .btn.danger:active{background:#ffc7c0}
+  .btn[disabled]{opacity:.42}
+
+  /* ⭐ 2026-09-23 主人定：开关按钮（🖥️屏幕/🍺酒馆/🚀UU远程）**统一** ——
+     开=白、关=黑（原先是"浅灰 vs 深灰 / 黑 vs 更黑"，对比不够、不符合直觉）。
+     深浅两主题用同一套色，一眼就懂（开=亮、关=暗）。
+     ⚠️ #app .btn 带 ID 权重压得住 html.dark .btn ⇒ 深色覆盖也要带 #app 前缀。 */
+  #app .btn.toggle-on{background:#ffffff;color:#3a3a3a;border-color:rgba(0,0,0,.10)}
+  #app .btn.toggle-on:active{background:#f1f1f1}
+  #app .btn.toggle-off{background:#1b1b1b;color:#bdbdbd;border-color:rgba(255,255,255,.10)}
+  #app .btn.toggle-off:active{background:#2a2a2a}
+  html.dark #app .btn.toggle-on{background:#ffffff;color:#3a3a3a;border-color:transparent}
+  html.dark #app .btn.toggle-on:active{background:#f1f1f1}
+  html.dark #app .btn.toggle-off{background:#1b1b1b;color:#bdbdbd;border-color:rgba(255,255,255,.10)}
+  html.dark #app .btn.toggle-off:active{background:#2a2a2a}
+
+  /* ---- 结果弹窗 ---- */
+  .mask{
+    position:fixed;inset:0;background:rgba(0,0,0,.42);
+    display:none;align-items:center;justify-content:center;
+    padding:20px;z-index:80;backdrop-filter:blur(2px);
+  }
+  .mask.show{display:flex}
+  .dlg{
+    background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;
+    width:100%;max-width:460px;max-height:80vh;display:flex;flex-direction:column;
+    animation:pop .16s ease-out;
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+  .dlg-h{
+    padding:15px 18px;border-bottom:1px solid var(--line);
+    font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;
+  }
+  .dlg-h .x{
+    margin-left:auto;color:var(--dim);font-size:19px;line-height:1;
+    padding:0 4px;background:none;border:0;font-family:inherit;
+  }
+  .dlg-b{
+    padding:16px 18px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+    font-size:13.5px;line-height:1.72;color:var(--mid);
+    -webkit-user-select:text;user-select:text;
+  }
+  .dlg-b img{width:100%;border-radius:8px;border:1px solid var(--line);margin-top:6px}
+  .dlg-f{padding:12px 18px 16px;display:flex;gap:10px}
+  .dlg-f .btn{flex:1;justify-content:center;text-align:center}
+
+
+  .busy{color:var(--dim);font-size:13px}
+
+  /* ---- ⭐ PDF 附件（手机端）----
+     2026-09-19 23:02 主人：「pdf看不了，还是白色的」
+     根因：**Android Chrome 不支持内嵌 PDF**（<embed type=application/pdf> 永远白屏）
+     ⇒ 手机端改成两个**跟站内 .btn 同款**的按钮（别自创样式，上次 op 就是栽在样式失衡上）。
+     ⚠️ 观感要跟消息里的按钮一致：圆角 11px、浅灰渐变、细边框、字 14.5px。 */
+  .pdffile{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+  .pdffile-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:13px 14px;border-radius:11px;border:1px solid var(--line);
+    background:linear-gradient(180deg,#ffffff,#f1f1f1);
+    color:var(--fg);font-size:14.5px;text-decoration:none;
+    box-shadow:0 1px 2px rgba(0,0,0,.06);
+  }
+  .pdffile-btn:active{background:#e6e6e6;border-color:var(--line-hi)}
+  html.dark .pdffile-btn{background:linear-gradient(180deg,#262626,#1e1e1e);border-color:rgba(255,255,255,.16)}
+  html.dark .pdffile-btn:active{background:#2e2e2e}
+
+  /* ---- ⭐ 图片放大层（2026-09-19 19:05 主人：「加个点击图片，能放大看的功能」）----
+     点消息里的图 ⇒ 全屏黑底大图；手机双指缩放/拖动、双击放大；点空白或 ✕ 关闭。
+     ⚠️ 独立一层 #imgView（z-index 90 比对话页 60 / 账本 65 都高）⇒ 在哪都能弹。
+     ⚠️ 缩放/平移走 transform（不重排）；`touch-action:none` 自己处理手势。 */
+  #imgView{
+    position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.94);
+    display:none;align-items:center;justify-content:center;overflow:hidden;
+    touch-action:none;-webkit-user-select:none;user-select:none;
+  }
+  #imgView.on{display:flex}
+  #imgView img{
+    max-width:96vw;max-height:92vh;transform-origin:center center;
+    will-change:transform;transition:transform .12s ease-out;
+    -webkit-user-drag:none;pointer-events:none;
+  }
+  #imgView.zoomed img{transition:none}
+  #imgClose{
+    position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;
+    width:38px;height:38px;border-radius:50%;border:0;
+    background:rgba(255,255,255,.16);color:#fff;font-size:20px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  #imgClose:active{background:rgba(255,255,255,.3)}
+  #imgHint{
+    position:absolute;bottom:calc(env(safe-area-inset-bottom) + 12px);left:0;right:0;
+    text-align:center;color:rgba(255,255,255,.5);font-size:12px;pointer-events:none;
+  }
+
+
+
+
+  /* ---- ⭐ 2026-09-17 改：不要气泡，要"整页出字"（主人原话）----
+     主人：「你也不用纠结对话框啊？就跟 dsh 一样，一整个页面都能出字，不就好了？」
+     QQ 需要气泡是因为它是聊天列表；这里是一份**文档**。
+     而且 82% 宽的气泡会把表格/代码挤烂 —— 现在我的回复占满整行、渲染 Markdown。 */
+  .bub{
+    width:100%;max-width:100%;padding:0;font-size:15px;line-height:1.75;
+    white-space:normal;word-break:break-word;
+    -webkit-user-select:text;user-select:text;
+  }
+  .bub .txt{display:block}
+  /* 来源标签（2026-09-19：主人发图/剪贴板注入，一眼看出消息哪来的） */
+  .srctag{display:block;font-size:11px;color:#8a94a6;font-weight:400;margin:2px 0 2px 1px;letter-spacing:.3px}
+  html.dark .srctag{color:#7c8798}
+  /* 我发的：整页正文 */
+  .bub.pc{align-self:stretch;background:none;border:0;color:var(--fg);padding:10px 0}
+  /* ★★ 2026-09-17 主人要的：**长报告也能折叠，展开就是原文**
+     原话：「你现在很多报告，可以也折叠，展开直接就是里面的内容，我就不需要去哪里看了」
+     设计取舍（这是 UI，归我）：
+       · 短内容（≤ 300 字）**不动** —— 直接显示，多一层折叠反而累赘
+       · 长内容收成一行标题（📄 + 摘要 + 字数），点开是**原文**（不是摘要、不是链接）
+       · 复用已有的 <details> 机制（和"思考/工具"折叠同一套观感，主人已经熟悉）
+       · **默认折叠**，但**不写入 localStorage** —— 每次都是折叠的，不会出现"上次展开了这次也展开"的意外 */
+  .msgfold{ margin:2px 0 }
+  .msgfold details{ border:1px solid var(--line);border-radius:8px;background:rgba(246,246,246,.58); }
+  .msgfold summary{
+    cursor:pointer;list-style:none;padding:8px 12px;font-size:13px;color:var(--mid);
+    display:flex;align-items:center;gap:7px;user-select:none;
+  }
+  .msgfold summary::-webkit-details-marker{ display:none }
+  .msgfold summary::before{
+    content:"▸";color:var(--dim);font-size:11px;flex:none;transition:transform .15s;
+  }
+  .msgfold details[open] summary::before{ transform:rotate(90deg) }
+  .msgfold summary .ft{ flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+  .msgfold summary .fn{ color:var(--dim);font-size:11.5px;flex:none }
+  .msgfold .fbody{
+    padding:2px 12px 12px;border-top:1px solid var(--line);
+    font-size:13.5px;line-height:1.6;color:var(--fg);white-space:pre-wrap;word-break:break-word;
+  }
+  /* ★★ 2026-09-19：附件「✏️ 编辑」—— 主人要"点开就能直接改"。默认只读，点编辑才变 textarea。 */
+  .fileeditbar{display:flex;justify-content:flex-end;margin:0 0 8px}
+  .fed-btn{
+    min-height:40px;padding:8px 16px;border:1px solid var(--line-hi);background:#fff;color:var(--fg);
+    border-radius:9px;font-size:14px;cursor:pointer;line-height:1;
+  }
+  .fed-btn.primary{background:#2f5cff;border-color:#2f5cff;color:#fff}
+  .fed-btn:active{opacity:.78}
+  .fed-btn:disabled{opacity:.5;cursor:default}
+  html.dark .fed-btn{background:#2f2f2f;border-color:rgba(255,255,255,.28);color:#e0e0e0}
+  html.dark .fed-btn.primary{background:#3b6bff;border-color:#3b6bff;color:#fff}
+  .fetext{white-space:pre-wrap;word-break:break-word}
+  .feta{
+    width:100%;min-height:60vh;max-height:82vh;box-sizing:border-box;
+    font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:13.5px;line-height:1.6;
+    padding:10px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(255,255,255,.9);color:var(--fg);resize:vertical;white-space:pre-wrap;
+  }
+  html.dark .feta{background:rgba(30,30,30,.92);color:#e0e0e0}
+  /* ★★ 2026-09-22：**网页浮层卡片**（和附件折叠块同款观感 —— 主人要"保持格式一致"） */
+  .webfold .webhint{color:var(--dim);font-size:12.5px;margin:2px 0 10px}
+  .webfold .webbody{display:flex;flex-direction:column}
+  .feact{display:flex;gap:10px;margin-top:10px}
+  .feact .fed-btn{flex:1}
+  /* 涵正发的：留一条窄色带，一眼能分清谁说的，但不抢版面 */
+  .bub.me{
+    align-self:stretch;background:rgba(238,243,255,.58);border-left:3px solid #2f5cff;
+    border-radius:0 8px 8px 0;padding:8px 12px;margin:6px 0 2px;
+    /* ★ 2026-09-17 白底主题：原来是 #cfe0f5（深色主题的浅蓝白）⇒ 白底上几乎看不见。
+       主人：「我发送的消息颜色太淡了…比思考的那些小字颜色深一点就行」
+       思考块小字 = #41567a ⇒ 这个取更深的 #2a3d5c */
+    color:#2a3d5c;white-space:pre-wrap;font-size:14px;line-height:1.6;
+  }
+  .bub.sys{align-self:center;background:none;border:0;color:#777;font-size:12px;padding:4px;text-align:center}
+  /* ★ 最底下那行「生成中…」（主人 2026-09-17 换的方案）—— 我答完就消失 */
+  /* ★ 花费行（在「生成中…」上面）—— 主人 2026-09-17 要的：
+     「写现在的余额，然后后面（这次消息减去多少钱），不然像今天一个上午30还是太难顶了」 */
+  /* ★ 2026-09-17 主人要的：**余额进度条**（分母 300，五档偏灰配色，「平均分」） */
+  .balbar{
+    display:inline-block;vertical-align:middle;width:64px;height:6px;border-radius:3px;
+    background:rgba(0,0,0,.09);overflow:hidden;margin:0 6px 0 3px;
+  }
+  .balbar i{ display:block;height:100%;border-radius:3px;transition:width .3s,background .3s }
+  /* ★ 2026-09-18：余额暂时没查到时的降级样式（虚线空心条 + 灰字），
+     让"没查到"和"真的没余额"一眼能分开 */
+  .balna{ color:var(--dim) }
+  .balna-bar{ background:transparent;border:1px dashed var(--line) }
+  html.dark .balbar{ background:rgba(255,255,255,.14) }
+  .chcost{
+    align-self:flex-start;flex:none;color:var(--dim);font-size:11.5px;
+    padding:9px 2px 0;letter-spacing:.03em;
+    font-family:ui-monospace,Consolas,monospace;
+  }
+  .chcost b{ color:var(--mid);font-weight:600 }
+  .chbusy{
+    align-self:flex-start;flex:none;color:var(--dim);font-size:12px;
+    padding:8px 2px 4px;letter-spacing:.05em;animation:blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ---- 正文里的 Markdown ---- */
+  .bub.pc h2,.bub.pc h3,.bub.pc h4,.bub.pc h5,.bub.pc h6{
+    margin:1.05em 0 .45em;line-height:1.35;font-weight:600;letter-spacing:.01em
+  }
+  .bub.pc h2{font-size:18px}
+  .bub.pc h3{font-size:16.5px}
+  .bub.pc h4,.bub.pc h5,.bub.pc h6{font-size:15px;color:var(--mid)}
+  .bub.pc p{margin:.55em 0}
+  .bub.pc ul,.bub.pc ol{margin:.5em 0;padding-left:1.5em}
+  .bub.pc li{margin:.2em 0}
+  .bub.pc code{
+    background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.08);border-radius:4px;padding:1px 5px;
+    font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:12.8px;
+  }
+  .bub.pc pre{
+    background:rgba(246,246,246,.58);border:1px solid var(--line);border-radius:9px;
+    /* ★★ 2026-09-17 21:22 主人实测：手机上代码块【右边被切掉 / 太贴边】。
+       ⚠️ 根因：`pre code` 没写 `white-space:pre-wrap` ⇒ **长行不折行** ⇒ 撑出横向滚动 ⇒ 右边看不见；
+          再加 13px 内边距在窄屏 + 中英混排下太宽 ⇒ 正文可用宽度更少。
+       ⇒ 改：**允许折行** + 内边距收窄 + 字号略缩 + 允许词内断行（中英混排必须）。
+       `overflow-x:auto` 留着兜底（万一有超长英文单词/URL，不至于溢出容器）。 */
+    padding:9px 10px;margin:.6em 0;overflow-x:auto;max-width:100%;
+  }
+  .bub.pc pre code{
+    background:none;border:0;padding:0;font-size:12px;line-height:1.55;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  /* ⭐ 2026-09-19：无语言 / text / md 代码块 —— **块的外观保留**，里面的 Markdown 正常渲染。
+     主人原话：「那代码块里也渲染吧，全是星号有点难读」；改后他又说「代码块直接没了」，
+     所以这里不能把块拆成普通段落，得留一个和 pre 同款的底框。 */
+  .bub.pc .mdblock{
+    background:rgba(246,246,246,.58);border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px;margin:.6em 0;overflow-x:auto;max-width:100%;
+  }
+  .bub.pc .mdblock>:first-child{margin-top:0}
+  .bub.pc .mdblock>:last-child{margin-bottom:0}
+  .bub.pc table{
+    border-collapse:collapse;margin:.75em 0;font-size:13.2px;
+    display:block;overflow-x:auto;max-width:100%;
+  }
+  .bub.pc th,.bub.pc td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  .bub.pc th{background:rgba(243,243,243,.58);font-weight:600}
+  .bub.pc blockquote{
+    margin:.6em 0;padding:.15em 0 .15em 11px;
+    border-left:3px solid var(--line-hi);color:var(--mid);
+  }
+  .bub.pc hr{border:0;border-top:1px solid var(--line);margin:1.1em 0}
+  .bub.pc a{color:#1a56d6;text-decoration:none;border-bottom:1px solid #a8c0ea}
+  /* ★ 2026-09-17 白底主题：加粗原来是纯白（深色下为了更亮）⇒ 白底上完全隐形。
+     浅色下更强调= 更黑，所以用 #000（正文是 #141414）。 */
+  /* ★★ 2026-09-20 02:39 主人：「你拿你的粗体字颜色变一下，变成拿坡里黄」
+     ⇒ **那不勒斯黄（Naples Yellow）**，白底上取"能看清"的那一档：
+        纯颜料色 `#FADA5E` 在白底上几乎看不见 ⇒ 用**加深版 `#D9A81E`**
+        （保留"拿坡里黄"的暖调，同时对比度够 —— 主人自己说了"亮色上次改过后基本没怎么用"）。
+     ⚠️ 深色模式（html.dark）那条在下面，保持白色不变（深底上黄反而脏）。 */
+  .bub.pc b{color:#D9A81E}
+
+  /* ---- ⭐ 思考块 / 工具条（2026-09-17 加）----
+     主人原话：「我不知道你在干嘛，不知道是不是在输入还是干嘛，现在和 dsh 一样，
+               你在调用什么工具，你在思考都能流式传输过来，反正能折叠了」
+     ⇒ 思考 = 默认折叠的 <details>，标题实时显示"思考中 · N 字"；工具 = 一行暗色小条。 */
+  .foldwrap{margin:5px 0}
+  /* ★ 2026-09-17 主人：「几个框也透明呗?但是比背景透明度低就行，知道有框」
+     背景图 26% 不透明 ⇒ 框取 58%：框里的图 ≈26%×42%≈11%，看得出有框、也透得出图 */
+  .foldwrap details.fold{background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.14);border-radius:8px;overflow:hidden}
+  .foldwrap summary{
+    cursor:pointer;list-style:none;padding:7px 11px;font-size:12.8px;color:#5f5f5f;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .foldwrap summary::-webkit-details-marker{display:none}
+  .foldwrap summary::before{content:'▸ ';color:#999}
+  .foldwrap details[open] summary::before{content:'▾ '}
+  .foldwrap .foldbody{
+    padding:9px 11px;font-size:12.4px;line-height:1.65;color:#4a4a4a;
+    white-space:pre-wrap;word-break:break-word;border-top:1px solid #1f1f1f;
+    max-height:340px;overflow-y:auto;
+  }
+  /* ★ 显式藏起"没展开"的正文。
+     新版 Chromium 的 <details> 靠内部机制收起（实测收起时 details 只有 35px 高，
+     但 .foldbody 的 computed display 仍是 block），光靠 UA 默认样式在这个 WebView 上不保险。
+     主人反复说"思考怎么又摊开了"，所以这里钉死一条，任何浏览器都不会露出来。 */
+  .foldwrap details.fold:not([open]) > .foldbody{display:none}
+  .foldwrap.reasoning details.fold{border-color:#bfd0ec;background:rgba(238,244,255,.58)}
+  .foldwrap.reasoning summary{color:#7d93c0}
+  .foldwrap.reasoning .foldbody{color:#41567a}
+  .foldwrap.tool details.fold{background:rgba(250,250,250,.58);border-color:rgba(0,0,0,.13)}
+  .foldwrap.tool summary{color:#5a5a5a;font-family:ui-monospace,Consolas,monospace;font-size:12.2px}
+  /* 工具展开后是**完整命令 / 完整参数**，用等宽字体、给足高度 —— 这是主人 10:11 明确要的 */
+  .foldwrap.tool .foldbody{
+    font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:12px;
+    line-height:1.6;color:#3f3f3f;max-height:52vh;
+  }
+  /* ★★ 2026-09-17 工具/思考嵌进正文的对应位置（像 dsh 网页）——
+     每条正文气泡底下挂一个「工具箱」，它触发的工具/思考都收在里面，
+     左边一条淡色引导线，一眼看出"这句正文 → 这些工具"的归属。 */
+  .toolbox{
+    margin:5px 0 2px;padding:2px 0 2px 11px;
+    border-left:2px solid rgba(110,120,155,.28);
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .toolbox .foldwrap{margin:0}
+  html.dark .toolbox{ border-left-color:rgba(160,175,215,.34) }
+  /* 还在写：标题末尾闪一下（只有思考块用，工具条是离散的一条条） */
+  .foldwrap.streaming summary::after{content:' ▍';color:#7aa2ff;animation:blink 1s steps(2) infinite}
+  /* ★ 工具折叠块里的配图（我看的图，主人一起看）—— 主人 10:47 要求 */
+  .foldwrap .foldimg{
+    display:block;width:100%;max-height:46vh;object-fit:contain;
+    border-radius:6px;margin:0 0 8px;background:rgba(255,255,255,.72);padding:3px;
+  }
+
+  /* ---- ★ 会话切换器（2026-09-17 加）---- */
+  .sessh{
+    font-size:11.5px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;
+    margin:12px 0 6px;padding:0 2px;
+  }
+  .sessh:first-child{margin-top:0}
+  /* ★ 2026-09-17：「＋」面板（传文件 + adb 状态） */
+  .plusrow{ display:flex;align-items:center;gap:9px;padding:11px 4px;border-bottom:1px solid var(--line) }
+  .plusrow:last-child{ border-bottom:0 }
+  .plusdot{ width:9px;height:9px;border-radius:50%;flex:none;background:#c0392b }
+  .plusdot.on{ background:#2f9e5f }
+  .plustx{ flex:1;font-size:13.5px;line-height:1.5 }
+  .plustx small{ display:block;color:var(--dim);font-size:11.5px;margin-top:2px }
+  .pluslist{ max-height:46vh;overflow:auto;margin-top:8px }
+  .plusitem{ display:flex;align-items:center;gap:9px;padding:9px 6px;border-bottom:1px solid var(--line);font-size:13px }
+  .plusitem:active{ background:rgba(0,0,0,.05) }
+  .plusitem .nm{ flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+  .plusitem .sz{ color:var(--dim);font-size:11.5px;flex:none }
+  html.dark .plusitem:active{ background:rgba(255,255,255,.07) }
+  /* ★ 2026-09-17：面板里的小按钮（原来 .minibtn 根本没定义，一直裸奔成浏览器默认按钮） */
+  .minibtn{
+    border:1px solid var(--line-hi);border-radius:9px;padding:8px 12px;font:inherit;
+    font-size:13px;background:rgba(238,238,238,.9);color:var(--fg);
+  }
+  .minibtn:active{ background:rgba(222,222,222,.95) }
+  html.dark .minibtn{ background:rgba(255,255,255,.12) }
+  html.dark .minibtn:active{ background:rgba(255,255,255,.2) }
+  .sessrow{
+    border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:7px;
+    background:linear-gradient(180deg,#ffffff,#f6f6f6);
+  }
+  .sessrow:active{background:#ececec;border-color:var(--line-hi)}
+  .sessrow.cur{border-color:#3f7a52;background:linear-gradient(180deg,#eefaf1,#e4f5e9)}
+  .sessrow-t{font-size:13.5px;color:var(--fg);margin-bottom:3px;word-break:break-word}
+  .sessrow-d{
+    font-size:11px;color:#777;font-family:ui-monospace,Consolas,monospace;
+    word-break:break-all;line-height:1.45;
+  }
+  .ch-f{
+    flex:none;display:flex;gap:8px;align-items:flex-end;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:rgba(255,255,255,.97);
+  }
+  .ch-f textarea{
+    flex:1;resize:none;height:42px;max-height:120px;background:rgba(255,255,255,.58);color:var(--fg);
+    border:1px solid var(--line);border-radius:10px;padding:11px 12px;
+    font:inherit;font-size:14.5px;line-height:1.4;font-family:inherit;
+  }
+  .ch-f textarea:focus{outline:none;border-color:var(--line-hi)}
+    .ch-f button{
+    /* ★ 2026-09-17 主人：「把这个按钮调小一点和对话框一样大…还有就是按钮的纯度调低一点，太艳了」
+       原来 #2f5cff 是荧光蓝，太抢眼 ⇒ 换成灰蓝；高度跟输入框对齐（42px），宽度收窄。 */
+    flex:none;height:42px;background:linear-gradient(180deg,#5d7cb4,#4b67a0);
+    border:1px solid #6d89bd;color:#f4f7fd;border-radius:10px;padding:0 14px;
+    font:inherit;font-size:14px;
+  }
+  .ch-f button[disabled]{opacity:.45}
+  /* ★★ 2026-09-17 主人要的：**我还在生成的时候，发送按钮变灰**
+     光靠 sendChat 里那个 disabled 不够 —— POST 一眨眼就返回，那时我还在生成。
+     所以要看"我这边还有没有流在跑"（见下面 setSendBusy / SSE 的 new+end 配对）。 */
+  /* 生成中：按钮变成「停」（主人 2026-09-17 要的）—— 它不再禁用、也不再只是变淡，
+     而是**换成另一个动作**：点它就去中断我。红色也按主人"纯度调低"的口味调过。 */
+  .ch-f button.stop{
+    background:linear-gradient(180deg,#a86a6a,#8f5a5a);
+    border-color:#b87d7d;color:#fff;opacity:1;
+  }
+  html.dark .ch-f button.stop{ background:linear-gradient(180deg,#6d3d3d,#5a3232);border-color:#7f4a4a }
+  /* 「⏹」独立按钮：窄一点，别跟发送抢位置。
+     ⭐ 2026-09-22 晚：字号 15→14（跟 op 那套统一；尺寸/颜色都不动） */
+  .ch-f #chStop{ padding:0 12px;font-size:14px;background:linear-gradient(180deg,#a86a6a,#8f5a5a);
+    border-color:#b87d7d;color:#fff }
+  html.dark .ch-f #chStop{ background:linear-gradient(180deg,#6d3d3d,#5a3232);border-color:#7f4a4a }
+  html.dark .ch-f button.busy{background:linear-gradient(180deg,#3c3c3c,#303030);border-color:#4c4c4c;color:#9a9a9a}
+  .badge{
+    display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;
+    background:#c0392b;color:#fff;font-size:11px;text-align:center;padding:0 5px;margin-left:6px;
+    vertical-align:middle;
+  }
+
+  /* ---- 气泡里的交互按钮（2026-09-17 加：push.js --btn）---- */
+  /* ★ 2026-09-17 主人要的：给 agent（op）的汇报加一个「直接回话」输入框 */
+  .agentrow{ display:flex;gap:7px;margin-top:9px;align-items:center }
+  .agentrow input{
+    flex:1;min-width:0;height:36px;border-radius:9px;border:1px solid var(--line);
+    background:rgba(255,255,255,.72);padding:0 11px;font:inherit;font-size:13.5px;color:var(--fg);
+  }
+  .agentrow input:focus{ outline:none;border-color:var(--line-hi) }
+  .agentrow button{
+    flex:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--line-hi);
+    background:rgba(232,232,232,.85);font:inherit;font-size:13.5px;color:var(--fg);
+  }
+  .agentrow button:disabled{ opacity:.5 }
+  html.dark .agentrow input{ background:rgba(255,255,255,.10) }
+  html.dark .agentrow button{ background:rgba(255,255,255,.14) }
+  /* ★ 2026-09-23：fht 回复成功后留的一行「已发」小字 */
+  .fhtsent{ font-size:12px; opacity:.65; margin-top:5px; word-break:break-all }
+  .actrow{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  /* ★★ 2026-09-17 主人要的：**选项卡** —— 以前 QQ 只能发纯文本，选项只能用「A. xxx」土办法 */
+  .optwrap{ display:flex;flex-direction:column;gap:6px;margin-top:10px }
+  .optwrap .opthint{ font-size:11.5px;color:var(--dim);margin-bottom:1px;letter-spacing:.03em }
+  .optwrap button{
+    text-align:left;padding:10px 13px;border-radius:9px;font:inherit;font-size:13.5px;
+    background:rgba(232,232,232,.58);border:1px solid var(--line);color:var(--fg);
+    display:flex;align-items:center;gap:9px;line-height:1.45;
+  }
+  .optwrap button .k{
+    flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--line-hi);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim);
+  }
+  .optwrap button:active{ background:rgba(216,216,216,.7) }
+  .optwrap button.picked{
+    background:rgba(210,232,214,.72);border-color:#5f9c72;color:#1d5330;
+  }
+  .optwrap button.picked .k{ background:#5f9c72;border-color:#5f9c72;color:#fff }
+  .optwrap button.notpicked{ opacity:.42 }
+  html.dark .optwrap button{ background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16) }
+  html.dark .optwrap button:active{ background:rgba(255,255,255,.12) }
+  html.dark .optwrap button.picked{ background:rgba(40,80,52,.55);border-color:#4f8a64;color:#bfe8cc }
+  html.dark .optwrap button.notpicked{ opacity:.35 }
+  /* ★★ 2026-09-29：**问用户选择框**（ask_user_question 的 UI）——
+     和选项卡长得像，但语义是"回答那个正在等我的工具调用"，点完回 /api/ask-answer。 */
+  .askwrap{ display:flex;flex-direction:column;gap:14px;margin-top:10px }
+  .askwrap .askq{ display:flex;flex-direction:column;gap:6px }
+  .askwrap .askhd{ font-size:11.5px;color:var(--dim);letter-spacing:.04em;text-transform:none }
+  .askwrap .asktitle{ font-size:14px;font-weight:600;line-height:1.5 }
+  .askwrap .askopt{
+    text-align:left;padding:11px 13px;border-radius:9px;font:inherit;font-size:13.5px;
+    background:rgba(232,232,232,.58);border:1px solid var(--line);color:var(--fg);
+    display:flex;flex-direction:column;gap:2px;line-height:1.4;
+  }
+  .askwrap .askopt .lb{ display:flex;align-items:center;gap:9px }
+  .askwrap .askopt .k{
+    flex:none;width:20px;height:20px;border-radius:5px;border:1px solid var(--line-hi);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim);
+  }
+  .askwrap .askopt .desc{ font-size:11.5px;color:var(--dim);padding-left:29px;line-height:1.45 }
+  .askwrap .askopt:active{ background:rgba(216,216,216,.7) }
+  .askwrap .askopt.picked{ background:rgba(210,232,214,.72);border-color:#5f9c72;color:#1d5330 }
+  .askwrap .askopt.picked .k{ background:#5f9c72;border-color:#5f9c72;color:#fff }
+  .askwrap .askopt.picked .desc{ color:#3d6b4c }
+  .askwrap button.askcommit{
+    justify-content:center;font-weight:600;text-align:center;padding:11px 13px;border-radius:9px;font:inherit;font-size:13.5px;
+    background:var(--accent,#ffe2c0);border:1px solid var(--line);color:#5a3d18;
+  }
+  .askwrap button[disabled]{ opacity:.5 }
+  .askwrap .askdone{ font-size:13px;color:#1f7a45;font-weight:600;margin-top:2px }
+  html.dark .askwrap .askopt{ background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16) }
+  html.dark .askwrap .askopt:active{ background:rgba(255,255,255,.12) }
+  html.dark .askwrap .askopt.picked{ background:rgba(40,80,52,.55);border-color:#4f8a64;color:#bfe8cc }
+  html.dark .askwrap .askopt.picked .desc{ color:#8fc9a2 }
+  html.dark .askwrap button.askcommit{ background:rgba(255,226,192,.85);color:#3a2708 }
+  .actrow button{
+    -webkit-appearance:none;appearance:none;font:inherit;font-size:13px;
+    background:rgba(232,232,232,.58);color:var(--fg);border:1px solid var(--line-hi);
+    border-radius:8px;padding:7px 12px;
+  }
+  .actrow button:active{background:#dcdcdc}
+  .actrow button.warn{background:rgba(255,241,241,.58);border-color:#e3b6b6;color:#b4322f}
+  /* 按过之后的样子（主人 10:47 的思路：变绿打勾 / 变红打叉，不注入消息） */
+  .actrow button.done-ok{background:rgba(230,247,236,.58);border-color:#3f7a52;color:#1f7a45}
+  .actrow button.done-bad{background:rgba(253,234,234,.58);border-color:#c0392b;color:#b4322f}
+  .actrow button[data-done]{pointer-events:none}
+
+  /* ---- 逐字流光标：还在蹦字时尾巴闪一下 ---- */
+  .bub.streaming .txt::after{content:'▍';color:#7aa2ff;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ---- 底部提示 ---- */
+  footer{
+    margin-top:26px;padding-top:14px;border-top:1px solid #1c1c1c;
+    font-size:11.5px;color:#888;letter-spacing:.03em;text-align:center;
+  }
+
+  /* ---- ⭐⭐ 2026-09-30 op：位置页 = 站内极简导航（地图 + 附近搜索 + 四种方式时间/路线）----
+     独立全屏层（照 #ledger 那套：自己那条 history + 刷新后还原），z-index 72 盖最上。
+     ⛔ 默认全在站内看，不跳转；只有「↗ 开始导航」那颗小按钮才跳地图 App（语音播报只有 App 有）。 */
+  #loc{ position:fixed;inset:0;z-index:72;display:none;flex-direction:column;
+    background:#f7f5ef;color:var(--fg);
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  #loc.show{display:flex}
+  /* ⭐⭐ 2026-09-30 op：位置页**强制浅色暖调**（照抄 #ledger 那套，2026-09-21 主人定的）：
+     底 #f7f5ef（暖白）/ 卡片 #fffefb / 抬头 #efece3 / 字深暖灰；强调米金 #E4D6A8 + 浅橘 #ffe2c0。
+     深色主题下也照样暖白（跟账本一致），⛔ 只在 #loc / #loNav 作用域内覆盖，不动全局 html.dark。 */
+  #loc, html.dark #loc, #loNav, html.dark #loNav{
+    --fg:#3a382f; --mid:#6b675c; --dim:#8f8a7d;
+    --line:rgba(58,56,47,.14); --line-hi:rgba(58,56,47,.28);
+    --panel:#fffefb; --panel-solid:#fffefb; --bg:#f7f5ef;
+    color:var(--fg); color-scheme:light;
+  }
+  html.dark #loc, html.dark #loNav{ background:#f7f5ef }
+  #loBar{flex:none;display:flex;align-items:center;gap:6px;
+    padding:10px 14px;border-bottom:1px solid var(--line);background:#efece3}
+  #loBar b{font-size:15px;font-weight:600;flex:1}
+  #loBar button{background:none;border:0;color:var(--dim);padding:0;flex:none;
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:19px}
+  #loBar button svg{display:block;width:21px;height:21px}
+  #loBar button:active{color:var(--fg)}
+  #loBody{flex:1;overflow-y:auto;padding:12px 14px 28px;-webkit-overflow-scrolling:touch}
+  /* 地图 */
+  #loMapBox{position:relative;height:38vh;min-height:190px;border-radius:14px;overflow:hidden;
+    border:1px solid var(--line);background:var(--panel);margin-bottom:10px}
+  #loMap{position:absolute;inset:0}
+  #loMapMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:var(--dim);text-align:center;padding:16px;pointer-events:none}
+  #loMapOpen{position:absolute;right:8px;bottom:8px;z-index:3;font:inherit;font-size:12px;
+    padding:7px 11px;border-radius:20px;border:1px solid var(--line-hi);
+    background:var(--panel-solid);color:var(--fg);box-shadow:0 2px 8px rgba(58,56,47,.18)}
+  #loMapOpen:active{opacity:.7}
+  /* 搜索 */
+  #loSearchRow{display:flex;gap:8px;margin-bottom:8px}
+  #loPoiIn{flex:1;min-width:0;font:inherit;font-size:15px;padding:11px 12px;border-radius:12px;
+    border:1px solid var(--line-hi);background:var(--panel-solid);color:var(--fg)}
+  #loPoiGo{font:inherit;font-size:15px;padding:11px 18px;border-radius:12px;border:1px solid transparent;
+    background:#ffe2c0;color:#3a382f;font-weight:600}
+  html.dark #loPoiGo{background:#ffe2c0;color:#3a382f}
+  #loPoiGo:active{background:#f7d3a6}
+  #loPoiGo:disabled{opacity:.5}
+  #loStat{font-size:13px;color:var(--dim);min-height:18px;margin-bottom:8px}
+  #loStat.err{color:var(--err)}
+  /* POI 列表 */
+  #loPois:empty{display:none}
+  #loPois{margin-bottom:10px}
+  .loPoi{display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:12px;
+    border:1px solid var(--line);background:var(--panel);margin-bottom:8px}
+  .loPoi:active{opacity:.75}
+  .loPoi.on{border-color:#E4D6A8;background:#f4f1e9}
+  html.dark .loPoi.on{border-color:#E4D6A8;background:#f4f1e9}
+  .loPoi .nm{flex:1;min-width:0;font-size:14.5px;font-weight:600;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .loPoi .ad{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .loPoi .ds{flex:none;font-size:12.5px;color:#6b675c;font-weight:600;white-space:nowrap}
+  html.dark .loPoi .ds{color:#6b675c}
+  .loPoiNav{flex:none;font:inherit;font-size:13px;padding:8px 12px;border-radius:10px;
+    border:1px solid #E4D6A8;background:#f4f1e9;color:#3a382f;font-weight:600}
+  .loPoiNav:active{opacity:.7}
+  html.dark .loPoiNav{border-color:#E4D6A8;background:#f4f1e9;color:#3a382f}
+  /* 路线面板 */
+  #loRoute{margin-bottom:12px}
+  #loModes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  #loModes button{font:inherit;font-size:12.5px;padding:9px 2px;border-radius:10px;
+    border:1px solid var(--line-hi);background:var(--panel-solid);color:var(--fg);
+    display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.3}
+  #loModes button .t{font-size:11.5px;color:var(--dim)}
+  #loModes button.on{border-color:rgba(58,56,47,.45);background:#E4D6A8;color:#3a382f;font-weight:600}
+  #loModes button.on .t{color:rgba(58,56,47,.72)}
+  #loModes button:disabled{opacity:.45}
+  #loRouteHead{margin-bottom:8px}
+  #loRouteTo{font-size:14.5px;font-weight:600;margin-bottom:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #loRouteSum{font-size:13px;color:#3a382f;font-weight:600}
+  html.dark #loRouteSum{color:#3a382f}
+  #loSteps{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    padding:4px 0;margin-bottom:10px;max-height:38vh;overflow-y:auto}
+  .loStep{display:flex;gap:10px;padding:9px 12px;border-top:1px solid var(--line);font-size:13.5px;line-height:1.5}
+  .loStep:first-child{border-top:0}
+  .loStep .ic{flex:none;width:20px;text-align:center}
+  .loStep .tx{flex:1;min-width:0}
+  .loStep .dt{flex:none;color:var(--dim);font-size:12px;white-space:nowrap;padding-top:1px}
+  #loNavStart{width:100%;font:inherit;font-size:15px;padding:12px;border-radius:12px;
+    border:1px solid #E4D6A8;background:#ffe2c0;color:#3a382f;font-weight:600}
+  #loNavStart:active{background:#f7d3a6}
+  /* 底部按钮 / 坐标 */
+  .lo-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .lo-btns button{font:inherit;font-size:15px;padding:13px 10px;border-radius:12px;
+    border:1px solid var(--line-hi);background:var(--panel-solid);color:var(--fg)}
+  .lo-btns button:active{opacity:.7}
+  .lo-btns button.primary{border-color:#E4D6A8;background:#ffe2c0;color:#3a382f;font-weight:600}
+  html.dark .lo-btns button.primary{border-color:#E4D6A8;background:#ffe2c0;color:#3a382f}
+  #loCoordBox{margin-bottom:12px}
+  #loCoordBox summary{font-size:13px;color:var(--dim);cursor:pointer;padding:4px 0}
+  #loCard{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-top:8px}
+  #loPos{font:600 16px/1.5 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;
+    letter-spacing:.01em;margin-bottom:8px}
+  #loMeta{font-size:12.5px;color:var(--dim);line-height:1.8}
+  #loMeta .k{color:var(--mid)}
+  #loHint{font-size:12px;color:var(--dim);line-height:1.7}
+  /* ---- ⭐⭐ 2026-09-30 op：全屏导航视图（点搜索结果里的「导航」进）----
+     地图占满中间，顶部信息条 + 底部可滚动分段指引；返回就退回搜索/地图视图。
+     ⛔ 仍然不跳转，只有底部「↗ 开始导航」才跳高德 App。 */
+  #loNav{position:fixed;inset:0;z-index:74;display:none;flex-direction:column;
+    background:var(--bg);color:var(--fg);
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  #loNav.show{display:flex}
+  #loNvBar{flex:none;display:flex;align-items:center;gap:6px;
+    padding:10px 14px;border-bottom:1px solid var(--line);background:#efece3}
+  #loNvBar b{font-size:15px;font-weight:600;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #loNvBar button{background:none;border:0;color:var(--dim);padding:0;flex:none;
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:19px}
+  #loNvBar button svg{display:block;width:21px;height:21px}
+  #loNvBar button:active{color:var(--fg)}
+  #loNvHead{flex:none;padding:9px 14px;border-bottom:1px solid var(--line);background:#efece3}
+  #loNvSum{font-size:13px;color:#3a382f;font-weight:600;min-height:18px;margin-bottom:8px}
+  html.dark #loNvSum{color:#3a382f}
+  #loNvModes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  #loNvModes button{font:inherit;font-size:12.5px;padding:9px 2px;border-radius:10px;
+    border:1px solid var(--line-hi);background:var(--panel-solid);color:var(--fg);
+    display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.3}
+  #loNvModes button .t{font-size:11.5px;color:var(--dim)}
+  #loNvModes button.on{border-color:rgba(58,56,47,.45);background:#E4D6A8;color:#3a382f;font-weight:600}
+  #loNvModes button.on .t{color:rgba(58,56,47,.72)}
+  #loNvModes button:disabled{opacity:.45}
+  #loNvMapWrap{position:relative;flex:1;min-height:0}
+  #loNvMap{position:absolute;inset:0}
+  #loNvMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:var(--dim);text-align:center;padding:16px;pointer-events:none}
+  #loNvSheet{flex:0 1 auto;max-height:34vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    border-top:1px solid var(--line);background:var(--panel-solid);padding:4px 0}
+  #loNvFoot{flex:none;padding:10px 14px;border-top:1px solid var(--line);background:#efece3}
+  #loNvStart{width:100%;font:inherit;font-size:15px;padding:12px;border-radius:12px;
+    border:1px solid #E4D6A8;background:#ffe2c0;color:#3a382f;font-weight:600}
+  #loNvStart:active{background:#f7d3a6}
+
+  /* ---- 上手引导 / 消息流（开源版新增）---- */
+  .guide{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;margin:4px 0 10px}
+  .guide-h{font-size:16px;font-weight:600;margin-bottom:8px}
+  .guide-addr{font-size:13.5px;color:var(--mid);margin-bottom:10px;word-break:break-all}
+  .guide-sub{font-size:12px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px}
+  .guide-list{list-style:none;padding:0;margin:0 0 12px;font-size:13.5px;color:var(--fg);line-height:2}
+  .guide-act{display:flex;gap:8px}
+  .guide-act .btn{flex:1;justify-content:center}
+  .guide-line{display:flex;align-items:center;gap:8px;padding:8px 4px 2px;font-size:12.5px;color:var(--dim)}
+  .guide-line .dot{flex:none}
+  .guide-addr2{font-family:ui-monospace,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .guide-line .minibtn{flex:none}
+  .ch-body{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:6px 2px;overflow-anchor:none;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.5)}
+  html.dark .ch-body{background:rgba(255,255,255,.04)}
+  .ch-body:empty::after{content:'暂无消息';color:var(--dim);font-size:12.5px;padding:10px}
+</style>
+</head>
+<body>
+
+<!-- ⭐⭐⭐ 第一页（控制台）= `#app` + 这个 `<header>`；里面按 DOM 从上到下分四个板块。
+     命名对照见 `D:\AI\important\ds酱页面地图.md`（以后说"第一页第三板块"= 查询那栏）。
+     【第一板块（顶部那一行）】= 本 `<header>`（ds酱 / 状态点 / 连接中 / 深浅色切换）
+                      + 下面 `#app` 里 `render()` 动态生成的 topRow（💬和涵正说话 / 🔗中转页）。
+     ⚠️ 编号**按主人肉眼从上到下数**；`hidden` 分组主人看不见，**不算板块**。
+     ⭐⭐⭐ 2026-09-22 晚（主人：「把主页变成现在的第二页吧，然后在会话页的时候往右滑，
+     能划出来，而且不要全覆盖，覆盖一部分就行」）：
+     ⇒ 第一页不再是"打开就看到的层"，而是**从会话页左侧滑出的抽屉**（`#home` 包起来，78% 宽）。
+        · 会话页（#chat）变成底层、默认打开；`chX`（< 返回）改成打开抽屉
+        · 往右滑 / 返回键 ⇒ 划出抽屉；点遮罩 / 往左滑 ⇒ 收回去
+        · 层级：#homeMask 61 < #home 62 < #ledger 65 < #relay 70（账本/中转页照样盖在最上面） -->
+<div id="home">
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>dsj-open</h1>
+  <!-- ⭐ 2026-09-23：代理（Clash）状态点 —— **紧跟 DSH 右侧一点点**（主人当场定的位置）。
+       绿=Clash 在跑（手机能翻墙）、灰=没跑（正常，默认）。**只是显示，不控制任何开关**。 -->
+  <span class="st" id="st">连接中</span>
+  <!-- ★★ 深色/浅色开关（主人 2026-09-17 从对话页挪过来）—— 图标：浅色显示月亮、深色显示太阳 -->
+  <button id="themeBtn" title="切换深色/浅色" aria-label="切换深色浅色">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path class="icoMoon" d="M20.6 14.7A8.7 8.7 0 0 1 9.3 3.4a8.7 8.7 0 1 0 11.3 11.3z"/>
+      <g class="icoSun" style="display:none">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/>
+      </g>
+    </svg>
+  </button>
+  <button id="chReload" title="刷新页面" aria-label="刷新页面">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.75-6.46"/><path d="M21 3.11v6.56h-6.56"/></svg>
+  </button>
+</header>
+
+<!-- ⭐ 第一页（控制台）：内容全部由 `render()` 动态生成，四个板块 = 第一板块(顶部) + 控制 + 查询 + 内容 -->
+<div id="app"></div>
+
+<!-- 上手引导（JS 填） -->
+<div id="guide"></div>
+
+<!-- 消息推送 -->
+<div class="sec">
+  <div class="sec-t">消息</div>
+  <div class="ch-body" id="chBody"></div>
+</div>
+
+<footer id="ver">—</footer>
+</div><!-- /#home（抽屉） -->
+
+
+
+
+
+<!-- ⭐⭐ 2026-09-30 op：位置页 = **站内极简导航**（地图 + 附近搜索 + 四种方式时间 / 路线分段）。
+     从主页「控制」板块的「📍 位置」进（render 里对 id==='loc' 特判）。
+     ⛔ 默认全在站内看，**不跳转**；只有「↗ 开始导航（跳高德）」那颗小按钮才跳地图 App。 -->
+<div id="loc">
+  <div id="loBar">
+    <button id="loX" title="返回" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M17.4 4.4L5.2 12l12.2 7.6"/>
+      </svg>
+    </button>
+    <b>📍 导航</b>
+    <button id="loRefresh" title="重新定位" aria-label="重新定位">⟳</button>
+  </div>
+  <div id="loBody">
+    <div id="loMapBox">
+      <div id="loMap"></div>
+      <div id="loMapMsg">地图加载中…</div>
+      <button id="loMapOpen" title="用地图 App 打开当前位置">↗ App</button>
+    </div>
+    <div id="loSearchRow">
+      <input id="loPoiIn" type="text" placeholder="找附近…（如 味千 / 加油站 / 医院）">
+      <button id="loPoiGo">搜索</button>
+    </div>
+    <div id="loStat">点下面「定位」获取当前位置</div>
+    <div id="loPois"></div>
+    <div id="loRoute" hidden>
+      <div id="loModes">
+        <button data-mode="driving">🚗<span class="t">…</span></button>
+        <button data-mode="walking">🚶<span class="t">…</span></button>
+        <button data-mode="bicycling">🚲<span class="t">…</span></button>
+        <button data-mode="transit">🚌<span class="t">…</span></button>
+      </div>
+      <div id="loRouteHead">
+        <div id="loRouteTo">—</div>
+        <div id="loRouteSum">—</div>
+      </div>
+      <div id="loSteps"></div>
+      <button id="loNavStart">↗ 开始导航（跳高德 App）</button>
+    </div>
+    <div class="lo-btns">
+      <button id="loGet" class="primary">📍 定位</button>
+      <button id="loCopy">📋 复制坐标</button>
+    </div>
+    <details id="loCoordBox">
+      <summary>坐标信息</summary>
+      <div id="loCard">
+        <div id="loPos">—</div>
+        <div id="loMeta">
+          <div><span class="k">WGS84：</span><span id="loWgs">—</span></div>
+          <div><span class="k">GCJ02：</span><span id="loGcj">—</span></div>
+          <div><span class="k">精度：</span><span id="loAcc">—</span></div>
+          <div><span class="k">来源：</span><span id="loProv">—</span></div>
+          <div><span class="k">更新：</span><span id="loTime">—</span></div>
+        </div>
+      </div>
+    </details>
+    <div id="loHint">地图 / 路线走高德 Web 服务（站内显示，不跳 App）。搜到地方后点一下看四种出行方式的时间与分段路线；「开始导航」才会跳高德 App（语音播报只有 App 有）。</div>
+  </div>
+</div>
+
+<!-- ⭐⭐ 2026-09-30 op：全屏导航视图（点搜索结果里「导航」进；返回退回搜索/地图） -->
+<div id="loNav">
+  <div id="loNvBar">
+    <button id="loNvX" title="返回" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M17.4 4.4L5.2 12l12.2 7.6"/>
+      </svg>
+    </button>
+    <b id="loNvTo">—</b>
+  </div>
+  <div id="loNvHead">
+    <div id="loNvSum">—</div>
+    <div id="loNvModes">
+      <button data-mode="driving">🚗<span class="t">…</span></button>
+      <button data-mode="walking">🚶<span class="t">…</span></button>
+      <button data-mode="bicycling">🚲<span class="t">…</span></button>
+      <button data-mode="transit">🚌<span class="t">…</span></button>
+    </div>
+  </div>
+  <div id="loNvMapWrap">
+    <div id="loNvMap"></div>
+    <div id="loNvMsg">地图加载中…</div>
+  </div>
+  <div id="loNvSheet">
+    <div id="loNvSteps"></div>
+  </div>
+  <div id="loNvFoot">
+    <button id="loNvStart">↗ 开始导航（跳高德 App）</button>
+  </div>
+</div>
+
+<!-- 弹窗 -->
+<div class="mask" id="mask">
+  <div class="dlg">
+    <div class="dlg-h"><span id="dTitle">结果</span><button class="x" id="dX">×</button></div>
+    <div class="dlg-b" id="dBody"></div>
+    <div class="dlg-f" id="dFoot"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+// ⭐ 页面版本：从 <meta name="app-ver"> 读（hub 吐 HTML 时替换成 index.html 的 mtime+大小）。
+//   ⚠️ 哨兵绝不能写成 JS 字面量 —— hub 是**全局替换**，会把判断里的它一起换掉，
+//      判断就恒为 false ⇒ 永不重载（2026-09-17 追了一小时才发现）。哨兵在这里拼出来。
+const MY_VER = (document.querySelector('meta[name="app-ver"]') || {}).content || '';
+const VER_SENTINEL = '__DSJ' + '_VER__';
+let CMDS = [];
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- 发图给 dsh（桌面浏览器兜底）----------
+// ★ 2026-09-17 op：手机端走原生（window.DsNative，上传+推送一条龙）；
+//   这里只给【没有原生桥的浏览器】兜底：上传 /api/upload → /api/push 带 image → dsh 直接看到。
+async function sendImageToDsh(file) {
+  if (!file) return;
+  try {
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch(API + '/api/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!j.ok) { bubble('sys', '✗ 上传失败：' + (j.error || '未知')); return; }
+    const p = await fetch(API + '/api/push', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: '📷 拍照', image: j.url, kind: 'chat' }),
+    });
+    if (!p.ok) bubble('sys', '✗ 推送失败');
+  } catch (e) { bubble('sys', '✗ 上传失败：' + e.message); }
+}
+
+// ---------- 连接检测 ----------
+async function ping() {
+  try {
+    const r = await fetch(API + '/api/ping', { cache: 'no-store' });
+    const j = await r.json();
+    $('dot').className = 'dot on';
+    $('st').textContent = '已连接';
+    return j;
+  } catch (e) {
+    $('dot').className = 'dot off';
+    $('st').textContent = '未连接';
+    return null;
+  }
+}
+
+
+// ---------- 弹窗 ----------
+function openDlg(title, bodyHtml, buttons) {
+  $('dTitle').textContent = title;
+  $('dBody').innerHTML = bodyHtml;
+  const f = $('dFoot');
+  f.innerHTML = '';
+  (buttons || [{ label: '知道了', primary: true }]).forEach((b) => {
+    const el = document.createElement('button');
+    el.className = 'btn' + (b.warn ? ' warn' : '') + (b.cls ? ' ' + b.cls : '');
+    el.innerHTML = `<span class="tx" style="text-align:center">${b.label}</span>`;
+    el.onclick = () => { closeDlg(); b.onClick && b.onClick(); };
+    f.appendChild(el);
+  });
+  $('mask').classList.add('show');
+}
+function closeDlg() { $('mask').classList.remove('show'); }
+$('dX').onclick = closeDlg;
+$('mask').onclick = (e) => { if (e.target === $('mask')) closeDlg(); };
+
+// ---------- 执行指令 ----------
+async function exec(cmd) {
+  const doIt = async () => {
+    openDlg(cmd.label, '<span class="busy">执行中…</span>', []);
+    try {
+      const r = await fetch(API + '/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cmd.id }),
+      });
+      const j = await r.json();
+      let body = escapeHtml(j.text || '(无返回)')
+        + (j.image ? `<img src="${API}${j.image}?t=${Date.now()}">` : '');
+      openDlg((j.ok ? '' : '⚠️ ') + cmd.label, body);
+    } catch (e) {
+      openDlg('出错', escapeHtml(String(e)));
+    }
+  };
+  if (cmd.confirm) {
+    openDlg('确认执行', `确定要执行「${cmd.label}」吗？\n\n${cmd.desc || ''}`, [
+      { label: '取消' },
+      { label: '确定执行', warn: true, onClick: doIt },
+    ]);
+  } else {
+    doIt();
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+/** 面板里的快捷动作：执行 → 显示结果 */
+async function quickRun(id, title) {
+  openDlg(title, '<span class="busy">执行中…</span>', []);
+  try {
+    const r = await fetch(API + '/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const j = await r.json();
+    openDlg((j.ok ? '' : '⚠️ ') + title, escapeHtml(j.text || '(无返回)'));
+  } catch (e) {
+    openDlg('出错', escapeHtml(String(e)));
+  }
+}
+
+
+
+// ---------- 渲染 ----------
+function render() {
+  const groups = {
+    control: { title: '控制', items: [] },
+    query: { title: '查询', items: [] },
+    content: { title: '内容', items: [] },
+  };
+  CMDS.forEach((c) => {
+    if (c.group === 'hidden') return;          // hidden = 只在面板里出现，不画在主界面
+    (groups[c.group] || groups.control).items.push(c);
+  });
+
+  const app = $('app');
+  app.innerHTML = '';
+
+  // 传文件 / 拍照入口
+  const top = document.createElement('div');
+  top.className = 'grid one';
+  top.style.marginBottom = '8px';
+  const up = document.createElement('button');
+  up.className = 'btn';
+  up.innerHTML = '<span class="ico">📎</span><span class="tx">传文件 / 拍照</span>';
+  up.onclick = () => openPlusPanel();
+  top.appendChild(up);
+  app.appendChild(top);
+
+  Object.values(groups).forEach((g) => {
+    if (!g.items.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'sec';
+    sec.innerHTML = `<div class="sec-t">${g.title}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    g.items.forEach((c) => {
+      const b = document.createElement('button');
+      b.className = 'btn' + (c.confirm ? ' warn' : '');
+      const parts = c.label.split(' ');
+      b.innerHTML = `<span class="ico">${parts[0]}</span><span class="tx">${parts.slice(1).join(' ') || parts[0]}</span>`;
+      b.onclick = () => {
+        if (c.id === 'open_web') { openWebBrowser(); return; }
+        if (c.id === 'loc') { openLoc(); return; }
+        exec(c);
+      };
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid);
+    app.appendChild(sec);
+  });
+  $('ver').textContent = `共 ${CMDS.length} 项 · ${API || location.origin}`;
+  renderGuide();
+}
+
+// ---------- 消息流（推送）----------
+// 收推送：SSE(/api/events) 实时 + /api/inbox 兜底轮询。消息渲染复用下面的 bubble()。
+let inboxSince = 0;
+let rendered = new Set();
+let es = null;
+
+// ---------- 上手引导（开源版新增）----------
+// 服务端暂无"配置状态"接口 ⇒ 用本地标记判断：第一次进来显示完整引导，点"知道了"收起为一行状态。
+function renderGuide() {
+  const box = document.getElementById('guide');
+  if (!box) return;
+  const addr = location.origin;
+  let done = false;
+  try { done = !!localStorage.getItem('dsj_onboard_done'); } catch (e) {}
+  if (!done) {
+    box.innerHTML = '<div class="guide">'
+      + '<div class="guide-h">👋 dsj-open 已启动</div>'
+      + '<div class="guide-addr">手机访问：<b>' + escapeHtml(addr) + '</b></div>'
+      + '<div class="guide-sub">下一步：</div>'
+      + '<ul class="guide-list">'
+      + '<li>□ 手机打开上面地址试试</li>'
+      + '<li>□ 配置位置功能（可选，需要高德 key）</li>'
+      + '<li>□ 装 APK（可选，体验更好）</li>'
+      + '</ul>'
+      + '<div class="guide-act">'
+      + '<button class="btn" id="guideQr"><span class="tx">📱 二维码</span></button>'
+      + '<button class="btn" id="guideOk"><span class="tx">知道了</span></button>'
+      + '</div>'
+      + '</div>';
+    const q = document.getElementById('guideQr');
+    if (q) q.onclick = () => openWebLayer('https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(addr), '二维码');
+    const ok = document.getElementById('guideOk');
+    if (ok) ok.onclick = () => { try { localStorage.setItem('dsj_onboard_done', '1'); } catch (e) {} renderGuide(); };
+    return;
+  }
+  box.innerHTML = '<div class="guide-line"><span class="dot on"></span>'
+    + '<span class="guide-addr2">' + escapeHtml(addr) + '</span>'
+    + '<button class="minibtn" id="guideCopy">复制</button>'
+    + '<button class="minibtn" id="guideQr2">二维码</button></div>';
+  const c = document.getElementById('guideCopy');
+  if (c) c.onclick = () => { try { navigator.clipboard.writeText(addr); toast('已复制地址'); } catch (e) { toast(addr); } };
+  const q2 = document.getElementById('guideQr2');
+  if (q2) q2.onclick = () => openWebLayer('https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(addr), '二维码');
+}
+// ★★ 2026-09-17 主人要的：**文件内容直接嵌进对话里，展开就能看**
+//
+// 原话：「你把正文写进折叠里去了，我要的是，**他汇报的txt，我能直接展开看**」
+//   ⇒ 不是"把我的长回复折起来"（那个我理解错了，已撤掉），
+//     而是**消息可以带一个文件**：页面上是个折叠块，展开**直接把文件内容贴出来**，
+//     不用去文件管理器翻。
+//
+// 数据：消息对象上的 `file: { path, name, size }`（桥推消息时带上，hub 存进消息池）
+//   ⚠️ **内容按需加载**（GET /api/file?path=…），**不是**一开始就把几万字塞进消息里 ——
+//     否则每次拉消息都拖着它，而且我这边也白读一遍。
+//
+// UI 取舍（归我）：
+//   · 标题 = 📄 文件名 + 大小
+//   · 展开 → 内容出现在**对话里**（等宽、保留换行），不跳转、不开新窗口
+//   · 懒加载 + 只加载一次
+// ★★ 2026-09-17：**文件阅读** —— 按类型分流，内容**不经过我的上下文**
+//   主人：「干脆扩展成文件阅读怎么样? word，txt，md这类? 比如他做完，给你注入文件，
+//          直接让我看到，跟图片一样，你看我也看，**不对，你不准看**」
+//
+// 分流规则（决定权在我，写清取舍）：
+//   · 纯文本（txt/md/json/log/csv/代码）→ `/api/file` 拿原文，**直接嵌**（等宽、保留换行）
+//   · PDF                              → `<embed>` 直接嵌（浏览器自带阅读器，手机也行）
+//   · Office（docx/xlsx/pptx）          → 用**桥事先转好的 PDF**（转一次几十秒，不能点开时才转）
+//   ⚠️ **内容永远不经过我**：桥只传路径，页面自己去拉/去嵌。
+const TEXT_EXT = /.(md|txt|json|log|csv|js|ts|html|css|ya?ml|xml|ini|sh|ps1|bat)$/i;
+
+// ★★ 2026-09-19：**附件编辑** —— 主人要"点开就能直接改、每次保存自动备份"。
+//   保存走新接口 POST /api/file/save（hub-server 负责备份+≤2MB 校验）。
+function toast(msg) {
+  let t = document.getElementById('fetoast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'fetoast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:99999;' +
+      'background:rgba(20,20,20,.92);color:#fff;padding:10px 18px;border-radius:10px;' +
+      'font-size:14px;max-width:82vw;word-break:break-word;box-shadow:0 4px 18px rgba(0,0,0,.3)';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.remove(); }, 2600);
+}
+function enterEdit(fb, path, origText) {
+  if (fb._editing) return;
+  fb._editing = true;
+  fb._orig = origText;
+  const edBar = fb.querySelector('.fileeditbar');
+  if (edBar) edBar.style.display = 'none';
+  const pre = fb.querySelector('.fetext');
+  if (pre) pre.style.display = 'none';
+  const ta = document.createElement('textarea');
+  ta.className = 'feta';
+  ta.value = origText;
+  fb._ta = ta;
+  fb.appendChild(ta);
+  const row = document.createElement('div');
+  row.className = 'feact';
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button'; saveBtn.className = 'fed-btn primary'; saveBtn.textContent = '💾 保存';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button'; cancelBtn.className = 'fed-btn'; cancelBtn.textContent = '↩️ 取消';
+  row.appendChild(saveBtn); row.appendChild(cancelBtn);
+  fb.appendChild(row);
+  ta.focus();
+  saveBtn.onclick = async () => {
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true; saveBtn.textContent = '保存中…';
+    try {
+      const rr = await fetch(API + '/api/file/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, text: ta.value }),
+      });
+      const jj = await rr.json();
+      if (jj && jj.ok) {
+        if (pre) { pre.textContent = ta.value; pre.style.display = ''; }
+        ta.remove(); row.remove();
+        if (edBar) edBar.style.display = '';
+        fb._editing = false;
+        toast('已保存'); stickToBottom();
+      } else {
+        saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+        toast('保存失败: ' + ((jj && jj.error) || '未知'));
+      }
+    } catch (e) {
+      saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+      toast('保存失败: ' + e.message);
+    }
+  };
+  cancelBtn.onclick = () => {
+    if (ta.value !== origText && !confirm('有未保存的改动，放弃吗？')) return;
+    ta.remove(); row.remove();
+    if (pre) pre.style.display = '';
+    if (edBar) edBar.style.display = '';
+    fb._editing = false;
+  };
+}
+function renderFileFold(file) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msgfold filefold';
+  const det = document.createElement('details');
+  const sum = document.createElement('summary');
+  const ft = document.createElement('span'); ft.className = 'ft';
+  const fn = document.createElement('span'); fn.className = 'fn';
+  ft.textContent = '📄 ' + ((file && file.name) || '(文件)');
+  fn.textContent = (file && file.size)
+    ? (file.size >= 1024 ? Math.round(file.size / 1024) + ' KB' : file.size + ' B') : '';
+  sum.appendChild(ft); sum.appendChild(fn);
+  const fb = document.createElement('div');
+  fb.className = 'fbody filebody';
+  det.appendChild(sum); det.appendChild(fb);
+  wrap.appendChild(det);
+  wrap._fbody = fb;
+  wrap._det = det;
+
+  let loaded = false;
+  det.addEventListener('toggle', async () => {
+    if (!det.open) {
+      // ★★ 2026-09-19：编辑态收起时若有未保存改动，先问（别静默丢）
+      if (fb._editing && fb._ta && fb._ta.value !== fb._orig) {
+        if (!confirm('文件编辑还没保存，收起会丢失改动，确定收起吗？')) det.open = true;
+      }
+      return;
+    }
+    if (loaded) return;
+    loaded = true;
+    const nm = (file && file.name) || '';
+
+    // 分支 ①：**PDF** → 内嵌阅读器（**只对桌面浏览器**）
+    //   ⚠️ 2026-09-17 修：原来条件是 `&& file.pdf` —— 那只认"**Office 转出来的 PDF**"。
+    //      但从手机拉下来的文件**本身就可能是 PDF**（没有 `pdf` 字段）⇒ 会被漏掉。
+    //      现在两种都认：有 `pdf` 字段就用它，否则用文件自己。
+    //   ⚠️⚠️ 2026-09-19 22:59 主人报：「**pdf看不了，还是白色的**」
+    //      根因：**Android Chrome 压根不支持内嵌 PDF**（`<embed type=application/pdf>` 永远白屏，
+    //            它不调系统阅读器）⇒ 手机上这个 embed 必然一片白。
+    //      ⇒ 修法：**手机端不内嵌，改成两个按钮**（⬇️ 下载 / ↗️ 用外部应用打开）；
+    //        桌面浏览器保留内嵌（那边 embed 能用）。
+    //      ⚠️ 之前的 op 改成了"统一的按钮"但**样式失衡**（按钮/字号跟别处不搭）被主人回滚 ⇒
+    //        这次按钮**完全复用站内现有的 `.legbtn`/`.opbtn` 那套样式**，别自创。
+    if (/\.pdf$/i.test(nm)) {
+      const src = file.pdf ? (API + file.pdf) : (API + '/uploads/' + encodeURIComponent(nm));
+      const isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      fb.textContent = '';
+      if (isPhone) {
+        // 手机：给两个按钮（下载 / 外部打开）—— 不内嵌，别白屏
+        const wrap = document.createElement('div');
+        wrap.className = 'pdffile';
+        const a1 = document.createElement('a');
+        a1.className = 'pdffile-btn';
+        a1.href = src;
+        a1.setAttribute('download', nm);
+        a1.textContent = '⬇️ 下载 PDF';
+        const a2 = document.createElement('a');
+        a2.className = 'pdffile-btn';
+        a2.href = src;
+        a2.target = '_blank';
+        a2.rel = 'noopener';
+        a2.textContent = '↗️ 用外部应用打开';
+        wrap.appendChild(a1);
+        wrap.appendChild(a2);
+        fb.appendChild(wrap);
+      } else {
+        const em = document.createElement('embed');
+        em.src = src;
+        em.type = 'application/pdf';
+        em.style.cssText = 'width:100%;height:70vh;border:0;border-radius:6px;background:#fff';
+        fb.appendChild(em);
+      }
+      stickToBottom();
+      return;
+    }
+    // 分支 ①b：图片 → 直接显示（从手机拉的截图、照片走这条）
+    if (/\.(png|jpe?g|gif|webp)$/i.test(nm)) {
+      const im = document.createElement('img');
+      im.src = API + '/uploads/' + encodeURIComponent(nm);
+      im.style.cssText = 'max-width:100%;border-radius:6px;display:block';
+      fb.textContent = '';
+      fb.appendChild(im);
+      stickToBottom();
+      return;
+    }
+
+    // 分支 ②：Office 文档**还没转好** → 提示（转换是桥事先做的，点开时来不及）
+    if (/\.(docx?|xlsx?|pptx?)$/i.test(nm)) {
+      fb.textContent = '(这个 Office 文档还没转成 PDF —— 转一次要几十秒，得在发消息前转好)';
+      loaded = false;
+      return;
+    }
+
+    // 分支 ③：纯文本 → 拿原文嵌（等宽、保留换行）
+    fb.textContent = '读取中…';
+    try {
+      const r = await fetch(API + '/api/file?path=' + encodeURIComponent(file.path), { cache: 'no-store' });
+      const j = await r.json();
+      if (j && j.ok) {
+        // ★★ 2026-09-19：**默认仍只读展示**（保持原体验），右上角加「✏️ 编辑」→ 点了才变 textarea。
+        fb.textContent = '';
+        const edBar = document.createElement('div');
+        edBar.className = 'fileeditbar';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'fed-btn';
+        editBtn.textContent = '✏️ 编辑';
+        editBtn.onclick = () => enterEdit(fb, file.path, j.text);
+        edBar.appendChild(editBtn);
+        fb.appendChild(edBar);
+        const pre = document.createElement('div');
+        pre.className = 'fetext';
+        pre.textContent = j.text;
+        fb.appendChild(pre);
+      }
+      else { fb.textContent = '(读不到: ' + ((j && j.error) || '未知') + ')'; loaded = false; }
+    } catch (e) {
+      fb.textContent = '(读不到: ' + e.message + ')';
+      loaded = false;
+    }
+    stickToBottom();
+  });
+  return wrap;
+}
+
+// ★★ 2026-09-22 op：**网页浮层卡片** —— 主人要「消息里点开一个网页小框，直接操作，不用切屏」。
+//   主人原话：「外面的，比如，后面几天你要提醒我打印准考证，那我直接点网页链接，
+//             展开窗口后，直接操作，不需要切屏，有问题直接告诉你，操作完直接折叠完事」
+//   「不要80%，和那个插入txt占的大小一样，保持格式一致」「能不能调用带cookie的小框？」
+//
+// 设计取舍：
+//   · **不用 iframe**：外部网站多半发 X-Frame-Options / CSP 拒绝被嵌 ⇒ 必然白屏。
+//   · 真浮层在 APK 里（WebActivity：独立 WebView、60% 屏高、自带持久 cookie）；
+//     网页这层只负责"卡片 + 叫桥"。
+//   · ⚠️ 电脑浏览器没有 DsNative ⇒ 降级成新标签页（window.open）。
+function webHost(url) {
+  try { return new URL(url).hostname || ''; } catch (e) { return ''; }
+}
+function hasWebBridge() {
+  return !!(window.DsNative && typeof window.DsNative.openWeb === 'function');
+}
+function openWebLayer(url, title) {
+  if (!url) return;
+  if (hasWebBridge()) {
+    try { window.DsNative.openWeb(url, title || ''); return; } catch (e) { /* 降级 */ }
+  }
+  window.open(url, '_blank');
+}
+// ⭐ 2026-09-22 op：主页「控制」板块的 🌐 浏览器按钮走这里（前端特判，**不经过电脑**）。
+//   手机有原生桥 ⇒ 弹浮层（独立 WebView、带 cookie）；电脑浏览器 ⇒ 降级新标签页。
+//   ⭐ 2026-09-26：手机端默认页改成 **APK 内置的本地首页**（GG公益站 / DeepSeek用量 两个快捷入口，
+//     离线可用）；电脑浏览器没有桥 ⇒ 仍开 hub 的 start.html 搜索页（保持原样）。
+var DEFAULT_URL = '';
+var DEFAULT_TITLE = '浏览器';
+function openWebBrowser() {
+  if (hasWebBridge()) {
+    try { window.DsNative.openWeb('', DEFAULT_TITLE); return; } catch (e) { /* 降级 */ }
+  }
+  var u = '';
+  try { u = window.prompt('输入要打开的网址', 'https://') || ''; } catch (e) {}
+  if (u) openWebLayer(u, DEFAULT_TITLE);
+}
+function renderWebFold(web) {
+  const url = (web && web.url) || '';
+  const title = (web && web.title) || '';
+  const wrap = document.createElement('div');
+  wrap.className = 'msgfold webfold';
+  const det = document.createElement('details');
+  const sum = document.createElement('summary');
+  const ft = document.createElement('span'); ft.className = 'ft';
+  const fn = document.createElement('span'); fn.className = 'fn';
+  ft.textContent = '🌐 ' + (title || webHost(url) || '(网页)');
+  fn.textContent = webHost(url);
+  sum.appendChild(ft); sum.appendChild(fn);
+  const fb = document.createElement('div');
+  fb.className = 'fbody webbody';
+  const hint = document.createElement('div');
+  hint.className = 'webhint';
+  hint.textContent = hasWebBridge()
+    ? '点一下就在浮层里打开（独立窗口，登录状态会记住）'
+    : '点一下在新标签页打开';
+  fb.appendChild(hint);
+  const go = document.createElement('button');
+  go.type = 'button'; go.className = 'fed-btn primary';
+  go.textContent = '🌐 打开网页';
+  go.onclick = (ev) => { ev.preventDefault(); openWebLayer(url, title); det.open = false; };
+  fb.appendChild(go);
+  det.appendChild(sum); det.appendChild(fb);
+  wrap.appendChild(det);
+  wrap._det = det;
+  wrap._url = url;   // ⭐ 2026-09-23：记下 URL —— 自动扫描时按它去重（同一条消息不重复出卡）
+  det.addEventListener('toggle', () => {
+    if (!det.open) return;
+    // 手机：叫原生浮层（浮层盖在上面了，卡片立刻收回 —— 主人「操作完直接折叠完事」）；
+    // 电脑：没有桥 ⇒ openWebLayer 降级成新标签页。两条路都是"点一下就走"。
+    det.open = false;
+    openWebLayer(url, title);
+  });
+  return wrap;
+}
+// ⭐ 2026-09-23 op：**明文 URL 自动变「折叠网页卡片」** —— 主人原话：
+//   「只要有链接，自动生成一个折叠的网页按钮」「不管你的还是 fht 发的，就只要有链接」
+//   任何消息（AI / 主人 / fht / 系统）渲染**定稿后**扫一次正文：正文里的 http(s) 明文链接
+//   ⇒ 自动生成一张跟 /api/push 的 web 卡片**一模一样**的折叠卡（复用 renderWebFold），
+//     点开还是走浮层（openWebLayer），不切 App。
+//   ⚠️ 幂等：重扫前先删掉自己上次加的（.autoweb）⇒ 流式收尾再扫也不会叠加。
+//   ⚠️ **原文一个字不动**（卡片是额外加的）；只认明文 http(s)（抖音口令那种不做）。
+function extractUrls(text) {
+  const s = String(text || '');
+  const out = [];
+  const seen = new Set();
+  // 边界：空格 / 引号 / 尖括号 / 反引号，以及中英文标点（。，、；：！？… 及成对括号引号）
+  const re = /https?:\/\/[^\s<>"'`）)】\]}、。，；：！？…“”‘’「」『』【】《》〈〉]+/g;
+  let m;
+  while ((m = re.exec(s))) {
+    // 尾部可能粘着句末标点（英文和中文都要剥）
+    const u = m[0].replace(/[.,;:!?'"`)\]}>。，、；：！？…·”’】）}]+$/g, '');
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push({ url: u, title: urlShortTitle(u) });
+  }
+  return out;
+}
+// 卡片标题：优先取 URL 最后一段（比"域名上下重复两遍"好看），空则留空、让 renderWebFold 用域名兜底
+function urlShortTitle(u) {
+  try {
+    const seg = new URL(u).pathname.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
+    return seg.length > 40 ? seg.slice(0, 38) + '…' : seg;
+  } catch (e) { return ''; }
+}
+function autoWebCards(el, text) {
+  if (!el || !el.classList) return;
+  if (el._mk === 'reasoning' || el._mk === 'tool') return;   // 思考/工具是旁白，不扫
+  Array.from(el.querySelectorAll('.webfold.autoweb')).forEach((n) => n.remove());
+  const urls = extractUrls(text != null ? text : (el._raw || ''));
+  if (!urls.length) return;
+  // 已经存在的卡片（push 带的 web）按 URL 去重
+  const taken = new Set();
+  Array.from(el.querySelectorAll('.webfold')).forEach((n) => { if (n._url) taken.add(n._url); });
+  const t = el.querySelector('.txt');
+  let anchor = (t && t.parentNode === el) ? t : null;
+  for (const u of urls) {
+    if (taken.has(u.url)) continue;
+    const card = renderWebFold({ url: u.url, title: u.title });
+    card.classList.add('autoweb');
+    if (anchor) { anchor.parentNode.insertBefore(card, anchor.nextSibling); anchor = card; }
+    else el.appendChild(card);
+  }
+  stickToBottom();
+}
+//   ⚠️ 只标"注入/发图"这种**主人主动或电脑自动塞进来的**；AI 正常回答（chat/text）不标，避免噪音。
+function srcTagFor(mkind, image, detailImage) {
+  if (image) return '（新图）';              // 手机/电脑发的图
+  if (mkind === 'clip') return '（新注入内容）'; // 电脑剪贴板注入（clip-watch）
+  if (mkind === 'tool' && detailImage) return '（新图）'; // 工具配图
+  return '';
+}
+function bubble(kind, text, image, buttons, mkind, detail, detailImage, streaming, file, options, agent, web, ask) {
+  const body = $('chBody');
+  const mk = mkind || 'chat';
+  const d = document.createElement('div');
+  d.dataset.kind = kind;
+  d.dataset.mkind = mk;
+  d._mk = mk;
+
+  // ⭐ 思考 / 工具 → 默认折叠的块（不是气泡，是"我在干嘛"的旁白）
+  if (mk === 'reasoning' || mk === 'tool') {
+    d.className = 'foldwrap ' + mk;
+    const det = document.createElement('details');
+    det.className = 'fold';
+    det.open = false;   // ★ 显式钉死"默认折叠"（主人 10:11 强调过；不写的话只能靠浏览器默认值）
+    const sum = document.createElement('summary');
+    const fb = document.createElement('div');
+    fb.className = 'foldbody';
+    det.appendChild(sum);
+    det.appendChild(fb);
+    d.appendChild(det);
+    d._sum = sum;
+    d._fb = fb;
+    d._detail = detail || '';   // 工具：折叠块里放**完整参数**（主人 10:11 要求）
+    d._foldImg = detailImage || '';   // 工具是"看图"时，折叠块里的配图（主人 10:47 要求）
+    setFoldText(d, text || '');
+    // ★★ 2026-09-17 不再直接 append —— 由 placeMsgTyped 决定
+    //   挂到它**所属的那段正文**下面（工具箱）还是退回顶层（老行为）。
+    //   （placeMsgTyped 会补 dataset.mid / msgKeys，这里只管把元素造好。）
+    return d;
+  }
+
+  d.className = 'bub ' + kind;
+  // ★★ 2026-09-19：来源标签 —— 主人一眼看出这条是怎么来的（发图/剪贴板注入）。
+  //   ⚠️ 只给"电脑推来的 pc"加；主人手打的消息（me）不加，那是他自己。
+  if (kind === 'pc') {
+    const tag = srcTagFor(mk, image, detailImage);
+    if (tag) {
+      const tg = document.createElement('span');
+      tg.className = 'srctag';
+      tg.textContent = tag;
+      d.appendChild(tg);
+    }
+  }
+  const t = document.createElement('span');   // ★ 文本单独放一个 span：逐字流只重画它
+  t.className = 'txt';
+  d.appendChild(t);
+  setMsgText(d, text || '', true);
+  if (image) {   // 2026-09-17：对话页支持发图（先用它发 NapCat 登录二维码）
+    const img = document.createElement('img');
+    img.src = API + image;
+    img.style.cssText = 'width:220px;max-width:100%;border-radius:8px;display:block;margin-top:6px;background:#fff;padding:6px';
+    d.appendChild(img);
+  }
+  // ★★ 2026-09-17：**附件折叠块** —— 消息带文件时，展开直接在对话里看内容
+  //   （主人：「他汇报的txt，我能直接展开看」）
+  if (file && file.path) d.appendChild(renderFileFold(file));
+  // ★★ 2026-09-22：**网页浮层卡片**（点开是原生小窗口，见 renderWebFold）
+  if (web && web.url) d.appendChild(renderWebFold(web));
+  if (buttons && buttons.length) {   // ★ 交互按钮
+    const row = document.createElement('div');
+    row.className = 'actrow';
+    buttons.forEach((b) => {
+      const el = document.createElement('button');
+      el.textContent = b.label;
+      if (b.warn) el.className = 'warn';
+      // ★★ 2026-09-17 主人给的思路（原话）：
+      //   「按了之后，不是注入消息，而是点了，然后换按钮背景，比如变绿，然后一个勾，
+      //     或者变红一个叉」
+      //   ⇒ 点一下**不再冒充主人发一条消息**塞进对话里，而是按钮自己变成"已按"的样子：
+      //     普通按钮 → 变绿 + ✓；warn 按钮 → 变红 + ✗。
+      //     value 照样发回后端（提醒脚本靠它做事），只是不再污染对话记录。
+      el.onclick = () => {
+        if (el.dataset.done) return;
+        el.dataset.done = '1';
+        el.classList.add(b.warn ? 'done-bad' : 'done-ok');
+        el.textContent = (b.warn ? '✗ ' : '✓ ') + String(b.label).replace(/^[^\p{L}\p{N}]+/u, '');
+        if (!b.silent) bubble('me', b.value);
+        toast('已选择：' + b.value);
+      };
+      row.appendChild(el);
+    });
+    d.appendChild(row);
+  }
+  // ★★ 2026-09-17 主人要的：**选项卡**（单选/多选）
+  //   和「按钮」的语义区别写在 renderOptions 的注释里。
+  if (options && options.items && options.items.length) d.appendChild(renderOptions(options));
+  body.appendChild(d);
+  if (!streaming) autoWebCards(d, text || '');   // ⭐ 非流式消息：落地就扫明文 URL（流式的等 end 再扫）
+  dshScroll.trim(40);      // ★ 2026-09-18：删顶部老消息会跳视口 ⇒ 改走带高度补偿的 trim()
+  stickToBottom();
+  return d;
+}
+
+// ★★ 选项卡：从一组里选一个（或多选），选完**一次**把结果回传。
+//   语义 = 「我答完了」。选中项变绿 + ✓，其余变灰不可点。
+//   数据：{ multi:false, hint:'', items:[{label, value}] }
+function renderOptions(o) {
+  const wrap = document.createElement('div');
+  wrap.className = 'optwrap';
+  if (o.hint) { const h = document.createElement('div'); h.className = 'opthint'; h.textContent = o.hint; wrap.appendChild(h); }
+  const btns = [];
+  const picked = new Set();
+  const KEYS = 'ABCDEFGH';
+  let commitBtn = null;   // ⚠️ 必须在下面 forEach 之前声明（否则点多选项时 TDZ 报错）
+  function settle() {
+    const vals = o.items.filter((_, i) => picked.has(i)).map((x) => x.value != null ? x.value : x.label);
+    btns.forEach((b, i) => {
+      b.disabled = true;
+      b.classList.toggle('picked', picked.has(i));
+      b.classList.toggle('notpicked', !picked.has(i));
+      const k = b.querySelector('.k');
+      if (k) k.textContent = picked.has(i) ? '✓' : KEYS[i] || '';
+    });
+    const val = o.multi ? vals.join(' + ') : (vals[0] || '');
+    bubble('me', val);
+    toast('已选择：' + val);
+  }
+  o.items.forEach((it, i) => {
+    const b = document.createElement('button');
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = KEYS[i] || '';
+    const t = document.createElement('span'); t.textContent = String(it.label);
+    b.appendChild(k); b.appendChild(t);
+    b.onclick = () => {
+      if (!o.multi) { picked.clear(); picked.add(i); settle(); return; }
+      if (picked.has(i)) picked.delete(i); else picked.add(i);
+      btns.forEach((x, j) => {
+        x.classList.toggle('picked', picked.has(j));
+        const kk = x.querySelector('.k'); if (kk) kk.textContent = picked.has(j) ? '✓' : (KEYS[j] || '');
+      });
+      if (o.multi && o.commitLabel) commitBtn.textContent = o.commitLabel + '（已选 ' + picked.size + '）';
+    };
+    btns.push(b);
+    wrap.appendChild(b);
+  });
+  if (o.multi) {
+    commitBtn = document.createElement('button');
+    commitBtn.textContent = o.commitLabel || '就这些';
+    commitBtn.style.cssText = 'justify-content:center;font-weight:600';
+    commitBtn.onclick = () => { if (picked.size) settle(); };
+    wrap.appendChild(commitBtn);
+  }
+  return wrap;
+}
+
+
+/** 逐字流追加：把增量拼到原文上，然后**重画这段 Markdown**。
+ *  为什么不直接 append 文字：正文里会有 `**`、`|` 表格、``` 代码块 ——
+ *  只有整段重新解析才能边流边渲染成最终的样子（跟 dsh 网页一个感觉）。
+ *  代价是每来一个字要重画一次，所以下面按 60ms 节流；收尾那一下强制重画。 */
+function bubbleAppend(el, text) {
+  if (!el) return;
+  setMsgText(el, (el._raw || '') + text, false);
+}
+
+/** 收尾：用权威全文替换掉增量拼出来的内容（强制重画，不受节流影响） */
+function bubbleSet(el, text) {
+  if (!el) return;
+  el._done = true;
+  setMsgText(el, text, true);
+  el.classList.remove('streaming');
+  if (el._mk === 'reasoning' || el._mk === 'tool') setFoldText(el, text);
+  else autoWebCards(el, text);   // ⭐ replace 也是定稿：扫一次 URL
+}
+
+// ---------- ⭐ Markdown 渲染（2026-09-17）----------
+// 主人要"跟 dsh 一样"：正文得是渲染过的文档，不是一串 `**` 和 `|`。
+// 自己写个够用的子集，**不引外部库**（手机走 Tailscale，离线也得能看）。
+// ⚠️ 安全：**先转义再解析**，源码里的 HTML 一律变实体；后面插进去的标签全是我们自己写的。
+function inlineMd(s) {
+  // ⭐ 2026-09-19：行内代码 `` `...` `` **先摘出来保护**，再对代码外的部分做粗体/斜体/链接。
+  //   ⚠️ 原来是一条链一路 replace：`` `a ** b ** c` `` 会被后面的粗体规则吃掉 `**`。
+  return String(s).split(/(`[^`\n]+`)/g).map((p) => {
+    if (p.length >= 2 && p[0] === '`' && p[p.length - 1] === '`') return '<code>' + p.slice(1, -1) + '</code>';
+    return p
+      .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+      .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<i>$2</i>')
+      .replace(/\[([^\]\n]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+  }).join('');
+}
+
+// ⭐ 2026-09-19：这些"语言标注"其实不是代码，是主人手写排版 ⇒ **块内也渲染 Markdown**。
+//   任何**真语言**（js / python / bash / json / …）不在名单里 ⇒ 保持原样（`a ** b` 的星号不能被吃）。
+const RENDER_AS_MD_LANGS = { '': 1, text: 1, txt: 1, md: 1, markdown: 1 };
+
+function mdToHtml(src) {
+  return mdToHtmlEscaped(escapeHtml(String(src || '')));
+}
+
+// ⭐ 2026-09-19：**已转义过**的文本走这里（代码块内渲染 Markdown 时复用，避免二次转义）。
+//   ⚠️ 别在外面再 escapeHtml 一次 —— `&` 会变 `&amp;amp;`。
+function mdToHtmlEscaped(escaped) {
+  const lines = String(escaped || '').split('\n');
+  const out = [];
+  const para = [];
+  const flush = () => {
+    if (!para.length) return;
+    out.push('<p>' + inlineMd(para.join('\n')).replace(/\n/g, '<br>') + '</p>');
+    para.length = 0;
+  };
+  let i = 0;
+  while (i < lines.length) {
+    const ln = lines[i];
+
+    let m = /^\s*(```|~~~)(.*)$/.exec(ln);          // 代码块
+    if (m) {
+      flush();
+      const fence = m[1], lang = m[2].trim(), code = [];
+      i++;
+      while (i < lines.length && lines[i].indexOf(fence) !== 0) { code.push(lines[i]); i++; }
+      i++;
+      // ⭐ 2026-09-19 按【语言标注】区分（主人：「那代码块里也渲染吧，全是星号有点难读」）：
+      //   · 无语言 / text / txt / md / markdown ⇒ 当 Markdown 排版渲染（粗体/斜体/链接/行内码）
+      //   · 真语言（js/python/bash/json/…）⇒ 一字不动 —— 否则 `a ** b` 的星号会被粗体规则吃掉
+      //   ⚠️ 渲染时**保留"块"的外观**（`.mdblock`）—— 主人看后马上说「代码块直接没了」，
+      //      他要的是"块还在、里面的星号没了"，不是把它拆成普通段落。
+      if (RENDER_AS_MD_LANGS[lang.toLowerCase()]) out.push('<div class="mdblock">' + mdToHtmlEscaped(code.join('\n')) + '</div>');
+      else out.push('<pre><code' + (lang ? ' data-lang="' + lang + '"' : '') + '>' + code.join('\n') + '</code></pre>');
+      continue;
+    }
+
+    if (/^\s*\|.*\|\s*$/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      flush();                                       // 表格
+      const head = ln.split('|').slice(1, -1).map((s) => s.trim());
+      i += 2;
+      const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+        rows.push(lines[i].split('|').slice(1, -1).map((s) => s.trim()));
+        i++;
+      }
+      out.push('<table><thead><tr>' + head.map((h) => '<th>' + inlineMd(h) + '</th>').join('') +
+        '</tr></thead><tbody>' +
+        rows.map((r) => '<tr>' + r.map((c) => '<td>' + inlineMd(c) + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table>');
+      continue;
+    }
+
+    m = /^(#{1,6})\s+(.*)$/.exec(ln);                // 标题
+    if (m) {
+      flush();
+      const lv = Math.min(6, m[1].length) + 1;       // # → h2（h1 留给页面标题）
+      out.push('<h' + lv + '>' + inlineMd(m[2]) + '</h' + lv + '>');
+      i++;
+      continue;
+    }
+
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(ln)) { flush(); out.push('<hr>'); i++; continue; }
+
+    if (/^\s*&gt;\s?/.test(ln)) {                    // 引用（注意：已转义，> 变成 &gt;）
+      flush();
+      const q = [];
+      while (i < lines.length && /^\s*&gt;\s?/.test(lines[i])) { q.push(lines[i].replace(/^\s*&gt;\s?/, '')); i++; }
+      out.push('<blockquote>' + inlineMd(q.join('\n')).replace(/\n/g, '<br>') + '</blockquote>');
+      continue;
+    }
+
+    if (/^\s*([-*+]|\d+[.)])\s+/.test(ln)) {          // 列表
+      flush();
+      const ordered = /^\s*\d+[.)]\s+/.test(ln), items = [];
+      while (i < lines.length && /^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*([-*+]|\d+[.)])\s+/, ''));
+        i++;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      out.push('<' + tag + '>' + items.map((x) => '<li>' + inlineMd(x) + '</li>').join('') + '</' + tag + '>');
+      continue;
+    }
+
+    if (!ln.trim()) { flush(); i++; continue; }
+    para.push(ln); i++;
+  }
+  flush();
+  return out.join('');
+}
+
+/** 折叠块（思考 / 工具）：标题实时更新，正文放原文。
+ *  思考块的标题显示"思考中 · N 字"，流完了变成"思考 · N 字" —— 一眼看出我还在不在想。 */
+function setFoldText(el, raw) {
+  if (!el || !el._sum) return;
+  const s = String(raw || '');
+  if (el._mk === 'reasoning') {
+    const n = [...s].length;
+    el._sum.textContent = (el._done ? '💭 思考' : '💭 思考中') + ' · ' + n.toLocaleString() + ' 字';
+    renderFoldBody(el, s);
+    return;
+  }
+  // 工具：上面一行是短摘要，展开看到的是**完整命令 / 完整参数**（+ 看图时把图也放进来）。
+  // 主人 10:11：「工具调用以前总结成一句短句也是因为不能折叠，现在能折叠了，你也完整发出来吧」
+  el._sum.textContent = s || '🔧 工具';
+  renderFoldBody(el, el._detail || s);
+}
+
+/** 折叠块的正文。★ 有图就先放图 —— 主人 10:47：
+ *  「你看图的时候…我想打开一起看看！所以发过来，放在那个折叠里」 */
+function renderFoldBody(el, text) {
+  const fb = el._fb;
+  if (!fb) return;
+  fb.textContent = '';
+  if (el._foldImg) {
+    const img = document.createElement('img');
+    img.className = 'foldimg';
+    img.src = API + el._foldImg;
+    img.loading = 'lazy';
+    fb.appendChild(img);
+  }
+  const d = document.createElement('div');
+  d.textContent = text || '';
+  fb.appendChild(d);
+}
+
+/** 把一段原文渲染进气泡。force=true 时不受节流限制（收尾用）。 */
+function setMsgText(el, raw, force) {
+  el._raw = raw;
+  if (el._mk === 'reasoning' || el._mk === 'tool') { setFoldText(el, raw); return; }
+  const t = el.querySelector('.txt');
+  if (!t) return;
+  if (el.dataset.kind === 'pc') {
+    const now = Date.now();
+    if (!force && now - (el._lr || 0) < 60) return;   // 节流：最多 ~16 次/秒
+    el._lr = now;
+    t.innerHTML = mdToHtml(raw);
+  } else {
+    t.textContent = raw;                              // 涵正自己发的原样显示
+  }
+  const body = $('chBody');
+  stickToBottom();
+}
+
+function syncOverlayLock() {
+  const on = !!document.querySelector('#loc.show');
+  document.documentElement.classList.toggle('overlay-open', on);
+}
+
+// 开源版：主页就是唯一页面（不再有会话页/抽屉）
+function openHome() { try { window.scrollTo(0, 0); } catch (e) {} }
+function closeHome() {}
+function closeHomeNow() {}
+
+
+// 手机返回键：APK 映射成 WebView goBack ⇒ 触发 popstate。
+let suppressPop = false;
+window.addEventListener('popstate', function () {
+  if (suppressPop) { suppressPop = false; return; }
+  const dlg = $('mask');
+  if (dlg && dlg.classList.contains('show')) { closeDlg(); return; }
+  if (window.__locOpen) { window.__closeLocNow(); return; }
+});
+
+
+
+// ★★ 2026-09-17 主人要的：**滚动锚点** —— 我生成的时候他往上滑，不该被拽回底部。
+//   病根：`bubble()` / `setMsgText()` 里三处 `body.scrollTop = body.scrollHeight`
+//         全是**无条件**滚到底 ⇒ 只要我来新字，他正在看的地方就被拽走。
+//   做法：**贴底才跟随** —— 离底 ≤ 48px 才算"贴着底"；他往上滑了就不动他的视口。
+//   ⚠️ 9/12 在小窗上踩过同源的坑（视角抖动/锚点漂失）；这次的结论是
+//      "不必做复杂的锚点补偿 —— 不跟随就是不跟随，最简单也最不会错"。
+const STICK_TOL = 48;
+
+// ══════════════════════════════════════════════════════════════════════
+// ★★ 2026-09-18 **重做**：粘底滚动（dsh + op 共用同一套实现）
+//   原型：9/17 那版 `stickBottom + lastSelfScroll(250ms) + MutationObserver`
+//   （见备份 `index.html.bak-before-sticky-redo-*`，说明见桌面《ds酱滚动贴底-重做说明.md》）
+//
+//   🔴 原型两个真 bug（今天探针实测复现）：
+//     ① **250ms 时间窗判断"自己滚的"** —— 流式生成时 `setMsgText()` 每 60ms 就滚一次，
+//        等于时间窗**永远处在刚滚过的状态** ⇒ 用户往上滑的那一下被当成"自己滚的"跳过
+//        ⇒ `stick` 一直是 true ⇒ 下一个字就把他拽回底部。（"生成的时候照样被往下拉"）
+//     ② **删顶部老消息（>60 条）** 触发 Chrome 的滚动锚定（scroll anchoring）
+//        ⇒ 探针实测：滚到 400px，来一条新消息，scrollTop 直接被打到 **0**（跳回顶部）。
+//
+//   ✅ 重做后的两条关键差别：
+//     ① 不再用时间窗 —— 改成**比对"我上次设置的目标位置"**（`lastSetTop`）。
+//        自己滚的那一下 scrollTop 必然等于 lastSetTop（读回的是被 clamp 后的真实值），
+//        只跳过"恰好等于"的那一次，**其余任何滚动都老老实实更新 stick**。
+//     ② `overflow-anchor:none`（CSS）+ **删节点时补偿高度**（`trim()`），
+//        视口不会因为顶部内容消失而跳。
+// ══════════════════════════════════════════════════════════════════════
+function makeSticky(getEl, tol) {
+  // ★★ 2026-09-18 第二版（主人定的语义）：
+  //   「我在最底下的时候，他就继续生成往上滚；**我往上拉就立马取消跟随**」
+  //   三个改动（针对"代码块流式时往上拉被强行弹下来 + 抖动"）：
+  //     ① 上滑**哪怕 1px** 就停手 —— 不再拿 48px 容差当"继续跟随"的依据
+  //     ② 补帧从"连续每帧滚 1.2 秒"改成**定次数**（0/50/150/350/700ms），
+  //        每次先过"别抢"的闸 —— 原来每帧都滚，小幅上滑马上被拽回 ⇒ 弹下来+抖
+  //     ③ 「阅读锁」：非粘底时盯住**视口里第一条可见消息**，DOM 一变就补回同样位移
+  //        （插入/删除/代码块撑高都不动他正在看的那一行）
+  const S = { stick: true, lastSetTop: -1, lastHeight: -1, bound: false, userTouched: false, userUntil: 0, selfTop: -1, selfAt: 0 };
+  function el() { try { return getEl(); } catch (e) { return null; } }
+  function atBottom(t) {
+    const e = el(); if (!e) return true;
+    return e.scrollHeight - e.scrollTop - e.clientHeight <= (t == null ? (tol || 48) : t);
+  }
+  function onScroll() {
+    const e = el(); if (!e) return;
+    // ★★★ 2026-09-18 第四版（主人定的**最简规则**）：
+    //   「我在最底下（≈1px）就自动往下滚；我只要往上滑，就立马停止跟随。」
+    //   判据只有两条，且**只对真实用户输入生效**（`userUntil` = 输入后 800ms 窗口）：
+    //     · 滚到"极底"（2px 内）⇒ 跟随
+    //     · 只要没到极底（= 往上滑了哪怕 1px）⇒ 立刻停
+    //   ⚠️ 不再用"和上次设的值比"来猜是不是用户滚的 —— 前两版就栽在这：
+    //     发消息时 force() 被自己的闸当成"你在上翻"挡掉 ⇒ **屏幕不动**。
+    //     程序滚动/内容长高的 scroll 事件**没有输入窗口** ⇒ 一律不参与判断。
+    //   ⚠️ 还有一道保险：**我自己滚的那一下**（发消息/补帧）会带 `selfTop` 标记，
+    //      哪怕你的手指还在屏幕上，也不会被误当成"你没到底"而停手。
+    //   ⚠️ 标记只认 250ms 内的（否则上一次程序滚动的标记会残留，把你"滚回底部"那一下吞掉
+    //      ⇒ 表现就是"回到最下面了但跟随不恢复"）
+    if (S.selfTop >= 0 && Date.now() - S.selfAt < 250 && Math.abs(e.scrollTop - S.selfTop) <= 2) { S.selfTop = -1; return; }
+    if (S.selfTop >= 0 && Date.now() - S.selfAt >= 250) S.selfTop = -1;
+    if (Date.now() > S.userUntil) return;
+    if (atBottom(2)) { if (!S.stick) S.stick = true; lockSample(); return; }
+    S.stick = false;
+    lockSample();
+  }
+  function scroll() {
+    const e = el(); if (!e || !S.stick) return;
+    e.scrollTop = e.scrollHeight;
+    S.selfTop = e.scrollTop; S.selfAt = Date.now();   // ★ 标记"这一下是我滚的"
+    S.lastSetTop = e.scrollTop;            // 读回真实值（浏览器会把 scrollTop 夹到最大值）
+    S.lastHeight = e.scrollHeight;
+    requestAnimationFrame(function () {
+      if (!S.stick) return;
+      const e2 = el(); if (!e2) return;
+      e2.scrollTop = e2.scrollHeight;
+      S.selfTop = e2.scrollTop; S.selfAt = Date.now();   // ★ 同上
+      S.lastSetTop = e2.scrollTop;
+      S.lastHeight = e2.scrollHeight;
+    });
+  }
+  function force() { S.stick = true; scroll(); }
+  // ★★ 2026-09-18 首屏硬贴底：`force()` 只把 stick 置真，可 `scroll()` 里还有"别抢"的闸 ——
+  //   首屏渲染时 `lastSetTop` 往往先被设成一个小值，之后 scrollTop 比它小 ⇒
+  //   `userMovedUp()` 误判成"用户上滑" ⇒ force 被自己的闸挡掉，人就停在顶上。
+  //   ⇒ hardForce：先把锚点记账清空（lastSetTop=-1，userMovedUp 必为 false）再滚，绝对到底。
+  function hardForce() { S.stick = true; S.lastSetTop = -1; S.lastHeight = -1; scroll(); }
+  // ★★ 2026-09-18 首屏补底（主人：「一刷新就在当前聊天位置」）：
+  //   手机 WebView 比无头 Chrome 慢，hardForce 之后内容还在长高（图片 / 字体 / 折叠块），
+  //   中途一旦被 `userMovedUp` 误判 ⇒ stick 掉了，人就停在"差最后一截"的地方。
+  //   ⇒ 首屏这几秒多补几帧（定次数，不占 rAF）；**只要用户真的动了手就立刻停**。
+  function bootBottom() {
+    S.userTouched = false;
+    [0, 250, 600, 1200, 2200, 3500].forEach(function (d) {
+      setTimeout(function () { if (!S.userTouched) hardForce(); }, d);
+    });
+  }
+  // ★ 「再贴一会儿」：改成**定次数**补帧（0/50/150/350/700ms），不连续占着 rAF
+  let settleBusy = false;
+  function settle() {
+    if (!S.stick || settleBusy) return;
+    settleBusy = true;
+    const delays = [0, 60, 180, 400, 800, 1500, 2500];
+    delays.forEach(function (d, i) {
+      setTimeout(function () {
+        if (i === delays.length - 1) settleBusy = false;
+        if (!S.stick) return;
+        scroll();
+      }, d);
+    });
+  }
+  // ★ 阅读锁：他不在底部（正在看历史）时，保证"视口里那一条"不动
+  let lockEl = null, lockTop = 0;
+  function lockSample() {
+    const e = el();
+    if (!e || S.stick) { lockEl = null; return; }
+    let cand = null;
+    for (const c of e.children) { const r = c.getBoundingClientRect(); if (r.bottom > 2) { cand = c; break; } }
+    if (!cand) { lockEl = null; return; }
+    lockEl = cand; lockTop = cand.getBoundingClientRect().top;
+  }
+  function lockApply() {
+    const e = el();
+    if (!e || S.stick || !lockEl || !lockEl.isConnected) { lockSample(); return; }
+    const top = lockEl.getBoundingClientRect().top;
+    const d = top - lockTop;
+    if (Math.abs(d) >= 1) {
+      e.scrollTop += d;                    // 把它挪回原来的屏幕位置
+      S.selfTop = e.scrollTop; S.selfAt = Date.now();   // ★ 我们主动补偿的，标记掉
+      S.lastSetTop = e.scrollTop;
+      lockTop = lockEl.getBoundingClientRect().top;
+    }
+  }
+  function bind() {
+    const e = el(); if (!e || S.bound) return;
+    S.bound = true;
+    e.addEventListener('scroll', onScroll, { passive: true });
+    // ★★ 2026-09-18：**只有真实用户交互**才允许"取消跟随" ——
+    //   布局/图片/字体引起的滚动位置变化不算用户操作（首屏补底靠这条兜底）。
+    ['wheel', 'touchstart', 'touchmove', 'pointerdown', 'keydown'].forEach(function (t) {
+      e.addEventListener(t, function () { S.userTouched = true; S.userUntil = Date.now() + 800; }, { passive: true });
+    });
+    // 图片 load / 折叠块 toggle **不冒泡**，但**捕获阶段**能收到
+    e.addEventListener('load', function () { settle(); }, true);
+    e.addEventListener('toggle', function () { lockApply(); settle(); }, true);
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(function () { lockApply(); settle(); })
+        .observe(e, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['open'] });
+    }
+  }
+  // 删顶部老消息。两条保险：
+  //   ① **贴底时才按 max 删**；他正在看历史（非粘底）就放宽到 hardMax，
+  //      绝不删掉他正在读的那条（原来固定 60 条 ⇒ 看到一半内容被删是常态）
+  //   ② 非粘底时补偿掉删掉的高度，视口不跳
+  function trim(max, hardMax) {
+    const e = el(); if (!e) return;
+    const cap = S.stick ? max : Math.max(max, hardMax || 200);
+    while (e.children.length > cap) {
+      const first = e.firstChild;
+      const h = first.offsetHeight || 0;
+      const wasStick = S.stick;
+      e.removeChild(first);
+      if (!wasStick && h) {
+        e.scrollTop = Math.max(0, e.scrollTop - h);
+        S.selfTop = e.scrollTop; S.selfAt = Date.now();   // ★ 补偿也是我们干的
+        S.lastSetTop = e.scrollTop;
+        S.lastHeight = e.scrollHeight;
+      }
+    }
+    lockSample();   // ★ 刚改过布局 ⇒ 重新采一次阅读锁基准（免得 lockApply 二次补偿）
+  }
+  return { S: S, el: el, atBottom: atBottom, scroll: scroll, force: force, hardForce: hardForce, bootBottom: bootBottom, bind: bind, trim: trim, settle: settle, lockSample: lockSample };
+}
+const dshScroll = makeSticky(() => $('chBody'), STICK_TOL);
+function stickToBottom(force) {
+  if (force) dshScroll.force();
+  else dshScroll.scroll();
+}
+function isNearBottom(el) { return dshScroll.atBottom(); }   // 兼容老引用
+// ★★ 光靠"append 之后滚一次"不够：**内容在滚动之后还会长高**
+//   （「生成中…」那行显出来、折叠块展开、图片加载、字体换行……），实测每次都差 127px 到不了底。
+//   ⇒ 挂一个 ResizeObserver：**只要内容长高、而且他贴着底，就再贴一次**。
+//     这样不用去猜"到底是哪个东西在后面长高"，一劳永逸。
+//   （设 scrollTop 不改变尺寸 ⇒ 不会自激循环。）
+// ★ 2026-09-18 重做：观察器/滚动监听统一由 dshScroll.bind() 挂（同一份实现，别在这另起一份）
+function watchChBodyResize() { dshScroll.bind(); }
+
+// ★★ 2026-09-19 禁止自动重载（主人：「禁止刷新，吞字数吞了我一篇百年孤独了都」）
+//   ⇒ 检测到服务端页面换新版时**不再 location.reload()**，改成给刷新键 #chReload 挂 .hasnew 红点；
+//     要不要刷由主人自己按 ⟳ 决定（按 ⟳ 照旧 reload，重载后红点自然消失）。
+//   ⚠️ 版本检测本身保留 —— 红点就靠它亮。
+function markNewVersion() {
+  try {
+    const b = document.getElementById('chReload');
+    if (b) b.classList.add('hasnew');
+  } catch (e) {}
+}
+function connectSSE() {
+  if (es) { try { es.close(); } catch (e) {} es = null; }
+  try { es = new EventSource(API + '/api/events'); } catch (e) { return; }
+  es.onopen = () => { inboxSince = 0; pullInbox(); };
+  es.onmessage = (ev) => {
+    let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    if (d.type === 'hello' || d.type === 'ping') {
+      if (d.version && MY_VER && MY_VER !== VER_SENTINEL && d.version !== MY_VER) markNewVersion();
+      return;
+    }
+    if (d.type === 'new' && d.msg) {
+      const m = d.msg;
+      if (m.from === 'phone') return;
+      if (m.kind === 'result') return;      // 指令结果不进消息流
+      if (rendered.has(m.id)) return;
+      rendered.add(m.id);
+      if (m.ts > inboxSince) inboxSince = m.ts;
+      bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, false, m.file, m.options, null, m.web);
+    }
+  };
+  es.onerror = () => { /* EventSource 自动重连 */ };
+}
+
+async function pullInbox() {
+  try {
+    const r = await fetch(API + '/api/inbox?since=' + inboxSince, { cache: 'no-store' });
+    const j = await r.json();
+    (j.messages || []).forEach((m) => {
+      if (m.ts > inboxSince) inboxSince = m.ts;
+      if (m.from === 'phone') return;      // 自己发的已经本地画过
+      if (m.kind === 'result') return;
+      if (rendered.has(m.id)) return;      // SSE 已经画过的不重复画
+      rendered.add(m.id);
+      bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, false, m.file, m.options, null, m.web);
+    });
+  } catch (e) { /* 断网忽略 */ }
+}
+
+// ★ 滚动监听：由 dshScroll.bind() 统一挂（2026-09-18 重做，见上面的模块注释）。
+dshScroll.bind();
+
+// ---------- 📎 传文件 / 拍照（开源版：只保留上传，去除 adb）----------
+async function uploadFiles(files) {
+  if (!files || !files.length) return;
+  for (const f of files) {
+    try {
+      const fd = new FormData(); fd.append('file', f);
+      const r = await fetch(API + '/api/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!j.ok) { bubble('sys', '✗ 上传失败：' + (j.error || '未知')); continue; }
+      const imgUrl = j.url || ('/uploads/' + j.name);
+      const isImg = /\.(png|jpe?g|gif|webp)$/i.test(j.name || '');
+      bubble('pc', '📎 已上传：' + j.name, isImg ? imgUrl : null, null, 'chat', null, null, false,
+        isImg ? null : { path: 'uploads/' + j.name, name: j.name, size: j.size });
+    } catch (e) { bubble('sys', '✗ 上传失败：' + e.message); }
+  }
+}
+
+function pickWebFile(capture) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  if (capture) { inp.accept = 'image/*'; inp.capture = 'environment'; }
+  else inp.multiple = true;
+  inp.onchange = () => { uploadFiles(inp.files); inp.value = ''; };
+  inp.click();
+}
+
+function openPlusPanel() {
+  const hasNative = !!(window.DsNative && window.DsNative.pickPhoto);
+  if (!hasNative) { pickWebFile(false); return; }
+  openDlg('📎 传文件', '<div class="plustx">选择来源</div>', []);
+  const box = document.getElementById('dBody');
+  if (!box) return;
+  box.innerHTML = '<div style="display:flex;gap:8px;margin:2px 0 4px">'
+    + '<button class="minibtn" id="btnCam" style="flex:1;height:46px;font-size:15px">📷 拍照</button>'
+    + '<button class="minibtn" id="btnGal" style="flex:1;height:46px;font-size:15px">🖼 相册</button>'
+    + '</div>';
+  const c = box.querySelector('#btnCam');
+  if (c) c.onclick = () => { closeDlg(); window.DsNative.takePhoto(); };
+  const g = box.querySelector('#btnGal');
+  if (g) g.onclick = () => { closeDlg(); window.DsNative.pickPhoto(); };
+}
+
+// ★★ 深色/浅色切换（2026-09-17 主人要的；**开关在主页头部**，不在对话页）
+//   选择存 localStorage：重载/自动重载之后都记得住。
+//   图标：当前浅色 → 月亮（点它变深）；当前深色 → 太阳。
+//   ⚠️ 用 class 找图标（.icoMoon/.icoSun）而不是 id —— 这个图标现在只在主页头部一份，
+//      但用 class 的话以后想在别处再放一个也不用改代码。
+function applyTheme() {
+  const dark = document.documentElement.classList.contains('dark');
+  document.querySelectorAll('.icoMoon').forEach((e) => { e.style.display = dark ? 'none' : ''; });
+  document.querySelectorAll('.icoSun').forEach((e) => { e.style.display = dark ? '' : 'none'; });
+  const btn = $('themeBtn');
+  if (btn) btn.title = dark ? '当前深色（点它变浅）' : '当前浅色（点它变深）';
+}
+$('themeBtn').onclick = () => {
+  const root = document.documentElement;
+  root.classList.toggle('dark');
+  const dark = root.classList.contains('dark');
+  try { localStorage.setItem('dsh_theme', dark ? 'dark' : 'light'); } catch (e) {}
+  applyTheme();
+};
+applyTheme();
+
+
+
+
+
+
+// ---------- 启动 ----------
+(async () => {
+  await ping();
+  try {
+    const r = await fetch(API + '/api/commands', { cache: 'no-store' });
+    const j = await r.json();
+    CMDS = j.commands || [];
+  } catch (e) { /* 保持空 */ }
+  // 兜底：位置页是前端自绘（不依赖后端），确保按钮在
+  if (!CMDS.some((c) => c.id === 'loc')) {
+    CMDS.unshift({ id: 'loc', label: '📍 位置', group: 'control', confirm: false });
+  }
+  render();
+  const rb = $('chReload');
+  if (rb) rb.onclick = () => location.reload();
+  setInterval(ping, 15000);
+  setInterval(() => { pullInbox(); }, 15000);
+  setInterval(versionCheck, 8000);
+  versionCheck();
+  connectSSE();
+  // 刷新后若停在位置页，恢复它
+  try {
+    if (localStorage.getItem('dshPage') === 'loc') {
+      setTimeout(() => { try { window.openLoc && window.openLoc(); } catch (e) {} }, 150);
+    }
+  } catch (e) { /* localStorage 不可用就算了 */ }
+})();
+
+async function versionCheck() {
+  try {
+    // 带时间戳把任何缓存层顶掉（WebView 对接口响应的缓存很顽固，实测踩过）
+    const j = await (await fetch(API + '/api/version?t=' + Date.now(), { cache: 'no-store' })).json();
+    if (j && j.version && MY_VER && MY_VER !== VER_SENTINEL && j.version !== MY_VER) {
+      markNewVersion();       // ★ 2026-09-19：服务端换新版 ⇒ 只点红点，由主人自己按 ⟳
+    }
+  } catch (e) { /* 断网忽略 */ }
+}
+</script>
+
+<!-- ⭐ 2026-09-19 19:05 图片放大层（主人：「加个点击图片，能放大看的功能」） -->
+<div id="imgView">
+  <img id="imgBig" alt="">
+  <button id="imgClose" aria-label="关闭">✕</button>
+  <div id="imgHint">双击放大 · 双指缩放 · 拖动平移 · 点空白关闭</div>
+</div>
+<script>
+(function () {
+  var view = document.getElementById('imgView');
+  var big = document.getElementById('imgBig');
+  if (!view || !big) return;
+  var scale = 1, tx = 0, ty = 0;      // 当前变换
+  var open = false;
+
+  function apply() {
+    big.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+    view.classList.toggle('zoomed', scale > 1.02);
+  }
+  function reset() { scale = 1; tx = 0; ty = 0; apply(); }
+  function show(src) {
+    big.src = src;
+    reset();
+    view.classList.add('on');
+    open = true;
+  }
+  function hide() {
+    view.classList.remove('on');
+    open = false;
+    setTimeout(function () { if (!open) big.removeAttribute('src'); }, 200);
+  }
+  window.__imgView = { show: show, hide: hide };
+
+  /* 点任意消息里的图 ⇒ 放大（用事件委托，新增的图也自动生效） */
+  document.addEventListener('click', function (e) {
+    if (!open) {
+      var t = e.target;
+      if (t && t.tagName === 'IMG' && t.id !== 'imgBig' && t.closest && !t.closest('#imgView')) {
+        e.preventDefault();
+        show(t.currentSrc || t.src);
+      }
+      return;
+    }
+    /* 已经打开时：点空白 / ✕ ⇒ 关闭（点图本身不关，方便拖动） */
+    if (e.target === view || e.target.id === 'imgClose') { e.preventDefault(); hide(); }
+  }, true);
+
+  /* ---- 手势：单指拖 / 双指捏合 / 双击放大 ---- */
+  var pts = {}, lastDist = 0, lastMid = null, moved = false, lastTap = 0;
+
+  view.addEventListener('pointerdown', function (e) {
+    pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+    moved = false;
+    view.setPointerCapture && view.setPointerCapture(e.pointerId);
+  });
+  view.addEventListener('pointermove', function (e) {
+    if (!pts[e.pointerId]) return;
+    var ids = Object.keys(pts);
+    if (ids.length === 1) {
+      var p = pts[e.pointerId];
+      var dx = e.clientX - p.x, dy = e.clientY - p.y;
+      if (scale > 1.02) { tx += dx; ty += dy; apply(); moved = true; }
+      p.x = e.clientX; p.y = e.clientY;
+    } else if (ids.length >= 2) {
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var a = pts[ids[0]], b = pts[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (lastDist) {
+        var k = d / lastDist;
+        scale = Math.max(1, Math.min(8, scale * k));
+        apply(); moved = true;
+      }
+      lastDist = d;
+    }
+  });
+  function up(e) {
+    delete pts[e.pointerId];
+    if (Object.keys(pts).length < 2) lastDist = 0;
+    if (Object.keys(pts).length === 0) {
+      /* 双击：快速点两次同一处 ⇒ 在"1x / 2.5x"之间切 */
+      var now = Date.now();
+      if (!moved && now - lastTap < 300) {
+        if (scale > 1.02) reset(); else { scale = 2.5; tx = 0; ty = 0; apply(); }
+        lastTap = 0;
+      } else lastTap = now;
+    }
+  }
+  view.addEventListener('pointerup', up);
+  view.addEventListener('pointercancel', up);
+
+  /* 桌面：滚轮缩放 */
+  view.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    scale = Math.max(1, Math.min(8, scale * (e.deltaY < 0 ? 1.15 : 0.87)));
+    if (scale <= 1.02) { tx = 0; ty = 0; }
+    apply();
+  }, { passive: false });
+
+  /* Esc 关闭 */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && open) hide();
+  });
+})();
+</script>
+
+<script>
+/* ⭐⭐ 2026-09-30 op：位置页 = **站内极简导航**（地图 / 附近搜索 / 四种方式时间 / 路线分段）。
+   故意写成**独立脚本块** —— 主脚本是一整块，语法错=整页白屏；这里就算出错也只死这一块。
+   · 地图 = 高德 **Web 端 JS API**（key 从 /api/nav-config 拿，⛔不硬编；没网则显示兜底文案）。
+   · 搜索 / 路线 = hub 的 /api/poi、/api/route（后端走高德 Web 服务，坐标一律 GCJ02）。
+   · 定位 / 跳地图 App = APK 原生桥 DsNative（普通浏览器退化为 navigator.geolocation / geo:）。
+   ⛔ 默认全在站内看，**不跳转**；只有「↗ 开始导航」那颗小按钮才跳高德 App。 */
+(function () {
+  var locEl = document.getElementById('loc');
+  if (!locEl) return;
+
+  var last = null;              // 最近一次定位 {lat,lng,acc,provider,ts,gcjLat,gcjLng}
+  var historyPushed = false;
+  var bound = false;
+
+  // 地图 / 路线状态（mainView = 搜索/地图视图，navView = 全屏导航视图；同一套画图逻辑）
+  var mainView = { mapId: 'loMap', msgId: 'loMapMsg', map: null, startMarker: null, endMarker: null, line: null };
+  var navView  = { mapId: 'loNvMap', msgId: 'loNvMsg', map: null, startMarker: null, endMarker: null, line: null };
+  var amapPromise = null;
+  var ROUTE_COLOR = '#ff8a3d';   // ⭐ 2026-09-30 路线折线改回**暖橙**（跟 ds酱 暖色调一致；浅色地图上看得很清，别用蓝）
+  var currentPoi = null;
+  var routes = {};              // mode -> {ok,distance,duration,cost,steps,polyline,...}
+  var curMode = 'driving';
+  var navOpen = false;
+  var MODES = ['driving', 'walking', 'bicycling', 'transit'];
+  var MODE_ICON = { driving: '🚗', walking: '🚶', bicycling: '🚲', transit: '🚌' };
+
+  function $(id) { return document.getElementById(id); }
+  function APIb() { return (typeof API === 'string') ? API : ''; }
+  function setStat(t, err) {
+    var s = $('loStat'); if (!s) return;
+    s.textContent = t || ''; s.className = err ? 'err' : '';
+  }
+  function fmt(n, d) { return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(d == null ? 6 : d); }
+  function fmtTime(ts) {
+    if (!ts) return '—';
+    try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch (e) { return '—'; }
+  }
+  function providerName(p) {
+    if (p === 'gps') return 'GPS 卫星';
+    if (p === 'network') return '网络（基站/WiFi）';
+    if (p === 'passive') return '被动';
+    if (p === 'browser') return '浏览器';
+    return p || '—';
+  }
+  function fmtDist(m) {
+    if (m == null || isNaN(m)) return '';
+    return m >= 1000 ? (m / 1000).toFixed(1) + ' 公里' : Math.round(m) + ' 米';
+  }
+  function fmtDur(s) {
+    if (s == null || isNaN(s)) return '—';
+    s = Math.round(s);
+    if (s < 60) return '不到1分';
+    var m = Math.round(s / 60);
+    if (m < 60) return m + '分';
+    var h = Math.floor(m / 60), mm = m % 60;
+    return h + '时' + (mm ? (mm + '分') : '');
+  }
+
+  function paint() {
+    if (!last) return;
+    $('loPos').textContent = fmt(last.lat) + ', ' + fmt(last.lng);
+    $('loWgs').textContent = fmt(last.lat) + ', ' + fmt(last.lng);
+    $('loGcj').textContent = (last.gcjLat == null) ? '—' : (fmt(last.gcjLat) + ', ' + fmt(last.gcjLng));
+    $('loAcc').textContent = (last.acc == null || last.acc < 0) ? '未知' : ('±' + Math.round(last.acc) + ' 米');
+    $('loProv').textContent = providerName(last.provider);
+    $('loTime').textContent = fmtTime(last.ts);
+  }
+  // 当前用于高德的 GCJ02 坐标（没有 GCJ02 就退回 WGS84，可能偏 ~500m）
+  function coord() {
+    if (!last) return null;
+    if (last.gcjLat != null) return { lat: last.gcjLat, lng: last.gcjLng };
+    return { lat: last.lat, lng: last.lng };
+  }
+
+  // ---------- 地图（高德 JS API，动态加载）----------
+  function hideMsgOf(v) { var m = $(v.msgId); if (m) m.style.display = 'none'; }
+  function showMsgOf(v, t) { var m = $(v.msgId); if (m) { m.style.display = 'flex'; m.textContent = t; } }
+  function hideMapMsg() { hideMsgOf(mainView); }
+  function showMapMsg(t) { showMsgOf(mainView, t); }
+  function loadAmap() {
+    if (amapPromise) return amapPromise;
+    var chain = fetch(APIb() + '/api/nav-config')
+      .then(function (r) { return r.json(); })
+      .then(function (c) {
+        if (!c || !c.ok || !c.jsKey) throw new Error('未配置地图 key');
+        return new Promise(function (res, rej) {
+          window._AMapSecurityConfig = { securityJsCode: c.jsSecurityCode || '' };
+          var s = document.createElement('script');
+          s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(c.jsKey);
+          s.onload = function () { res(); };
+          s.onerror = function () { rej(new Error('地图脚本加载失败')); };
+          document.head.appendChild(s);
+        });
+      });
+    amapPromise = chain.catch(function (e) { amapPromise = null; throw e; });   // 失败可重试
+    return amapPromise;
+  }
+  function ensureView(v, center) {
+    return loadAmap().then(function () {
+      if (typeof AMap === 'undefined') throw new Error('AMap 未就绪');
+      if (!v.map) {
+        v.map = new AMap.Map(v.mapId, { zoom: 15, center: [center.lng, center.lat], viewMode: '2D', resizeEnable: true, mapStyle: 'amap://styles/whitesmoke' });
+      } else {
+        v.map.setCenter([center.lng, center.lat]);
+      }
+      hideMsgOf(v);
+      return v.map;
+    });
+  }
+  function drawStartOf(v, g) {
+    if (!v.map) return;
+    try {
+      if (v.startMarker) v.map.remove(v.startMarker);
+      v.startMarker = new AMap.Marker({ position: [g.lng, g.lat], title: '我的位置', label: { content: '我' } });
+      v.map.add(v.startMarker);
+    } catch (e) {}
+  }
+  function drawPoiOf(v, p) {
+    if (!v.map) return;
+    try {
+      if (v.endMarker) v.map.remove(v.endMarker);
+      v.endMarker = new AMap.Marker({ position: [p.lng, p.lat], title: p.name });
+      v.map.add(v.endMarker);
+    } catch (e) {}
+  }
+  function drawLineOf(v, poly) {
+    if (!v.map) return;
+    try {
+      if (v.line) { v.map.remove(v.line); v.line = null; }
+      if (poly && poly.length > 1) {
+        v.line = new AMap.Polyline({
+          path: poly, strokeColor: ROUTE_COLOR, strokeWeight: 6,
+          strokeOpacity: 0.9, lineJoin: 'round', lineCap: 'round',
+        });
+        v.map.add(v.line);
+      }
+      var vs = [];
+      if (v.startMarker) vs.push(v.startMarker);
+      if (v.endMarker) vs.push(v.endMarker);
+      if (v.line) vs.push(v.line);
+      if (vs.length) v.map.setFitView(vs, false, [50, 50, 50, 50]);
+    } catch (e) {}
+  }
+  function ensureMap(center) { return ensureView(mainView, center); }
+  function drawStart(g) { drawStartOf(mainView, g); }
+  function drawPoi(p) { drawPoiOf(mainView, p); }
+  function drawLine(poly) { drawLineOf(mainView, poly); }
+
+  // ---- 给 APK 原生桥用的回调 ----
+  window.DsLoc = {
+    onResult: function (o) {
+      if (!o) return;
+      last = o;
+      paint();
+      var a = (o.acc == null || o.acc < 0) ? '精度未知' : ('±' + Math.round(o.acc) + '米');
+      setStat('✅ 已定位（' + providerName(o.provider) + '，' + a + '）', false);
+      var g = coord();
+      if (g) {
+        showMapMsg('地图加载中…');
+        ensureMap(g).then(function () { drawStart(g); })
+          .catch(function (e) { showMapMsg('地图加载失败：' + e.message + '\n可点右下角「↗ App」用地图 App 打开'); });
+      }
+    },
+    onError: function (msg) { setStat('⚠️ ' + (msg || '定位失败'), true); }
+  };
+
+  // ---- 定位（按需：打开页面/点按钮才定位）----
+  function doLocate() {
+    setStat('定位中…请稍候（首次可能要几秒）', false);
+    var btn = $('loGet'); if (btn) btn.disabled = true;
+    var done = function () { if (btn) btn.disabled = false; };
+    if (window.DsNative && typeof window.DsNative.getLocation === 'function') {
+      try { window.DsNative.getLocation(); }
+      catch (e) { setStat('⚠️ 定位桥调用失败：' + e.message, true); }
+      setTimeout(done, 600);   // 桥是异步的；真实结果靠 DsLoc 回调
+      return;
+    }
+    if (navigator.geolocation) {   // 普通浏览器兜底（WebView 里不会走到这）
+      navigator.geolocation.getCurrentPosition(function (p) {
+        last = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy,
+                 provider: 'browser', ts: p.timestamp, gcjLat: null, gcjLng: null };
+        window.DsLoc.onResult(last); done();
+      }, function (err) {
+        setStat('⚠️ 浏览器定位失败：' + (err && err.message ? err.message : err), true); done();
+      }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    } else {
+      setStat('⚠️ 定位只能在 ds酱 App 里用（网页没有定位能力）', true); done();
+    }
+  }
+
+  // ---- 复制坐标（给窗口 AI 贴）----
+  function doCopy() {
+    if (!last) { setStat('先点「定位」拿到坐标再复制', true); return; }
+    var s = '位置 ' + fmt(last.lat) + ',' + fmt(last.lng)
+      + (last.gcjLat == null ? '' : ('  GCJ02 ' + fmt(last.gcjLat) + ',' + fmt(last.gcjLng)))
+      + ((last.acc == null || last.acc < 0) ? '' : ('  ±' + Math.round(last.acc) + 'm'))
+      + '  来源:' + providerName(last.provider);
+    var ok = false;
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = s;
+      ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) { ok = false; }
+    setStat(ok ? ('已复制：' + s) : ('复制失败，请手动选中：' + s), !ok);
+  }
+
+  // ---- 用地图 App 打开当前位置（GCJ02 —— 国内地图 App 认 GCJ02）----
+  function doMapApp() {
+    var g = coord();
+    if (!g) { setStat('先点「定位」再打开地图', true); return; }
+    if (window.DsNative && typeof window.DsNative.openGeo === 'function') {
+      try { window.DsNative.openGeo(String(g.lat), String(g.lng), '当前位置'); return; } catch (e) {}
+    }
+    try { location.href = 'geo:' + g.lat + ',' + g.lng; } catch (e) { setStat('没找到地图应用', true); }
+  }
+
+  // ---------- 附近搜索 ----------
+  function doSearch() {
+    var q = ($('loPoiIn') && $('loPoiIn').value ? $('loPoiIn').value : '').trim();
+    if (!q) { setStat('输入要找的地方，例如「味千」', true); return; }
+    var g = coord();
+    if (!g) { setStat('先点「定位」拿到位置，才能搜附近', true); return; }
+    setStat('搜索中…', false);
+    var btn = $('loPoiGo'); if (btn) btn.disabled = true;
+    fetch(APIb() + '/api/poi?q=' + encodeURIComponent(q) + '&lat=' + g.lat + '&lng=' + g.lng)
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (btn) btn.disabled = false;
+        if (!j || !j.ok) { setStat('⚠️ ' + ((j && j.error) || '搜索失败'), true); renderPois([]); return; }
+        renderPois(j.pois);
+        setStat(j.count ? ('找到 ' + j.count + ' 个「' + q + '」，点一个看路线') : ('附近没搜到「' + q + '」'), !j.count);
+      })
+      .catch(function (e) { if (btn) btn.disabled = false; setStat('⚠️ 搜索失败：' + e.message, true); });
+  }
+  function renderPois(list) {
+    var box = $('loPois'); if (!box) return;
+    box.innerHTML = '';
+    (list || []).forEach(function (p) {
+      var d = document.createElement('div');
+      d.className = 'loPoi';
+      var left = document.createElement('div'); left.style.cssText = 'flex:1;min-width:0';
+      var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = p.name || '(无名)';
+      var ad = document.createElement('div'); ad.className = 'ad';
+      ad.textContent = (p.adname || '') + (p.address ? (' · ' + p.address) : '') + (p.tel ? (' · ' + p.tel) : '');
+      left.appendChild(nm); left.appendChild(ad);
+      var ds = document.createElement('div'); ds.className = 'ds';
+      ds.textContent = (p.distance != null ? fmtDist(p.distance) : '');
+      var nb = document.createElement('button'); nb.className = 'loPoiNav'; nb.textContent = '导航';
+      nb.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var all = box.querySelectorAll('.loPoi');
+        for (var i = 0; i < all.length; i++) all[i].classList.remove('on');
+        d.classList.add('on');
+        openNavFor(p);
+      });
+      d.appendChild(left); d.appendChild(ds); d.appendChild(nb);
+      d.addEventListener('click', function () {
+        var all = box.querySelectorAll('.loPoi');
+        for (var i = 0; i < all.length; i++) all[i].classList.remove('on');
+        d.classList.add('on');
+        selectPoi(p);
+      });
+      box.appendChild(d);
+    });
+  }
+
+  // ---------- 路线 ----------
+  function selectPoi(p) {
+    currentPoi = p;
+    routes = {}; curMode = 'driving';
+    $('loRoute').hidden = false;
+    $('loRouteTo').textContent = p.name || '';
+    $('loRouteSum').textContent = '';
+    $('loSteps').innerHTML = '';
+    setStepsVisible($('loSteps'), false);   // ⭐ 默认驾车 ⇒ 先收起分段列表
+    paintModes();
+    setStat('规划路线中…', false);
+    var g = coord();
+    if (g) {
+      showMapMsg('地图加载中…');
+      ensureMap(g).then(function () { drawStart(g); drawPoi(p); })
+        .catch(function (e) { showMapMsg('地图加载失败：' + e.message); });
+    }
+    fetchRoutes(p);
+  }
+  function fetchRoutes(p) {
+    var g = coord();
+    if (!g) { setStat('⚠️ 没有起点坐标（先定位）', true); return; }
+    var jobs = MODES.map(function (m) {
+      var u = APIb() + '/api/route?mode=' + m
+        + '&flat=' + g.lat + '&flng=' + g.lng
+        + '&tlat=' + p.lat + '&tlng=' + p.lng;
+      return fetch(u).then(function (r) { return r.json(); })
+        .then(function (j) { routes[m] = j; })
+        .catch(function (e) { routes[m] = { ok: false, error: e.message }; });
+    });
+    Promise.all(jobs).then(function () {
+      paintModes();
+      // 默认挑一个能走的：driving → walking → bicycling → transit
+      var pick = curMode;
+      if (!(routes[pick] && routes[pick].ok)) {
+        for (var i = 0; i < MODES.length; i++) { if (routes[MODES[i]] && routes[MODES[i]].ok) { pick = MODES[i]; break; } }
+      }
+      showMode(pick);
+      setStat('', false);
+    });
+  }
+  function paintModes() {
+    var btns = $('loModes').querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var m = btns[i].dataset.mode;
+      var r = routes[m];
+      var label = btns[i].querySelector('.t');
+      if (!label) continue;
+      if (!r) label.textContent = '…';
+      else if (r.ok) label.textContent = fmtDur(r.duration);
+      else label.textContent = '无';
+      btns[i].disabled = !!(r && !r.ok);
+      btns[i].classList.toggle('on', m === curMode);
+    }
+  }
+  // ⭐⭐ 2026-09-30 op：分段指引列表**只有公交/地铁才显示**（步行/骑行/驾车地图折线已说清，
+  //     列表纯遮挡）。切换方式时自动出现/收起，地图区随之变大。
+  function stepsShown(m) { return m === 'transit'; }
+  function setStepsVisible(el, on) { if (el) el.style.display = on ? '' : 'none'; }
+  function fillSteps(stepsEl, steps) {
+    steps = steps || [];
+    if (!steps.length) { stepsEl.innerHTML = '<div class="loStep"><span class="ic">·</span><span class="tx">直达</span></div>'; return; }
+    steps.forEach(function (s) {
+      var row = document.createElement('div'); row.className = 'loStep';
+      var ic = document.createElement('span'); ic.className = 'ic';
+      ic.textContent = s.kind === 'bus' ? '🚌' : ((s.kind === 'walk' || s.kind === 'walking') ? '🚶' : (s.kind === 'bicycling' ? '🚲' : '↑'));
+      var tx = document.createElement('span'); tx.className = 'tx'; tx.textContent = s.instruction || '';
+      var dt = document.createElement('span'); dt.className = 'dt'; dt.textContent = (s.distance != null ? fmtDist(s.distance) : '');
+      row.appendChild(ic); row.appendChild(tx); row.appendChild(dt);
+      stepsEl.appendChild(row);
+    });
+  }
+  function showMode(m) {
+    curMode = m;
+    var r = routes[m];
+    var btns = $('loModes').querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', btns[i].dataset.mode === m);
+    var sum = $('loRouteSum'), stepsEl = $('loSteps');
+    stepsEl.innerHTML = '';
+    if (!r) { sum.textContent = ''; setStepsVisible(stepsEl, false); if (navOpen) paintNav(); return; }
+    if (!r.ok) { sum.textContent = '该方式没有路线：' + (r.error || ''); setStepsVisible(stepsEl, false); drawLine([]); if (navOpen) paintNav(); return; }
+    var parts = ['全程 ' + fmtDist(r.distance), '约 ' + fmtDur(r.duration)];
+    if (m === 'transit' && r.cost != null) parts.push('票价 ' + r.cost + ' 元');
+    sum.textContent = parts.join(' · ');
+    setStepsVisible(stepsEl, stepsShown(m));       // ⭐ 只有公交/地铁显示分段
+    if (stepsShown(m)) fillSteps(stepsEl, r.steps);
+    drawLine((r.polyline && r.polyline.length > 1) ? r.polyline : []);
+    if (navOpen) paintNav();
+  }
+
+  // ---------- 全屏导航视图（点搜索结果里的「导航」进；返回退回搜索/地图视图）----------
+  function openNavFor(p) {
+    selectPoi(p);            // 复用：设定 currentPoi + 拉四种路线（完成后会刷新两个视图）
+    openNavView();
+  }
+  function openNavView() {
+    navOpen = true;
+    var el = $('loNav'); if (el) el.classList.add('show');
+    var p = currentPoi;
+    var to = $('loNvTo'); if (to) to.textContent = (p && p.name) || '—';
+    var sum = $('loNvSum'); if (sum) sum.textContent = '';
+    var steps = $('loNvSteps'); if (steps) steps.innerHTML = '';
+    setStepsVisible($('loNvSheet'), false);   // ⭐ 默认驾车 ⇒ 先收起分段列表（地图占满）
+    paintNav();
+    var g = coord();
+    if (g) {
+      showMsgOf(navView, '地图加载中…');
+      ensureView(navView, g).then(function () { drawStartOf(navView, g); if (p) drawPoiOf(navView, p); })
+        .catch(function (e) { showMsgOf(navView, '地图加载失败：' + e.message); });
+    } else {
+      showMsgOf(navView, '定位后显示地图…');
+    }
+  }
+  function closeNavView() {
+    navOpen = false;
+    var el = $('loNav'); if (el) el.classList.remove('show');
+    try { if (mainView.map) setTimeout(function () { mainView.map.resize(); }, 60); } catch (e) {}
+  }
+  function paintNavModes() {
+    var box = $('loNvModes'); if (!box) return;
+    var btns = box.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var m = btns[i].dataset.mode, r = routes[m], label = btns[i].querySelector('.t');
+      if (label) label.textContent = !r ? '…' : (r.ok ? fmtDur(r.duration) : '无');
+      btns[i].disabled = !!(r && !r.ok);
+      btns[i].classList.toggle('on', m === curMode);
+    }
+  }
+  function paintNav() {
+    if (!navOpen) return;
+    paintNavModes();
+    var r = routes[curMode];
+    var sumEl = $('loNvSum'), stepsEl = $('loNvSteps');
+    if (!sumEl || !stepsEl) return;
+    var sheet = $('loNvSheet');
+    var showSteps = stepsShown(curMode) && !!r && r.ok;   // ⭐ 只有公交/地铁且路线可用才显示
+    setStepsVisible(sheet, showSteps);
+    stepsEl.innerHTML = '';
+    if (!r) { sumEl.textContent = '规划路线中…'; return; }
+    if (!r.ok) { sumEl.textContent = '该方式没有路线：' + (r.error || ''); drawLineOf(navView, []); return; }
+    var parts = ['全程 ' + fmtDist(r.distance), '约 ' + fmtDur(r.duration)];
+    if (curMode === 'transit' && r.cost != null) parts.push('票价 ' + r.cost + ' 元');
+    sumEl.textContent = parts.join(' · ');
+    if (showSteps) fillSteps(stepsEl, r.steps);
+    drawLineOf(navView, (r.polyline && r.polyline.length > 1) ? r.polyline : []);
+  }
+
+  // ---- 开始导航（唯一会跳出 ds酱 的按钮；语音播报只有地图 App 有）----
+  function startNav() {
+    if (!currentPoi) { setStat('先搜一个地方、点开路线', true); return; }
+    var p = currentPoi;
+    if (window.DsNative && typeof window.DsNative.openNav === 'function') {
+      try { window.DsNative.openNav(p.name || '', String(p.lat), String(p.lng)); return; } catch (e) {}
+    }
+    try { location.href = 'geo:' + p.lat + ',' + p.lng + '?q=' + encodeURIComponent(p.name || ''); }
+    catch (e) { setStat('没找到地图应用', true); }
+  }
+
+  function bind() {
+    if (bound) return; bound = true;
+    $('loX').addEventListener('click', closeLoc);
+    $('loRefresh').addEventListener('click', doLocate);
+    $('loGet').addEventListener('click', doLocate);
+    $('loCopy').addEventListener('click', doCopy);
+    $('loMapOpen').addEventListener('click', doMapApp);
+    $('loPoiGo').addEventListener('click', doSearch);
+    $('loPoiIn').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+    });
+    $('loNavStart').addEventListener('click', startNav);
+    var btns = $('loModes').querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function (e) {
+        var m = e.currentTarget.dataset.mode;
+        if (routes[m] && routes[m].ok) showMode(m);
+      });
+    }
+    // ---- 全屏导航视图 ----
+    $('loNvX').addEventListener('click', closeNavView);
+    $('loNvStart').addEventListener('click', startNav);
+    var nb = $('loNvModes').querySelectorAll('button');
+    for (var j = 0; j < nb.length; j++) {
+      nb[j].addEventListener('click', function (e) {
+        var m = e.currentTarget.dataset.mode;
+        if (routes[m] && routes[m].ok) showMode(m);   // showMode 会顺带刷新导航视图
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && navOpen) closeNavView();
+    });
+  }
+
+  function openLoc() {
+    bind();
+    try { localStorage.setItem('dshPage', 'loc'); } catch (e) {}
+    locEl.classList.add('show');
+    try { if (typeof syncOverlayLock === 'function') syncOverlayLock(); } catch (e) {}
+    if (!historyPushed) {
+      try { history.pushState({ dshLoc: 1 }, '', location.pathname); historyPushed = true; } catch (e) {}
+    }
+    window.__locOpen = true;
+    if (mainView.map) { try { setTimeout(function () { mainView.map.resize(); }, 300); } catch (e) {} }
+    else { showMapMsg('定位后显示地图…'); }
+    loadAmap().catch(function (e) { showMapMsg('地图加载失败：' + e.message + '\n可点右下角「↗ App」用地图 App 打开'); });
+    doLocate();   // 打开即定位一次（拿到就收工，不常驻）
+  }
+  function closeLocNow() {
+    navOpen = false;
+    var nv = $('loNav'); if (nv) nv.classList.remove('show');
+    historyPushed = false;
+    window.__locOpen = false;
+    locEl.classList.remove('show');
+    try { if (typeof syncOverlayLock === 'function') syncOverlayLock(); } catch (e) {}
+    try { localStorage.removeItem('dshPage'); } catch (e) {}
+  }
+  function closeLoc() {
+    // ⚠️ suppressPop：自己发的 back() 别让主脚本 popstate 再处理一遍（照 closeLedger 老规矩）
+    if (historyPushed) { historyPushed = false; try { suppressPop = true; } catch (e) {} try { history.back(); } catch (e) {} }
+    closeLocNow();
+  }
+
+  window.openLoc = openLoc;
+  window.__closeLocNow = closeLocNow;   // 给主脚本 popstate 用
+})();
+</script>
+</body>
+</html>

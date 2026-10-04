@@ -1,0 +1,84 @@
+name: 新坑投稿
+description: 你踩到了一个 `docs/PITFALLS.md` 里没有的坑
+title: "[坑] "
+labels: ["pitfall"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **这个模板是本项目最欢迎的贡献类型。**
+
+        这套东西的价值不在于代码，在于**把踩过的坑记下来**。
+        你踩到的坑，别人（和别人的 AI）一定会再踩一次。
+
+  - type: input
+    id: symptom
+    attributes:
+      label: 症状
+      description: 你看到了什么（用一句话说清）
+      placeholder: "例：手机能 ping 通 IP，但打不开任何域名"
+    validations:
+      required: true
+
+  - type: textarea
+    id: root-cause
+    attributes:
+      label: 根因
+      description: 为什么会这样
+      placeholder: |
+        例：手机 DNS 被设成了 Tailscale 自己（100.100.100.100），
+        而它的上游也是"系统默认" → 死循环
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 解法
+      description: 怎么修（越具体越好，最好有命令）
+      placeholder: |
+        例：Tailscale 应用 → 关掉「Use Tailscale DNS」
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: 你是怎么确认根因的（命令输出、日志等）
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分类
+      options:
+        - 手机联机（adb）
+        - Tailscale / 网络
+        - 坐标系 / 位置
+        - WebView / 前端
+        - APK 构建
+        - Windows 启动 / 进程
+        - 其他
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **如果你愿意直接提 PR 往 `docs/PITFALLS.md` 加一条，那更好。**
+
+        格式：
+        ```markdown
+        ## P<下一个编号> · <一句话描述>
+
+        **症状**：...
+
+        **根因**：...
+
+        **解法**：...
+        ```

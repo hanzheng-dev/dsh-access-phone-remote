@@ -1,0 +1,95 @@
+name: Bug 报告
+description: 报告一个 bug
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **感谢反馈！** 在提交之前，请先做两件事：
+        1. 查一下 `docs/PITFALLS.md`（69 条实测坑，可能你的问题已经有答案）
+        2. 查一下 `docs/TROUBLESHOOT.md`（排障决策树）
+
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已经查过 `docs/PITFALLS.md`
+          required: true
+        - label: 我已经查过 `docs/TROUBLESHOOT.md`
+          required: true
+        - label: 我用的是最新版本
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 你期望什么，实际发生了什么
+      placeholder: |
+        我期望：...
+        实际：...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 运行 xxx
+        2. 打开 xxx
+        3. 看到报错
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: 完整报错
+      description: 请贴完整文本，不要只贴一行
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: "Windows 11 / Ubuntu 22.04 / macOS 14"
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node 版本
+      description: 运行 `node --version` 的输出
+      placeholder: "v20.11.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: 连接方式
+      options:
+        - 局域网
+        - Tailscale
+        - 其他
+        - 还没连上
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnose
+    attributes:
+      label: 诊断信息
+      description: |
+        如果你装了 dsh 插件，可以在设置页点「复制诊断信息」。
+        没有的话，贴这些：
+        - `curl http://127.0.0.1:3099/api/ping` 的输出
+        - 服务端启动日志
+    validations:
+      required: false
