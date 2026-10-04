@@ -104,7 +104,7 @@ adb shell "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file
 
 **解法**：`adb mdns services` 自动发现：
 ```
-adb-<序列号>-XXXX  _adb-tls-connect._tcp  <局域网IP>:38635
+adb-<序列号>-XXXX  _adb-tls-connect._tcp  192.168.1.5:38635
 ```
 
 ---
@@ -415,7 +415,7 @@ sh.Run "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 
 
 ## P49 · 看门狗判据 `-match 'IP'` 会漏判
 
-**坑**：`-match '<手机Tailscale-IP>:5555'` —— **只要"出现"就算在线**，但设备可能是 `offline`。
+**坑**：`-match '100.64.1.21:5555'` —— **只要"出现"就算在线**，但设备可能是 `offline`。
 
 **解法**：**必须匹配 `IP\s+device`** 才算好。
 
@@ -592,7 +592,7 @@ adb shell cmd role add-role-holder android.app.role.BROWSER com.android.chrome
 
 | 通道 | 速度 |
 |---|---|
-| 局域网直连 `<局域网IP>:5555` | **19.9 MB/s** |
+| 局域网直连 `192.168.1.101:5555` | **19.9 MB/s** |
 | Tailscale 隧道 | 13.7 MB/s |
 
 **解法**：脚本里**优先局域网 IPv4，排除 `100.64` / `10` CGNAT 段**。
