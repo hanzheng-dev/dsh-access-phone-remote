@@ -1219,9 +1219,12 @@ function renderGuide() {
       + '</ul>'
       + '<div class="guide-act">'
       + '<button class="btn" id="guideQr"><span class="tx">二维码</span></button>'
+      + '<button class="btn" id="guideHelp"><span class="tx">帮助</span></button>'
       + '<button class="btn" id="guideOk"><span class="tx">知道了</span></button>'
       + '</div>'
       + '</div>';
+    const hp = document.getElementById('guideHelp');
+    if (hp) hp.onclick = () => { location.href = '/pages/help.html'; };
     const q = document.getElementById('guideQr');
     // ⭐ 本地生成二维码（零依赖、离线）—— 原来打 api.qrserver.com 会把「地址+token」发给第三方
     if (q) q.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
@@ -1232,11 +1235,14 @@ function renderGuide() {
   box.innerHTML = '<div class="guide-line"><span class="dot on"></span>'
     + '<span class="guide-addr2">' + escapeHtml(addr) + '</span>'
     + '<button class="minibtn" id="guideCopy">复制</button>'
-    + '<button class="minibtn" id="guideQr2">二维码</button></div>';
+    + '<button class="minibtn" id="guideQr2">二维码</button>'
+    + '<button class="minibtn" id="guideHelp2">帮助</button></div>';
   const c = document.getElementById('guideCopy');
   if (c) c.onclick = () => { try { navigator.clipboard.writeText(addr); toast('已复制地址'); } catch (e) { toast(addr); } };
   const q2 = document.getElementById('guideQr2');
   if (q2) q2.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
+  const h2 = document.getElementById('guideHelp2');
+  if (h2) h2.onclick = () => { location.href = '/pages/help.html'; };
 }
 // ★★ 2026-09-17 用户要的：**文件内容直接嵌进对话里，展开就能看**
 //

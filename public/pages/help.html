@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>帮助 · dsj-open</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --fg: #26241f;
+    --mid: #5c584e;
+    --dim: #928c7e;
+    --line: #e6e2d9;
+    --line-strong: #d5cfc2;
+    --card: #ffffff;
+    --accent: #2f2c25;
+    --warn: #8a6d3b;
+    --err: #a33a32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171614; --fg: #ebe8e1; --mid: #a8a396; --dim: #7a7568;
+      --line: #2e2c28; --line-strong: #3d3a34; --card: #1f1e1b;
+      --accent: #ebe8e1; --warn: #c9a961; --err: #d9776e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 16px 40px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.7 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+
+  h1 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .sub { font-size: 12.5px; color: var(--dim); margin-bottom: 22px; }
+
+  .q {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .q > summary {
+    padding: 13px 15px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13.5px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .q > summary::-webkit-details-marker { display: none; }
+  .q > summary::before {
+    content: '›';
+    color: var(--dim);
+    font-size: 15px;
+    transition: transform .15s;
+    flex: none;
+  }
+  .q[open] > summary::before { transform: rotate(90deg); }
+  .q > summary:hover { background: rgba(128,128,128,.04); }
+  .body {
+    padding: 0 15px 15px 37px;
+    font-size: 13px;
+    color: var(--mid);
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+  .body p { margin: 0 0 10px; }
+  .body p:last-child { margin-bottom: 0; }
+  .body b { color: var(--fg); font-weight: 600; }
+  .body ol, .body ul { margin: 0 0 10px; padding-left: 18px; }
+  .body li { margin-bottom: 5px; }
+
+  code {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    background: rgba(128,128,128,.1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+  pre {
+    background: rgba(128,128,128,.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 11.5px;
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  pre code { background: none; padding: 0; }
+
+  .tag-err { color: var(--err); font-weight: 600; }
+  .tag-warn { color: var(--warn); font-weight: 600; }
+
+  .foot {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.9;
+  }
+  a { color: var(--fg); }
+
+  .back {
+    display: inline-block;
+    margin-bottom: 16px;
+    font-size: 12.5px;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .back:hover { color: var(--fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="/">← 返回</a>
+
+  <h1>帮助</h1>
+  <div class="sub">连不上？很慢？收不到推送？先看这里</div>
+
+  <details class="q" open>
+    <summary>手机打不开页面</summary>
+    <div class="body">
+      <p><b>按顺序查三步：</b></p>
+      <ol>
+        <li><b>服务在跑吗</b> —— 电脑上执行 <code>node src/doctor.js</code>，
+            看「端口」那项是不是「服务正在运行」。</li>
+        <li><b>手机能通吗</b> —— 要先确认手机和电脑在同一个网络
+            （同一个 WiFi，或都装了 Tailscale 并登录同一账号）。</li>
+        <li><b>防火墙拦了吗</b> —— 特征很明显：<b>局域网打不开但 Tailscale 能开</b>，
+            基本就是防火墙。Windows 上以管理员运行：
+            <pre><code>netsh advfirewall firewall add rule name="dsj" dir=in action=allow protocol=TCP localport=3099</code></pre>
+        </li>
+      </ol>
+      <p><span class="tag-warn">提示：</span>启动服务时终端会打印所有可用地址，
+        挑<b>局域网</b>那个试。带 <code>(virtual)</code> 标记的是虚拟网卡，手机连不上。</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>能连上，但很慢</summary>
+    <div class="body">
+      <p>先分清是哪种慢：</p>
+      <ul>
+        <li><b>刚切换网络（WiFi ↔ 4G）</b> —— 正常。
+            头 1~2 分钟会走中继，然后才打洞直连。<b>等一下再试。</b></li>
+        <li><b>一直慢</b> —— 移动网络本来就比局域网慢很多
+            （实测局域网 19.9 MB/s，移动网 0.7 MB/s）。</li>
+        <li><b>传大量小文件慢</b> —— 每个文件都有多次往返开销。
+            可以<b>先打包再传</b>。</li>
+      </ul>
+      <p>判断走的是不是直连：<code>tailscale ping &lt;对方IP&gt;</code><br>
+        显示 <code>via DERP</code> = 走中继（慢）；显示 <code>via &lt;IP&gt;:&lt;端口&gt;</code> = 直连（快）。</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>过一会儿就连不上了</summary>
+    <div class="body">
+      <p>最常见的原因：<b>手机把后台进程杀了</b>。</p>
+      <p><b>Android 上要做的</b>：</p>
+      <ul>
+        <li>把 Tailscale（或本 App）加进<b>电池优化白名单</b></li>
+        <li>开启<b>常驻 VPN</b>（Tailscale 设置里）</li>
+        <li>小米 / HyperOS 还要额外允许<b>自启动</b></li>
+      </ul>
+      <p>如果用的是 Tailscale，先看电脑上 <code>tailscale status</code> 是不是 stopped。</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>收不到推送</summary>
+    <div class="body">
+      <ol>
+        <li><b>页面收到了吗</b> —— 打开页面看「消息」区有没有。有 → 是通知的问题；没有 → 是服务端的问题。</li>
+        <li><b>通知权限</b> —— Android 13 以上<b>必须主动允许通知</b>，
+            光装 App 不够。去系统设置 → 应用 → 通知，手动打开。</li>
+        <li><b>App 退到后台就收不到</b> —— 这是已知问题（SSE 长连接会静默变死）。
+            当前版本已加读超时自动重连，最坏情况会瞎 15 分钟。</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>位置不准 / 偏了几百米</summary>
+    <div class="body">
+      <p><b>这是坐标系问题，不是 bug。</b></p>
+      <p>手机 GPS 给的是 <b>WGS84</b>，国内地图（高德/百度）用 <b>GCJ02</b>（火星坐标）。
+        两者直接混用会偏 <b>约 500 米</b>。</p>
+      <p>本服务在定位时已经做了转换。如果你是<b>自己改代码</b>遇到的，
+        检查有没有在调地图接口前做 WGS84→GCJ02 转换。</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>位置功能完全用不了</summary>
+    <div class="body">
+      <p><b>需要高德 key</b>（位置功能区不填 key 就不工作）：</p>
+      <ol>
+        <li>去 <a href="https://lbs.amap.com/" target="_blank" rel="noopener">lbs.amap.com</a> 注册</li>
+        <li>创建应用，申请<b>两个</b> key：
+          <b>Web 服务</b>（后端用）和 <b>Web 端 JS API</b>（页面嵌地图用）</li>
+        <li>填进 <code>config.json</code> 的 <code>amap</code> 段</li>
+      </ol>
+      <p>如果页面报 <code>INVALID_USER_KEY</code>：JS API key 有 referer 限制，
+        去高德控制台把域名加白，或留空（= 不限）。</p>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>传文件报错</summary>
+    <div class="body">
+      <ul>
+        <li><b>「路径不在白名单」</b> —— 允许的目录在 <code>config.json</code> 的
+            <code>allowDirs</code> 里。想读别的目录就往里加。</li>
+        <li><b>「文件太大」</b> —— 上传上限 20MB，读取上限 2MB。</li>
+        <li><b>可执行文件被拒</b> —— <b>这是故意的</b>（安全策略），
+            <code>.exe/.bat/.ps1/.apk</code> 这些不让通过。</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>开机不会自动启动</summary>
+    <div class="body">
+      <p><span class="tag-err">最常见的坑：</span>如果你写了个 <code>.bat</code> 来启动，
+        <b>它必须是 CRLF 换行</b>（不是 LF）。用 LF 的话 <code>cmd.exe</code> 会解析错乱，
+        整个脚本<b>静默失效</b> —— 看起来配了，其实从没跑过。</p>
+      <p>另外：<b>不要用「后台运行」的方式起服务</b>（比如直接 <code>start</code> 或 <code>nohup</code>），
+        那样起的进程会随终端关闭而死。</p>
+      <p>Windows 上正确做法是<b>计划任务</b>：</p>
+      <pre><code>schtasks /Create /TN "dsj-open" /TR "node D:\path\to\src\server.js" /SC ONLOGON /RL HIGHEST /F</code></pre>
+    </div>
+  </details>
+
+  <details class="q">
+    <summary>我想加个自己的按钮 / 接口</summary>
+    <div class="body">
+      <p><b>加按钮</b>：改 <code>src/commands.js</code>，往 <code>COMMANDS</code> 数组里加一项。
+        前端会自动渲染出来，不用改页面。</p>
+      <p><b>加接口</b>：在 <code>src/routes/</code> 下选一个文件（或新建），
+        写 <code>register(server, config)</code>，然后在 <code>server.js</code> 里挂载。</p>
+      <p>完整说明见项目里的 <code>docs/FOR-AI-EXTEND.md</code>
+        （那份是写给 AI 助手看的，直接丢给你的 AI 让它做也行）。</p>
+    </div>
+  </details>
+
+  <div class="foot">
+    <div><b>还是解决不了？</b></div>
+    <div>· 项目里有 <code>docs/TROUBLESHOOT.md</code>（按症状走的决策树）</div>
+    <div>· 还有 <code>docs/PITFALLS.md</code>（69 条实测坑 + 解法）</div>
+    <div>· 或者把你的 AI 叫来，让它读 <code>AGENTS.md</code></div>
+  </div>
+
+</div>
+</body>
+</html>
