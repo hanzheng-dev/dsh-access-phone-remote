@@ -26,6 +26,7 @@ const loc = require('./routes/loc');
 const push = require('./routes/push');
 const file = require('./routes/file');
 const addresses = require('./routes/addresses');
+const { printTerminalQR } = require('./terminal-qr');
 
 // 启动时载入消息池（读盘，不监听；不存在则空池）
 loadStore();
@@ -159,6 +160,31 @@ if (require.main === module) {
   server.listen(config.port, config.listenHost, () => {
     log(`===== dsj-open 启动，监听 ${config.listenHost}:${config.port}，功能 ${COMMANDS.length} 个 =====`);
     log(`本机: http://127.0.0.1:${config.port}/`);
-    log(`页面首次访问带口令: http://<地址>:${config.port}/?t=<token>（见 .hub-token）`);
+
+    // ---- 给手机用的地址 + 终端二维码 ----
+    // 挑一个手机能连的地址（局域网优先），直接把二维码打在终端里，省得开浏览器
+    try {
+      const list = addresses.listAddresses();
+      const best = list.find((a) => a.kind === 'lan') || list.find((a) => a.kind !== 'loopback');
+      const token = (() => {
+        try { return fs.readFileSync(config.tokenFile, 'utf8').trim(); } catch { return ''; }
+      })();
+
+      if (best) {
+        const url = `http://${best.ip}:${config.port}/` + (token ? `?t=${token}` : '');
+        log(`手机访问: ${url}`);
+        process.stdout.write('\n  手机扫这个（或复制上面那行）:\n\n');
+        printTerminalQR(url);
+        if (list.length > 1) {
+          const others = list.filter((a) => a.ip !== best.ip).map((a) => `${a.ip}(${a.kind})`).join('  ');
+          log(`其他可用地址: ${others}`);
+        }
+      } else {
+        log('⚠️ 没找到可给手机用的地址（可能只有回环）');
+      }
+    } catch (e) {
+      log(`（二维码生成失败，不影响使用: ${e.message}）`);
+      log(`页面首次访问带口令: http://<地址>:${config.port}/?t=<token>（见 .hub-token）`);
+    }
   });
 }
