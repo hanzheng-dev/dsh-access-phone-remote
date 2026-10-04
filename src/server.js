@@ -19,7 +19,7 @@ const http = require('http');
 const { config } = require('./config');
 const { COMMANDS } = require('./commands');
 const {
-  messages, addMessage, json, readBody, log, loadStore, htmlVersion,
+  messages, addMessage, json, readBody, log, loadStore, htmlVersion, saveStore,
 } = require('./store');
 const auth = require('./routes/auth');
 const loc = require('./routes/loc');
@@ -209,5 +209,27 @@ if (require.main === module) {
     } catch (e) {
       log(`（自动发现启动失败，不影响使用: ${e.message}）`);
     }
+  });
+
+  // ---- 优雅退出 ----
+  // store 的保存有 1 秒防抖（scheduleSave），如果不处理信号，
+  // 在这 1 秒内被 Ctrl+C / kill 会丢掉最近的改动。这里补上。
+  let exiting = false;
+  const gracefulExit = (sig) => {
+    if (exiting) return;
+    exiting = true;
+    try {
+      saveStore();
+      log(`收到 ${sig}，已保存数据，退出`);
+    } catch (e) {
+      log(`退出时保存失败: ${e.message}`);
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', () => gracefulExit('SIGINT'));
+  process.on('SIGTERM', () => gracefulExit('SIGTERM'));
+  // 兜底：正常退出路径也存一次（不含 SIGKILL —— 那个拦不住）
+  process.on('beforeExit', () => {
+    if (!exiting) { try { saveStore(); } catch { } }
   });
 }
