@@ -217,9 +217,9 @@ function handleStatic(req, res, url, p) {
     if (fs.existsSync(f)) { serveFile(res, f, 'text/html; charset=utf-8'); return true; }
   }
 
-  // public 根下的图片 / 图标 / css
+  // public 根下的图片 / 图标 / css / js
   {
-    const m = /^\/[\w.\-]+\.(jpg|jpeg|png|gif|webp|svg|ico|css)$/i.exec(p);
+    const m = /^\/[\w.\-]+\.(jpg|jpeg|png|gif|webp|svg|ico|css|js)$/i.exec(p);
     if (m) {
       const f = path.join(config.projectRoot, 'public', path.basename(p));
       if (fs.existsSync(f)) { serveFile(res, f, contentType(f)); return true; }

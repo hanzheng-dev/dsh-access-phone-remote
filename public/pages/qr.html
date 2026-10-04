@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>扫码连接 · dsj-open</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --fg: #3a382f;
+    --dim: #8f8a7d;
+    --line: rgba(58,56,47,.12);
+    --card: #fffefb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1c1b19; --fg:#e8e5df; --dim:#8f8a7d; --line:rgba(255,255,255,.12); --card:#252422; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: var(--bg); color: var(--fg);
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .wrap { width: 100%; max-width: 380px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 6px 28px rgba(0,0,0,.07);
+    text-align: center;
+  }
+  .title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 12.5px; color: var(--dim); margin-bottom: 18px; }
+  #qr { display: inline-block; line-height: 0; }
+  #qr svg { border-radius: 8px; }
+  .url {
+    margin-top: 16px; padding: 10px 12px;
+    background: rgba(127,127,127,.08);
+    border-radius: 10px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11.5px; color: var(--dim);
+    word-break: break-all; line-height: 1.5;
+    user-select: all;
+  }
+  .hint { margin-top: 16px; font-size: 12.5px; color: var(--dim); line-height: 1.7; text-align: left; }
+  .hint b { color: var(--fg); font-weight: 600; }
+  .btns { margin-top: 18px; display: flex; gap: 8px; }
+  button {
+    flex: 1; padding: 11px 14px; border-radius: 11px;
+    border: 1px solid var(--line); background: transparent;
+    color: var(--fg); font: inherit; font-size: 13.5px; cursor: pointer;
+  }
+  button:active { opacity: .6; }
+  .err { color: #c0392b; font-size: 13px; padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="title">📱 扫码连接</div>
+    <div class="sub">用手机扫一下，自动打开并完成鉴权</div>
+    <div id="qr"></div>
+    <div class="url" id="url">—</div>
+    <div class="hint">
+      · 手机和电脑要在<b>同一个网络</b>（WiFi 或 Tailscale）<br>
+      · 扫完会种一个 <b>180 天</b>的凭证，之后直接访问即可<br>
+      · <b>别截图分享</b> —— 这张码等于你的访问权限
+    </div>
+    <div class="btns">
+      <button id="copy">复制链接</button>
+      <button id="close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script src="/qr.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  // 目标地址：?u=<encoded> —— 没给就用当前页面的 origin
+  function targetUrl() {
+    const q = new URLSearchParams(location.search).get('u');
+    if (q) return q;
+    // 兜底：用当前 origin（去掉 /qr.html）
+    return location.origin + '/';
+  }
+
+  const url = targetUrl();
+  $('url').textContent = url;
+
+  // 生成二维码（本地、离线、不联网）
+  try {
+    if (!window.QRLite) throw new Error('qr.js 没加载');
+    window.QRLite.into($('qr'), url, 240);
+  } catch (e) {
+    $('qr').innerHTML = '<div class="err">二维码生成失败：' + e.message + '</div>';
+  }
+
+  // 复制
+  $('copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      $('copy').textContent = '已复制 ✓';
+      setTimeout(() => ($('copy').textContent = '复制链接'), 1500);
+    } catch {
+      // 降级：选中文本
+      const r = document.createRange();
+      r.selectNodeContents($('url'));
+      const s = getSelection();
+      s.removeAllRanges(); s.addRange(r);
+      $('copy').textContent = '已选中，手动复制';
+    }
+  };
+
+  // 关闭（如果是被 openWebLayer 打开的浮层，就关掉；否则返回）
+  $('close').onclick = () => {
+    if (window.DsNative && typeof window.DsNative.closeWeb === 'function') {
+      try { window.DsNative.closeWeb(); return; } catch (e) {}
+    }
+    if (history.length > 1) history.back();
+    else window.close();
+  };
+})();
+</script>
+</body>
+</html>

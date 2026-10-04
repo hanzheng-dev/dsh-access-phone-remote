@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<!-- ★ 页面版本：hub 吐 HTML 时把下面这个 __DSH_VER__ 换成 index.html 的 mtime+大小。
-     放 <meta> 里、页面从 DOM 读 —— 因为 hub 是**全局替换**，哨兵写在 JS 里会被一起换掉
-     （2026-09-17 追了一小时的坑：判断里的哨兵被换成真版本号 ⇒ 判断恒为 false ⇒ 永不重载）。 -->
+<!-- ★ 页面版本：服务端吐 HTML 时把下面这个 __DSJ_VER__ 换成 index.html 的 mtime+大小。
+     放 <meta> 里、页面从 DOM 读 —— 因为服务端是**全局替换**，哨兵写在 JS 里会被一起换掉
+     （判断里的哨兵被换成真版本号 ⇒ 判断恒为 false ⇒ 永不重载）。 -->
 <meta name="app-ver" content="__DSJ_VER__">
 <title>dsj-open</title>
 <script>
@@ -16,9 +16,7 @@
 </script>
 <style>
   :root{
-    /* ★★ 2026-09-17 主人改定：**白底 + 背景图 + 黑字**
-       （原话：「把 ds酱 的背景改成白色，这个图 26% 的透明度，然字改黑」）
-       ⇒ 整套配色翻转。深色那套值直接换掉，别留半深半浅的残留。 */
+    /* 浅色配色：**白底 + 黑字**（暖调），深色那套在下面 html.dark 覆盖。 */
     --bg:#ffffff;
     --panel:rgba(255,255,255,.86);      /* 面板半透，让背景图透出来一点 */
     --panel-solid:#ffffff;
@@ -30,17 +28,16 @@
     --ok:#1f8a4c;
     --err:#b4322f;
   }
-  /* ★ 背景层：主人指定的那张图，**26% 透明度**，铺满、固定、不跟滚动。
-     放在 body::before 而不是 body 上 —— 这样底下还能再压一层半透明白，
-     保证黑字在任何画面上都读得清（纯图 + 黑字在深色区域会糊）。 */
+  /* ★ 背景层：原本是一张私有背景图（26% 透明）。
+     开源版不带那张图 ⇒ 改成纯色打底，保留同一层结构（以后想放自己的图，
+     把 background 换成 url(...) 即可）。 */
   body::before{
     content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:#fff url('/bg.jpg') center top / cover no-repeat;
-    opacity:.26;
+    background:#faf8f3;
   }
 
   /* ═══════════════════════════════════════════════════════════════════
-     ★★ 2026-09-17 深色模式（主人：「右边加个深色模式?这样我还能选择，
+     ★★ 2026-09-17 深色模式（用户：「右边加个深色模式?这样我还能选择，
         现在白色有点怪怪的，毕竟是按照那个图设计的」）
      做法：`html.dark` 一套覆盖 —— 变量 + 那些**写死颜色**的规则。
      ⚠️ 为什么不能只覆盖变量：今天为了白底把 35 处写死的深色值逐个换成了浅色，
@@ -62,7 +59,7 @@
   /* ⚠️ 深色下背景层要**压淡** —— 那张 bg.jpg 现在是纯白，铺在 #111 上会把深色洗成灰
      （实测：26% 白 ⇒ 背景从 rgb(17) 变成 rgb(79)）。深色下压到 8%，只留一点质感。 */
   /* ⚠️ 必须给 html 也上底色 —— 浅色时给 html 设了 #fff（让 body 透明后有个底），
-     深色块里忘了覆盖 ⇒ **外面主页永远白底**（主人 2026-09-17 一眼看出来）。 */
+     深色块里忘了覆盖 ⇒ **外面主页永远白底**（用户 2026-09-17 一眼看出来）。 */
   html.dark{ background:#111111 }
   html.dark body::before{ background-color:#111;opacity:.08 }
   /* 主页按钮 —— ⭐ 2026-09-22 op：深色下也是**扁平一块**（原来是 180° 渐变 + 描边） */
@@ -79,9 +76,9 @@
   html.dark .btn.danger{ background:rgba(200,80,70,.30);color:#ffc9c9 }
   html.dark .btn.danger:active{ background:rgba(200,80,70,.42) }
   /* 正文 / 消息 */
-  /* ★★ 2026-09-20 02:42 主人要"拿坡里黄"（那不勒斯黄）。
+  /* ★★ 2026-09-20 02:42 用户要"拿坡里黄"（那不勒斯黄）。
      ⚠️ 深色下用**柔和的奶油黄**（不刺眼）：
-        第 1 版 `#F2D06B` 主人说"**太黄了**" ⇒ 降到 `#E4D6A8`（米黄/奶油，
+        第 1 版 `#F2D06B` 用户说"**太黄了**" ⇒ 降到 `#E4D6A8`（米黄/奶油，
         饱和度砍掉一半，还是暖调，但不像荧光）。
      ⚠️ 这条优先级（html.dark）**高于** 671 行那条 ⇒ 深色模式下生效的是它。 */
   html.dark .bub.pc b{ color:#E4D6A8 }
@@ -113,7 +110,7 @@
   html.dark .sessrow-d{ color:#6a6a6a }
   /* 输入框 / 消息里的按钮 */
   html.dark #chIn{ background:#1e1e1e }
-  /* ★ 思考档位按钮 —— ⭐ 2026-09-22 晚 主人：「ds会话和op会话的对话框和旁边的聪明程度大小不一样！
+  /* ★ 思考档位按钮 —— ⭐ 2026-09-22 晚 用户：「ds会话和op会话的对话框和旁边的聪明程度大小不一样！
      让对话框这一行统一大小，只不过颜色别变」⇒ 尺寸对齐 op 那套（42 高 / 10 圆角 / 14px 字，
      和「发送」同规格）；**颜色/边框色一律不动**（浅色 rgba(0,0,0,.18)+#555，深色见下面 124 行）。 */
   #chEffort{ height:42px; padding:0 10px; font-size:14px; border-radius:10px;
@@ -147,7 +144,6 @@
     overscroll-behavior:none;
   }
 
-
   /* ---- 主页（开源版：直接就是主页面，不再是抽屉）---- */
   #home{
     min-height:100%;
@@ -163,7 +159,7 @@
   header h1{
     font-size:17px;font-weight:600;letter-spacing:.06em;margin:0;flex:none;
   }
-  /* ⭐ 2026-09-23 主人当场定的：代理点**紧跟 DSH 右侧一点点**（不是甩到「已连接」左边）⇒
+  /* ⭐ 2026-09-23 用户当场定的：代理点**紧跟 DSH 右侧一点点**（不是甩到「已连接」左边）⇒
      h1 不再 flex:1，改让 `.st` 自己吃剩余空间、把「已连接」和右侧图标顶到最右。 */
   header .st{margin-left:auto}
   /* ★ 主页头部的深色/浅色开关 —— 尺寸线宽跟对话页那几个图标保持一致 */
@@ -198,14 +194,14 @@
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .grid.one{grid-template-columns:1fr}
 
-  /* ⭐⭐ 2026-09-22 op：**第一页按钮全面改扁平**（主人：「第一页四个板块全是立体按钮，太丑了」）
+  /* ⭐⭐ 2026-09-22 op：**第一页按钮全面改扁平**（用户：「第一页四个板块全是立体按钮，太丑了」）
      病根：原来是 `linear-gradient` 渐变 + 1px 描边 + `box-shadow`（还有 inset 高光）
            ⇒ 一套"立体拟物"，和会话页/账本页（平面、无描边、无投影）完全不一套。
      做法（照账本那三个控件的成法）：
        · 底色换成**一块浅灰平面**（浅色 #f4f4f2 / 深色 #1f1f1f）
        · 描边一律 `transparent`（**不是 border:none** —— 保住盒模型，按钮尺寸不位移）
        · 渐变/投影全去；圆角统一 12px；按下只变底色 + 轻微缩放（不再变描边）
-     ⭐⭐ 2026-09-22 晚 第二版（主人：「第一页里面排版，按钮什么的变一下，还是平面，反正现在不太喜欢」）
+     ⭐⭐ 2026-09-22 晚 第二版（用户：「第一页里面排版，按钮什么的变一下，还是平面，反正现在不太喜欢」）
      ⇒ 第一页（`#app` 作用域）改**三列抽屉风**（手机 App 主屏那种）：
        · 按钮**无底色**、竖排（emoji 上 / 文字下、居中）—— 整页 = 白底 + 图标网格，最轻的平面
        · 按下才浮出一块浅灰（`:active`）—— 平时干净，点了有反馈
@@ -259,7 +255,7 @@
   .btn.danger:active{background:#ffc7c0}
   .btn[disabled]{opacity:.42}
 
-  /* ⭐ 2026-09-23 主人定：开关按钮（🖥️屏幕/🍺酒馆/🚀UU远程）**统一** ——
+  /* ⭐ 2026-09-23 用户定：开关按钮（🖥️屏幕/🍺酒馆/🚀UU远程）**统一** ——
      开=白、关=黑（原先是"浅灰 vs 深灰 / 黑 vs 更黑"，对比不够、不符合直觉）。
      深浅两主题用同一套色，一眼就懂（开=亮、关=暗）。
      ⚠️ #app .btn 带 ID 权重压得住 html.dark .btn ⇒ 深色覆盖也要带 #app 前缀。 */
@@ -302,11 +298,10 @@
   .dlg-f{padding:12px 18px 16px;display:flex;gap:10px}
   .dlg-f .btn{flex:1;justify-content:center;text-align:center}
 
-
   .busy{color:var(--dim);font-size:13px}
 
   /* ---- ⭐ PDF 附件（手机端）----
-     2026-09-19 23:02 主人：「pdf看不了，还是白色的」
+     2026-09-19 23:02 用户：「pdf看不了，还是白色的」
      根因：**Android Chrome 不支持内嵌 PDF**（<embed type=application/pdf> 永远白屏）
      ⇒ 手机端改成两个**跟站内 .btn 同款**的按钮（别自创样式，上次 op 就是栽在样式失衡上）。
      ⚠️ 观感要跟消息里的按钮一致：圆角 11px、浅灰渐变、细边框、字 14.5px。 */
@@ -322,7 +317,7 @@
   html.dark .pdffile-btn{background:linear-gradient(180deg,#262626,#1e1e1e);border-color:rgba(255,255,255,.16)}
   html.dark .pdffile-btn:active{background:#2e2e2e}
 
-  /* ---- ⭐ 图片放大层（2026-09-19 19:05 主人：「加个点击图片，能放大看的功能」）----
+  /* ---- ⭐ 图片放大层（2026-09-19 19:05 用户：「加个点击图片，能放大看的功能」）----
      点消息里的图 ⇒ 全屏黑底大图；手机双指缩放/拖动、双击放大；点空白或 ✕ 关闭。
      ⚠️ 独立一层 #imgView（z-index 90 比对话页 60 / 账本 65 都高）⇒ 在哪都能弹。
      ⚠️ 缩放/平移走 transform（不重排）；`touch-action:none` 自己处理手势。 */
@@ -350,11 +345,8 @@
     text-align:center;color:rgba(255,255,255,.5);font-size:12px;pointer-events:none;
   }
 
-
-
-
-  /* ---- ⭐ 2026-09-17 改：不要气泡，要"整页出字"（主人原话）----
-     主人：「你也不用纠结对话框啊？就跟 dsh 一样，一整个页面都能出字，不就好了？」
+  /* ---- ⭐ 2026-09-17 改：不要气泡，要"整页出字"（用户原话）----
+     用户：「你也不用纠结对话框啊？就跟 dsh 一样，一整个页面都能出字，不就好了？」
      QQ 需要气泡是因为它是聊天列表；这里是一份**文档**。
      而且 82% 宽的气泡会把表格/代码挤烂 —— 现在我的回复占满整行、渲染 Markdown。 */
   .bub{
@@ -363,17 +355,17 @@
     -webkit-user-select:text;user-select:text;
   }
   .bub .txt{display:block}
-  /* 来源标签（2026-09-19：主人发图/剪贴板注入，一眼看出消息哪来的） */
+  /* 来源标签（2026-09-19：用户发图/剪贴板注入，一眼看出消息哪来的） */
   .srctag{display:block;font-size:11px;color:#8a94a6;font-weight:400;margin:2px 0 2px 1px;letter-spacing:.3px}
   html.dark .srctag{color:#7c8798}
   /* 我发的：整页正文 */
   .bub.pc{align-self:stretch;background:none;border:0;color:var(--fg);padding:10px 0}
-  /* ★★ 2026-09-17 主人要的：**长报告也能折叠，展开就是原文**
+  /* ★★ 2026-09-17 用户要的：**长报告也能折叠，展开就是原文**
      原话：「你现在很多报告，可以也折叠，展开直接就是里面的内容，我就不需要去哪里看了」
      设计取舍（这是 UI，归我）：
        · 短内容（≤ 300 字）**不动** —— 直接显示，多一层折叠反而累赘
        · 长内容收成一行标题（📄 + 摘要 + 字数），点开是**原文**（不是摘要、不是链接）
-       · 复用已有的 <details> 机制（和"思考/工具"折叠同一套观感，主人已经熟悉）
+       · 复用已有的 <details> 机制（和"思考/工具"折叠同一套观感，用户已经熟悉）
        · **默认折叠**，但**不写入 localStorage** —— 每次都是折叠的，不会出现"上次展开了这次也展开"的意外 */
   .msgfold{ margin:2px 0 }
   .msgfold details{ border:1px solid var(--line);border-radius:8px;background:rgba(246,246,246,.58); }
@@ -392,7 +384,7 @@
     padding:2px 12px 12px;border-top:1px solid var(--line);
     font-size:13.5px;line-height:1.6;color:var(--fg);white-space:pre-wrap;word-break:break-word;
   }
-  /* ★★ 2026-09-19：附件「✏️ 编辑」—— 主人要"点开就能直接改"。默认只读，点编辑才变 textarea。 */
+  /* ★★ 2026-09-19：附件「✏️ 编辑」—— 用户要"点开就能直接改"。默认只读，点编辑才变 textarea。 */
   .fileeditbar{display:flex;justify-content:flex-end;margin:0 0 8px}
   .fed-btn{
     min-height:40px;padding:8px 16px;border:1px solid var(--line-hi);background:#fff;color:var(--fg);
@@ -411,25 +403,25 @@
     background:rgba(255,255,255,.9);color:var(--fg);resize:vertical;white-space:pre-wrap;
   }
   html.dark .feta{background:rgba(30,30,30,.92);color:#e0e0e0}
-  /* ★★ 2026-09-22：**网页浮层卡片**（和附件折叠块同款观感 —— 主人要"保持格式一致"） */
+  /* ★★ 2026-09-22：**网页浮层卡片**（和附件折叠块同款观感 —— 用户要"保持格式一致"） */
   .webfold .webhint{color:var(--dim);font-size:12.5px;margin:2px 0 10px}
   .webfold .webbody{display:flex;flex-direction:column}
   .feact{display:flex;gap:10px;margin-top:10px}
   .feact .fed-btn{flex:1}
-  /* 涵正发的：留一条窄色带，一眼能分清谁说的，但不抢版面 */
+  /* 对方发的：留一条窄色带，一眼能分清谁说的，但不抢版面 */
   .bub.me{
     align-self:stretch;background:rgba(238,243,255,.58);border-left:3px solid #2f5cff;
     border-radius:0 8px 8px 0;padding:8px 12px;margin:6px 0 2px;
     /* ★ 2026-09-17 白底主题：原来是 #cfe0f5（深色主题的浅蓝白）⇒ 白底上几乎看不见。
-       主人：「我发送的消息颜色太淡了…比思考的那些小字颜色深一点就行」
+       用户：「我发送的消息颜色太淡了…比思考的那些小字颜色深一点就行」
        思考块小字 = #41567a ⇒ 这个取更深的 #2a3d5c */
     color:#2a3d5c;white-space:pre-wrap;font-size:14px;line-height:1.6;
   }
   .bub.sys{align-self:center;background:none;border:0;color:#777;font-size:12px;padding:4px;text-align:center}
-  /* ★ 最底下那行「生成中…」（主人 2026-09-17 换的方案）—— 我答完就消失 */
-  /* ★ 花费行（在「生成中…」上面）—— 主人 2026-09-17 要的：
+  /* ★ 最底下那行「生成中…」（用户 2026-09-17 换的方案）—— 我答完就消失 */
+  /* ★ 花费行（在「生成中…」上面）—— 用户 2026-09-17 要的：
      「写现在的余额，然后后面（这次消息减去多少钱），不然像今天一个上午30还是太难顶了」 */
-  /* ★ 2026-09-17 主人要的：**余额进度条**（分母 300，五档偏灰配色，「平均分」） */
+  /* ★ 2026-09-17 用户要的：**余额进度条**（分母 300，五档偏灰配色，「平均分」） */
   .balbar{
     display:inline-block;vertical-align:middle;width:64px;height:6px;border-radius:3px;
     background:rgba(0,0,0,.09);overflow:hidden;margin:0 6px 0 3px;
@@ -468,7 +460,7 @@
   }
   .bub.pc pre{
     background:rgba(246,246,246,.58);border:1px solid var(--line);border-radius:9px;
-    /* ★★ 2026-09-17 21:22 主人实测：手机上代码块【右边被切掉 / 太贴边】。
+    /* ★★ 2026-09-17 21:22 用户实测：手机上代码块【右边被切掉 / 太贴边】。
        ⚠️ 根因：`pre code` 没写 `white-space:pre-wrap` ⇒ **长行不折行** ⇒ 撑出横向滚动 ⇒ 右边看不见；
           再加 13px 内边距在窄屏 + 中英混排下太宽 ⇒ 正文可用宽度更少。
        ⇒ 改：**允许折行** + 内边距收窄 + 字号略缩 + 允许词内断行（中英混排必须）。
@@ -480,7 +472,7 @@
     white-space:pre-wrap;word-break:break-word;
   }
   /* ⭐ 2026-09-19：无语言 / text / md 代码块 —— **块的外观保留**，里面的 Markdown 正常渲染。
-     主人原话：「那代码块里也渲染吧，全是星号有点难读」；改后他又说「代码块直接没了」，
+     用户原话：「那代码块里也渲染吧，全是星号有点难读」；改后他又说「代码块直接没了」，
      所以这里不能把块拆成普通段落，得留一个和 pre 同款的底框。 */
   .bub.pc .mdblock{
     background:rgba(246,246,246,.58);border:1px solid var(--line);border-radius:9px;
@@ -502,19 +494,19 @@
   .bub.pc a{color:#1a56d6;text-decoration:none;border-bottom:1px solid #a8c0ea}
   /* ★ 2026-09-17 白底主题：加粗原来是纯白（深色下为了更亮）⇒ 白底上完全隐形。
      浅色下更强调= 更黑，所以用 #000（正文是 #141414）。 */
-  /* ★★ 2026-09-20 02:39 主人：「你拿你的粗体字颜色变一下，变成拿坡里黄」
+  /* ★★ 2026-09-20 02:39 用户：「你拿你的粗体字颜色变一下，变成拿坡里黄」
      ⇒ **那不勒斯黄（Naples Yellow）**，白底上取"能看清"的那一档：
         纯颜料色 `#FADA5E` 在白底上几乎看不见 ⇒ 用**加深版 `#D9A81E`**
-        （保留"拿坡里黄"的暖调，同时对比度够 —— 主人自己说了"亮色上次改过后基本没怎么用"）。
+        （保留"拿坡里黄"的暖调，同时对比度够 —— 用户自己说了"亮色上次改过后基本没怎么用"）。
      ⚠️ 深色模式（html.dark）那条在下面，保持白色不变（深底上黄反而脏）。 */
   .bub.pc b{color:#D9A81E}
 
   /* ---- ⭐ 思考块 / 工具条（2026-09-17 加）----
-     主人原话：「我不知道你在干嘛，不知道是不是在输入还是干嘛，现在和 dsh 一样，
+     用户原话：「我不知道你在干嘛，不知道是不是在输入还是干嘛，现在和 dsh 一样，
                你在调用什么工具，你在思考都能流式传输过来，反正能折叠了」
      ⇒ 思考 = 默认折叠的 <details>，标题实时显示"思考中 · N 字"；工具 = 一行暗色小条。 */
   .foldwrap{margin:5px 0}
-  /* ★ 2026-09-17 主人：「几个框也透明呗?但是比背景透明度低就行，知道有框」
+  /* ★ 2026-09-17 用户：「几个框也透明呗?但是比背景透明度低就行，知道有框」
      背景图 26% 不透明 ⇒ 框取 58%：框里的图 ≈26%×42%≈11%，看得出有框、也透得出图 */
   .foldwrap details.fold{background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.14);border-radius:8px;overflow:hidden}
   .foldwrap summary{
@@ -532,14 +524,14 @@
   /* ★ 显式藏起"没展开"的正文。
      新版 Chromium 的 <details> 靠内部机制收起（实测收起时 details 只有 35px 高，
      但 .foldbody 的 computed display 仍是 block），光靠 UA 默认样式在这个 WebView 上不保险。
-     主人反复说"思考怎么又摊开了"，所以这里钉死一条，任何浏览器都不会露出来。 */
+     用户反复说"思考怎么又摊开了"，所以这里钉死一条，任何浏览器都不会露出来。 */
   .foldwrap details.fold:not([open]) > .foldbody{display:none}
   .foldwrap.reasoning details.fold{border-color:#bfd0ec;background:rgba(238,244,255,.58)}
   .foldwrap.reasoning summary{color:#7d93c0}
   .foldwrap.reasoning .foldbody{color:#41567a}
   .foldwrap.tool details.fold{background:rgba(250,250,250,.58);border-color:rgba(0,0,0,.13)}
   .foldwrap.tool summary{color:#5a5a5a;font-family:ui-monospace,Consolas,monospace;font-size:12.2px}
-  /* 工具展开后是**完整命令 / 完整参数**，用等宽字体、给足高度 —— 这是主人 10:11 明确要的 */
+  /* 工具展开后是**完整命令 / 完整参数**，用等宽字体、给足高度 —— 这是用户 10:11 明确要的 */
   .foldwrap.tool .foldbody{
     font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:12px;
     line-height:1.6;color:#3f3f3f;max-height:52vh;
@@ -556,7 +548,7 @@
   html.dark .toolbox{ border-left-color:rgba(160,175,215,.34) }
   /* 还在写：标题末尾闪一下（只有思考块用，工具条是离散的一条条） */
   .foldwrap.streaming summary::after{content:' ▍';color:#7aa2ff;animation:blink 1s steps(2) infinite}
-  /* ★ 工具折叠块里的配图（我看的图，主人一起看）—— 主人 10:47 要求 */
+  /* ★ 工具折叠块里的配图（我看的图，用户一起看）—— 用户 10:47 要求 */
   .foldwrap .foldimg{
     display:block;width:100%;max-height:46vh;object-fit:contain;
     border-radius:6px;margin:0 0 8px;background:rgba(255,255,255,.72);padding:3px;
@@ -612,18 +604,18 @@
   }
   .ch-f textarea:focus{outline:none;border-color:var(--line-hi)}
     .ch-f button{
-    /* ★ 2026-09-17 主人：「把这个按钮调小一点和对话框一样大…还有就是按钮的纯度调低一点，太艳了」
+    /* ★ 2026-09-17 用户：「把这个按钮调小一点和对话框一样大…还有就是按钮的纯度调低一点，太艳了」
        原来 #2f5cff 是荧光蓝，太抢眼 ⇒ 换成灰蓝；高度跟输入框对齐（42px），宽度收窄。 */
     flex:none;height:42px;background:linear-gradient(180deg,#5d7cb4,#4b67a0);
     border:1px solid #6d89bd;color:#f4f7fd;border-radius:10px;padding:0 14px;
     font:inherit;font-size:14px;
   }
   .ch-f button[disabled]{opacity:.45}
-  /* ★★ 2026-09-17 主人要的：**我还在生成的时候，发送按钮变灰**
+  /* ★★ 2026-09-17 用户要的：**我还在生成的时候，发送按钮变灰**
      光靠 sendChat 里那个 disabled 不够 —— POST 一眨眼就返回，那时我还在生成。
      所以要看"我这边还有没有流在跑"（见下面 setSendBusy / SSE 的 new+end 配对）。 */
-  /* 生成中：按钮变成「停」（主人 2026-09-17 要的）—— 它不再禁用、也不再只是变淡，
-     而是**换成另一个动作**：点它就去中断我。红色也按主人"纯度调低"的口味调过。 */
+  /* 生成中：按钮变成「停」（用户 2026-09-17 要的）—— 它不再禁用、也不再只是变淡，
+     而是**换成另一个动作**：点它就去中断我。红色也按用户"纯度调低"的口味调过。 */
   .ch-f button.stop{
     background:linear-gradient(180deg,#a86a6a,#8f5a5a);
     border-color:#b87d7d;color:#fff;opacity:1;
@@ -642,7 +634,7 @@
   }
 
   /* ---- 气泡里的交互按钮（2026-09-17 加：push.js --btn）---- */
-  /* ★ 2026-09-17 主人要的：给 agent（op）的汇报加一个「直接回话」输入框 */
+  /* ★ 2026-09-17 用户要的：给 agent（op）的汇报加一个「直接回话」输入框 */
   .agentrow{ display:flex;gap:7px;margin-top:9px;align-items:center }
   .agentrow input{
     flex:1;min-width:0;height:36px;border-radius:9px;border:1px solid var(--line);
@@ -656,10 +648,9 @@
   .agentrow button:disabled{ opacity:.5 }
   html.dark .agentrow input{ background:rgba(255,255,255,.10) }
   html.dark .agentrow button{ background:rgba(255,255,255,.14) }
-  /* ★ 2026-09-23：fht 回复成功后留的一行「已发」小字 */
-  .fhtsent{ font-size:12px; opacity:.65; margin-top:5px; word-break:break-all }
+  
   .actrow{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
-  /* ★★ 2026-09-17 主人要的：**选项卡** —— 以前 QQ 只能发纯文本，选项只能用「A. xxx」土办法 */
+  /* ★★ 2026-09-17 用户要的：**选项卡** —— 以前 QQ 只能发纯文本，选项只能用「A. xxx」土办法 */
   .optwrap{ display:flex;flex-direction:column;gap:6px;margin-top:10px }
   .optwrap .opthint{ font-size:11.5px;color:var(--dim);margin-bottom:1px;letter-spacing:.03em }
   .optwrap button{
@@ -682,7 +673,7 @@
   html.dark .optwrap button.picked{ background:rgba(40,80,52,.55);border-color:#4f8a64;color:#bfe8cc }
   html.dark .optwrap button.notpicked{ opacity:.35 }
   /* ★★ 2026-09-29：**问用户选择框**（ask_user_question 的 UI）——
-     和选项卡长得像，但语义是"回答那个正在等我的工具调用"，点完回 /api/ask-answer。 */
+     和选项卡长得像，但语义不同。 */
   .askwrap{ display:flex;flex-direction:column;gap:14px;margin-top:10px }
   .askwrap .askq{ display:flex;flex-direction:column;gap:6px }
   .askwrap .askhd{ font-size:11.5px;color:var(--dim);letter-spacing:.04em;text-transform:none }
@@ -720,7 +711,7 @@
   }
   .actrow button:active{background:#dcdcdc}
   .actrow button.warn{background:rgba(255,241,241,.58);border-color:#e3b6b6;color:#b4322f}
-  /* 按过之后的样子（主人 10:47 的思路：变绿打勾 / 变红打叉，不注入消息） */
+  /* 按过之后的样子（用户 10:47 的思路：变绿打勾 / 变红打叉，不注入消息） */
   .actrow button.done-ok{background:rgba(230,247,236,.58);border-color:#3f7a52;color:#1f7a45}
   .actrow button.done-bad{background:rgba(253,234,234,.58);border-color:#c0392b;color:#b4322f}
   .actrow button[data-done]{pointer-events:none}
@@ -742,7 +733,7 @@
     background:#f7f5ef;color:var(--fg);
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
   #loc.show{display:flex}
-  /* ⭐⭐ 2026-09-30 op：位置页**强制浅色暖调**（照抄 #ledger 那套，2026-09-21 主人定的）：
+  /* ⭐⭐ 2026-09-30 op：位置页**强制浅色暖调**（照抄 #ledger 那套，2026-09-21 用户定的）：
      底 #f7f5ef（暖白）/ 卡片 #fffefb / 抬头 #efece3 / 字深暖灰；强调米金 #E4D6A8 + 浅橘 #ffe2c0。
      深色主题下也照样暖白（跟账本一致），⛔ 只在 #loc / #loNav 作用域内覆盖，不动全局 html.dark。 */
   #loc, html.dark #loc, #loNav, html.dark #loNav{
@@ -895,25 +886,14 @@
 </head>
 <body>
 
-<!-- ⭐⭐⭐ 第一页（控制台）= `#app` + 这个 `<header>`；里面按 DOM 从上到下分四个板块。
-     命名对照见 `D:\AI\important\ds酱页面地图.md`（以后说"第一页第三板块"= 查询那栏）。
-     【第一板块（顶部那一行）】= 本 `<header>`（ds酱 / 状态点 / 连接中 / 深浅色切换）
-                      + 下面 `#app` 里 `render()` 动态生成的 topRow（💬和涵正说话 / 🔗中转页）。
-     ⚠️ 编号**按主人肉眼从上到下数**；`hidden` 分组主人看不见，**不算板块**。
-     ⭐⭐⭐ 2026-09-22 晚（主人：「把主页变成现在的第二页吧，然后在会话页的时候往右滑，
-     能划出来，而且不要全覆盖，覆盖一部分就行」）：
-     ⇒ 第一页不再是"打开就看到的层"，而是**从会话页左侧滑出的抽屉**（`#home` 包起来，78% 宽）。
-        · 会话页（#chat）变成底层、默认打开；`chX`（< 返回）改成打开抽屉
-        · 往右滑 / 返回键 ⇒ 划出抽屉；点遮罩 / 往左滑 ⇒ 收回去
-        · 层级：#homeMask 61 < #home 62 < #ledger 65 < #relay 70（账本/中转页照样盖在最上面） -->
+<!-- dsj-open 主页：顶栏（状态点 / 深浅色 / 刷新）+ 控制台（#app，按钮由 render() 按 /api/commands 生成）
+     + 上手引导（#guide）+ 消息流（#chBody，接收 /api/push 推送）。 -->
 <div id="home">
 <header>
   <span class="dot" id="dot"></span>
   <h1>dsj-open</h1>
-  <!-- ⭐ 2026-09-23：代理（Clash）状态点 —— **紧跟 DSH 右侧一点点**（主人当场定的位置）。
-       绿=Clash 在跑（手机能翻墙）、灰=没跑（正常，默认）。**只是显示，不控制任何开关**。 -->
   <span class="st" id="st">连接中</span>
-  <!-- ★★ 深色/浅色开关（主人 2026-09-17 从对话页挪过来）—— 图标：浅色显示月亮、深色显示太阳 -->
+  <!-- 深色/浅色开关：图标——浅色显示月亮、深色显示太阳 -->
   <button id="themeBtn" title="切换深色/浅色" aria-label="切换深色浅色">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path class="icoMoon" d="M20.6 14.7A8.7 8.7 0 0 1 9.3 3.4a8.7 8.7 0 1 0 11.3 11.3z"/>
@@ -928,11 +908,11 @@
   </button>
 </header>
 
-<!-- ⭐ 第一页（控制台）：内容全部由 `render()` 动态生成，四个板块 = 第一板块(顶部) + 控制 + 查询 + 内容 -->
-<div id="app"></div>
-
 <!-- 上手引导（JS 填） -->
 <div id="guide"></div>
+
+<!-- 控制台：按钮由 render() 按 /api/commands 动态生成 -->
+<div id="app"></div>
 
 <!-- 消息推送 -->
 <div class="sec">
@@ -941,11 +921,7 @@
 </div>
 
 <footer id="ver">—</footer>
-</div><!-- /#home（抽屉） -->
-
-
-
-
+</div><!-- /#home -->
 
 <!-- ⭐⭐ 2026-09-30 op：位置页 = **站内极简导航**（地图 + 附近搜索 + 四种方式时间 / 路线分段）。
      从主页「控制」板块的「📍 位置」进（render 里对 id==='loc' 特判）。
@@ -1091,7 +1067,6 @@ async function ping() {
   }
 }
 
-
 // ---------- 弹窗 ----------
 function openDlg(title, bodyHtml, buttons) {
   $('dTitle').textContent = title;
@@ -1158,8 +1133,6 @@ async function quickRun(id, title) {
     openDlg('出错', escapeHtml(String(e)));
   }
 }
-
-
 
 // ---------- 渲染 ----------
 function render() {
@@ -1243,7 +1216,8 @@ function renderGuide() {
       + '</div>'
       + '</div>';
     const q = document.getElementById('guideQr');
-    if (q) q.onclick = () => openWebLayer('https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(addr), '二维码');
+    // ⭐ 本地生成二维码（零依赖、离线）—— 原来打 api.qrserver.com 会把「地址+token」发给第三方
+    if (q) q.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
     const ok = document.getElementById('guideOk');
     if (ok) ok.onclick = () => { try { localStorage.setItem('dsj_onboard_done', '1'); } catch (e) {} renderGuide(); };
     return;
@@ -1255,9 +1229,9 @@ function renderGuide() {
   const c = document.getElementById('guideCopy');
   if (c) c.onclick = () => { try { navigator.clipboard.writeText(addr); toast('已复制地址'); } catch (e) { toast(addr); } };
   const q2 = document.getElementById('guideQr2');
-  if (q2) q2.onclick = () => openWebLayer('https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(addr), '二维码');
+  if (q2) q2.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
 }
-// ★★ 2026-09-17 主人要的：**文件内容直接嵌进对话里，展开就能看**
+// ★★ 2026-09-17 用户要的：**文件内容直接嵌进对话里，展开就能看**
 //
 // 原话：「你把正文写进折叠里去了，我要的是，**他汇报的txt，我能直接展开看**」
 //   ⇒ 不是"把我的长回复折起来"（那个我理解错了，已撤掉），
@@ -1273,7 +1247,7 @@ function renderGuide() {
 //   · 展开 → 内容出现在**对话里**（等宽、保留换行），不跳转、不开新窗口
 //   · 懒加载 + 只加载一次
 // ★★ 2026-09-17：**文件阅读** —— 按类型分流，内容**不经过我的上下文**
-//   主人：「干脆扩展成文件阅读怎么样? word，txt，md这类? 比如他做完，给你注入文件，
+//   用户：「干脆扩展成文件阅读怎么样? word，txt，md这类? 比如他做完，给你注入文件，
 //          直接让我看到，跟图片一样，你看我也看，**不对，你不准看**」
 //
 // 分流规则（决定权在我，写清取舍）：
@@ -1283,7 +1257,7 @@ function renderGuide() {
 //   ⚠️ **内容永远不经过我**：桥只传路径，页面自己去拉/去嵌。
 const TEXT_EXT = /.(md|txt|json|log|csv|js|ts|html|css|ya?ml|xml|ini|sh|ps1|bat)$/i;
 
-// ★★ 2026-09-19：**附件编辑** —— 主人要"点开就能直接改、每次保存自动备份"。
+// ★★ 2026-09-19：**附件编辑** —— 用户要"点开就能直接改、每次保存自动备份"。
 //   保存走新接口 POST /api/file/save（hub-server 负责备份+≤2MB 校验）。
 function toast(msg) {
   let t = document.getElementById('fetoast');
@@ -1388,12 +1362,12 @@ function renderFileFold(file) {
     //   ⚠️ 2026-09-17 修：原来条件是 `&& file.pdf` —— 那只认"**Office 转出来的 PDF**"。
     //      但从手机拉下来的文件**本身就可能是 PDF**（没有 `pdf` 字段）⇒ 会被漏掉。
     //      现在两种都认：有 `pdf` 字段就用它，否则用文件自己。
-    //   ⚠️⚠️ 2026-09-19 22:59 主人报：「**pdf看不了，还是白色的**」
+    //   ⚠️⚠️ 2026-09-19 22:59 用户报：「**pdf看不了，还是白色的**」
     //      根因：**Android Chrome 压根不支持内嵌 PDF**（`<embed type=application/pdf>` 永远白屏，
     //            它不调系统阅读器）⇒ 手机上这个 embed 必然一片白。
     //      ⇒ 修法：**手机端不内嵌，改成两个按钮**（⬇️ 下载 / ↗️ 用外部应用打开）；
     //        桌面浏览器保留内嵌（那边 embed 能用）。
-    //      ⚠️ 之前的 op 改成了"统一的按钮"但**样式失衡**（按钮/字号跟别处不搭）被主人回滚 ⇒
+    //      ⚠️ 之前的 op 改成了"统一的按钮"但**样式失衡**（按钮/字号跟别处不搭）被用户回滚 ⇒
     //        这次按钮**完全复用站内现有的 `.legbtn`/`.opbtn` 那套样式**，别自创。
     if (/\.pdf$/i.test(nm)) {
       const src = file.pdf ? (API + file.pdf) : (API + '/uploads/' + encodeURIComponent(nm));
@@ -1477,8 +1451,8 @@ function renderFileFold(file) {
   return wrap;
 }
 
-// ★★ 2026-09-22 op：**网页浮层卡片** —— 主人要「消息里点开一个网页小框，直接操作，不用切屏」。
-//   主人原话：「外面的，比如，后面几天你要提醒我打印准考证，那我直接点网页链接，
+// ★★ 2026-09-22 op：**网页浮层卡片** —— 用户要「消息里点开一个网页小框，直接操作，不用切屏」。
+//   用户原话：「外面的，比如，后面几天你要提醒我打印准考证，那我直接点网页链接，
 //             展开窗口后，直接操作，不需要切屏，有问题直接告诉你，操作完直接折叠完事」
 //   「不要80%，和那个插入txt占的大小一样，保持格式一致」「能不能调用带cookie的小框？」
 //
@@ -1545,16 +1519,16 @@ function renderWebFold(web) {
   wrap._url = url;   // ⭐ 2026-09-23：记下 URL —— 自动扫描时按它去重（同一条消息不重复出卡）
   det.addEventListener('toggle', () => {
     if (!det.open) return;
-    // 手机：叫原生浮层（浮层盖在上面了，卡片立刻收回 —— 主人「操作完直接折叠完事」）；
+    // 手机：叫原生浮层（浮层盖在上面了，卡片立刻收回 —— 用户「操作完直接折叠完事」）；
     // 电脑：没有桥 ⇒ openWebLayer 降级成新标签页。两条路都是"点一下就走"。
     det.open = false;
     openWebLayer(url, title);
   });
   return wrap;
 }
-// ⭐ 2026-09-23 op：**明文 URL 自动变「折叠网页卡片」** —— 主人原话：
+// ⭐ 2026-09-23 op：**明文 URL 自动变「折叠网页卡片」** —— 用户原话：
 //   「只要有链接，自动生成一个折叠的网页按钮」「不管你的还是 fht 发的，就只要有链接」
-//   任何消息（AI / 主人 / fht / 系统）渲染**定稿后**扫一次正文：正文里的 http(s) 明文链接
+//   任何消息（AI / 用户 / fht / 系统）渲染**定稿后**扫一次正文：正文里的 http(s) 明文链接
 //   ⇒ 自动生成一张跟 /api/push 的 web 卡片**一模一样**的折叠卡（复用 renderWebFold），
 //     点开还是走浮层（openWebLayer），不切 App。
 //   ⚠️ 幂等：重扫前先删掉自己上次加的（.autoweb）⇒ 流式收尾再扫也不会叠加。
@@ -1602,7 +1576,7 @@ function autoWebCards(el, text) {
   }
   stickToBottom();
 }
-//   ⚠️ 只标"注入/发图"这种**主人主动或电脑自动塞进来的**；AI 正常回答（chat/text）不标，避免噪音。
+//   ⚠️ 只标"注入/发图"这种**用户主动或电脑自动塞进来的**；AI 正常回答（chat/text）不标，避免噪音。
 function srcTagFor(mkind, image, detailImage) {
   if (image) return '（新图）';              // 手机/电脑发的图
   if (mkind === 'clip') return '（新注入内容）'; // 电脑剪贴板注入（clip-watch）
@@ -1622,7 +1596,7 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
     d.className = 'foldwrap ' + mk;
     const det = document.createElement('details');
     det.className = 'fold';
-    det.open = false;   // ★ 显式钉死"默认折叠"（主人 10:11 强调过；不写的话只能靠浏览器默认值）
+    det.open = false;   // ★ 显式钉死"默认折叠"（用户 10:11 强调过；不写的话只能靠浏览器默认值）
     const sum = document.createElement('summary');
     const fb = document.createElement('div');
     fb.className = 'foldbody';
@@ -1631,8 +1605,8 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
     d.appendChild(det);
     d._sum = sum;
     d._fb = fb;
-    d._detail = detail || '';   // 工具：折叠块里放**完整参数**（主人 10:11 要求）
-    d._foldImg = detailImage || '';   // 工具是"看图"时，折叠块里的配图（主人 10:47 要求）
+    d._detail = detail || '';   // 工具：折叠块里放**完整参数**（用户 10:11 要求）
+    d._foldImg = detailImage || '';   // 工具是"看图"时，折叠块里的配图（用户 10:47 要求）
     setFoldText(d, text || '');
     // ★★ 2026-09-17 不再直接 append —— 由 placeMsgTyped 决定
     //   挂到它**所属的那段正文**下面（工具箱）还是退回顶层（老行为）。
@@ -1641,8 +1615,8 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
   }
 
   d.className = 'bub ' + kind;
-  // ★★ 2026-09-19：来源标签 —— 主人一眼看出这条是怎么来的（发图/剪贴板注入）。
-  //   ⚠️ 只给"电脑推来的 pc"加；主人手打的消息（me）不加，那是他自己。
+  // ★★ 2026-09-19：来源标签 —— 用户一眼看出这条是怎么来的（发图/剪贴板注入）。
+  //   ⚠️ 只给"电脑推来的 pc"加；用户手打的消息（me）不加，那是他自己。
   if (kind === 'pc') {
     const tag = srcTagFor(mk, image, detailImage);
     if (tag) {
@@ -1663,7 +1637,7 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
     d.appendChild(img);
   }
   // ★★ 2026-09-17：**附件折叠块** —— 消息带文件时，展开直接在对话里看内容
-  //   （主人：「他汇报的txt，我能直接展开看」）
+  //   （用户：「他汇报的txt，我能直接展开看」）
   if (file && file.path) d.appendChild(renderFileFold(file));
   // ★★ 2026-09-22：**网页浮层卡片**（点开是原生小窗口，见 renderWebFold）
   if (web && web.url) d.appendChild(renderWebFold(web));
@@ -1674,10 +1648,10 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
       const el = document.createElement('button');
       el.textContent = b.label;
       if (b.warn) el.className = 'warn';
-      // ★★ 2026-09-17 主人给的思路（原话）：
+      // ★★ 2026-09-17 用户给的思路（原话）：
       //   「按了之后，不是注入消息，而是点了，然后换按钮背景，比如变绿，然后一个勾，
       //     或者变红一个叉」
-      //   ⇒ 点一下**不再冒充主人发一条消息**塞进对话里，而是按钮自己变成"已按"的样子：
+      //   ⇒ 点一下**不再冒充用户发一条消息**塞进对话里，而是按钮自己变成"已按"的样子：
       //     普通按钮 → 变绿 + ✓；warn 按钮 → 变红 + ✗。
       //     value 照样发回后端（提醒脚本靠它做事），只是不再污染对话记录。
       el.onclick = () => {
@@ -1692,7 +1666,7 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
     });
     d.appendChild(row);
   }
-  // ★★ 2026-09-17 主人要的：**选项卡**（单选/多选）
+  // ★★ 2026-09-17 用户要的：**选项卡**（单选/多选）
   //   和「按钮」的语义区别写在 renderOptions 的注释里。
   if (options && options.items && options.items.length) d.appendChild(renderOptions(options));
   body.appendChild(d);
@@ -1753,7 +1727,6 @@ function renderOptions(o) {
   return wrap;
 }
 
-
 /** 逐字流追加：把增量拼到原文上，然后**重画这段 Markdown**。
  *  为什么不直接 append 文字：正文里会有 `**`、`|` 表格、``` 代码块 ——
  *  只有整段重新解析才能边流边渲染成最终的样子（跟 dsh 网页一个感觉）。
@@ -1774,7 +1747,7 @@ function bubbleSet(el, text) {
 }
 
 // ---------- ⭐ Markdown 渲染（2026-09-17）----------
-// 主人要"跟 dsh 一样"：正文得是渲染过的文档，不是一串 `**` 和 `|`。
+// 用户要"跟 dsh 一样"：正文得是渲染过的文档，不是一串 `**` 和 `|`。
 // 自己写个够用的子集，**不引外部库**（手机走 Tailscale，离线也得能看）。
 // ⚠️ 安全：**先转义再解析**，源码里的 HTML 一律变实体；后面插进去的标签全是我们自己写的。
 function inlineMd(s) {
@@ -1789,7 +1762,7 @@ function inlineMd(s) {
   }).join('');
 }
 
-// ⭐ 2026-09-19：这些"语言标注"其实不是代码，是主人手写排版 ⇒ **块内也渲染 Markdown**。
+// ⭐ 2026-09-19：这些"语言标注"其实不是代码，是用户手写排版 ⇒ **块内也渲染 Markdown**。
 //   任何**真语言**（js / python / bash / json / …）不在名单里 ⇒ 保持原样（`a ** b` 的星号不能被吃）。
 const RENDER_AS_MD_LANGS = { '': 1, text: 1, txt: 1, md: 1, markdown: 1 };
 
@@ -1819,10 +1792,10 @@ function mdToHtmlEscaped(escaped) {
       i++;
       while (i < lines.length && lines[i].indexOf(fence) !== 0) { code.push(lines[i]); i++; }
       i++;
-      // ⭐ 2026-09-19 按【语言标注】区分（主人：「那代码块里也渲染吧，全是星号有点难读」）：
+      // ⭐ 2026-09-19 按【语言标注】区分（用户：「那代码块里也渲染吧，全是星号有点难读」）：
       //   · 无语言 / text / txt / md / markdown ⇒ 当 Markdown 排版渲染（粗体/斜体/链接/行内码）
       //   · 真语言（js/python/bash/json/…）⇒ 一字不动 —— 否则 `a ** b` 的星号会被粗体规则吃掉
-      //   ⚠️ 渲染时**保留"块"的外观**（`.mdblock`）—— 主人看后马上说「代码块直接没了」，
+      //   ⚠️ 渲染时**保留"块"的外观**（`.mdblock`）—— 用户看后马上说「代码块直接没了」，
       //      他要的是"块还在、里面的星号没了"，不是把它拆成普通段落。
       if (RENDER_AS_MD_LANGS[lang.toLowerCase()]) out.push('<div class="mdblock">' + mdToHtmlEscaped(code.join('\n')) + '</div>');
       else out.push('<pre><code' + (lang ? ' data-lang="' + lang + '"' : '') + '>' + code.join('\n') + '</code></pre>');
@@ -1895,12 +1868,12 @@ function setFoldText(el, raw) {
     return;
   }
   // 工具：上面一行是短摘要，展开看到的是**完整命令 / 完整参数**（+ 看图时把图也放进来）。
-  // 主人 10:11：「工具调用以前总结成一句短句也是因为不能折叠，现在能折叠了，你也完整发出来吧」
+  // 用户 10:11：「工具调用以前总结成一句短句也是因为不能折叠，现在能折叠了，你也完整发出来吧」
   el._sum.textContent = s || '🔧 工具';
   renderFoldBody(el, el._detail || s);
 }
 
-/** 折叠块的正文。★ 有图就先放图 —— 主人 10:47：
+/** 折叠块的正文。★ 有图就先放图 —— 用户 10:47：
  *  「你看图的时候…我想打开一起看看！所以发过来，放在那个折叠里」 */
 function renderFoldBody(el, text) {
   const fb = el._fb;
@@ -1930,7 +1903,7 @@ function setMsgText(el, raw, force) {
     el._lr = now;
     t.innerHTML = mdToHtml(raw);
   } else {
-    t.textContent = raw;                              // 涵正自己发的原样显示
+    t.textContent = raw;                              // 用户自己发的原样显示
   }
   const body = $('chBody');
   stickToBottom();
@@ -1946,7 +1919,6 @@ function openHome() { try { window.scrollTo(0, 0); } catch (e) {} }
 function closeHome() {}
 function closeHomeNow() {}
 
-
 // 手机返回键：APK 映射成 WebView goBack ⇒ 触发 popstate。
 let suppressPop = false;
 window.addEventListener('popstate', function () {
@@ -1956,9 +1928,7 @@ window.addEventListener('popstate', function () {
   if (window.__locOpen) { window.__closeLocNow(); return; }
 });
 
-
-
-// ★★ 2026-09-17 主人要的：**滚动锚点** —— 我生成的时候他往上滑，不该被拽回底部。
+// ★★ 2026-09-17 用户要的：**滚动锚点** —— 我生成的时候他往上滑，不该被拽回底部。
 //   病根：`bubble()` / `setMsgText()` 里三处 `body.scrollTop = body.scrollHeight`
 //         全是**无条件**滚到底 ⇒ 只要我来新字，他正在看的地方就被拽走。
 //   做法：**贴底才跟随** —— 离底 ≤ 48px 才算"贴着底"；他往上滑了就不动他的视口。
@@ -1969,7 +1939,7 @@ const STICK_TOL = 48;
 // ══════════════════════════════════════════════════════════════════════
 // ★★ 2026-09-18 **重做**：粘底滚动（dsh + op 共用同一套实现）
 //   原型：9/17 那版 `stickBottom + lastSelfScroll(250ms) + MutationObserver`
-//   （见备份 `index.html.bak-before-sticky-redo-*`，说明见桌面《ds酱滚动贴底-重做说明.md》）
+//   （记于早期版本；现在的实现见下面 makeSticky）
 //
 //   🔴 原型两个真 bug（今天探针实测复现）：
 //     ① **250ms 时间窗判断"自己滚的"** —— 流式生成时 `setMsgText()` 每 60ms 就滚一次，
@@ -1986,7 +1956,7 @@ const STICK_TOL = 48;
 //        视口不会因为顶部内容消失而跳。
 // ══════════════════════════════════════════════════════════════════════
 function makeSticky(getEl, tol) {
-  // ★★ 2026-09-18 第二版（主人定的语义）：
+  // ★★ 2026-09-18 第二版（用户定的语义）：
   //   「我在最底下的时候，他就继续生成往上滚；**我往上拉就立马取消跟随**」
   //   三个改动（针对"代码块流式时往上拉被强行弹下来 + 抖动"）：
   //     ① 上滑**哪怕 1px** 就停手 —— 不再拿 48px 容差当"继续跟随"的依据
@@ -2002,7 +1972,7 @@ function makeSticky(getEl, tol) {
   }
   function onScroll() {
     const e = el(); if (!e) return;
-    // ★★★ 2026-09-18 第四版（主人定的**最简规则**）：
+    // ★★★ 2026-09-18 第四版（用户定的**最简规则**）：
     //   「我在最底下（≈1px）就自动往下滚；我只要往上滑，就立马停止跟随。」
     //   判据只有两条，且**只对真实用户输入生效**（`userUntil` = 输入后 800ms 窗口）：
     //     · 滚到"极底"（2px 内）⇒ 跟随
@@ -2042,7 +2012,7 @@ function makeSticky(getEl, tol) {
   //   `userMovedUp()` 误判成"用户上滑" ⇒ force 被自己的闸挡掉，人就停在顶上。
   //   ⇒ hardForce：先把锚点记账清空（lastSetTop=-1，userMovedUp 必为 false）再滚，绝对到底。
   function hardForce() { S.stick = true; S.lastSetTop = -1; S.lastHeight = -1; scroll(); }
-  // ★★ 2026-09-18 首屏补底（主人：「一刷新就在当前聊天位置」）：
+  // ★★ 2026-09-18 首屏补底（用户：「一刷新就在当前聊天位置」）：
   //   手机 WebView 比无头 Chrome 慢，hardForce 之后内容还在长高（图片 / 字体 / 折叠块），
   //   中途一旦被 `userMovedUp` 误判 ⇒ stick 掉了，人就停在"差最后一截"的地方。
   //   ⇒ 首屏这几秒多补几帧（定次数，不占 rAF）；**只要用户真的动了手就立刻停**。
@@ -2142,9 +2112,9 @@ function isNearBottom(el) { return dshScroll.atBottom(); }   // 兼容老引用
 // ★ 2026-09-18 重做：观察器/滚动监听统一由 dshScroll.bind() 挂（同一份实现，别在这另起一份）
 function watchChBodyResize() { dshScroll.bind(); }
 
-// ★★ 2026-09-19 禁止自动重载（主人：「禁止刷新，吞字数吞了我一篇百年孤独了都」）
+// ★★ 2026-09-19 禁止自动重载（用户：「禁止刷新，吞字数吞了我一篇百年孤独了都」）
 //   ⇒ 检测到服务端页面换新版时**不再 location.reload()**，改成给刷新键 #chReload 挂 .hasnew 红点；
-//     要不要刷由主人自己按 ⟳ 决定（按 ⟳ 照旧 reload，重载后红点自然消失）。
+//     要不要刷由用户自己按 ⟳ 决定（按 ⟳ 照旧 reload，重载后红点自然消失）。
 //   ⚠️ 版本检测本身保留 —— 红点就靠它亮。
 function markNewVersion() {
   try {
@@ -2235,7 +2205,7 @@ function openPlusPanel() {
   if (g) g.onclick = () => { closeDlg(); window.DsNative.pickPhoto(); };
 }
 
-// ★★ 深色/浅色切换（2026-09-17 主人要的；**开关在主页头部**，不在对话页）
+// ★★ 深色/浅色切换（2026-09-17 用户要的；**开关在主页头部**，不在对话页）
 //   选择存 localStorage：重载/自动重载之后都记得住。
 //   图标：当前浅色 → 月亮（点它变深）；当前深色 → 太阳。
 //   ⚠️ 用 class 找图标（.icoMoon/.icoSun）而不是 id —— 这个图标现在只在主页头部一份，
@@ -2255,11 +2225,6 @@ $('themeBtn').onclick = () => {
   applyTheme();
 };
 applyTheme();
-
-
-
-
-
 
 // ---------- 启动 ----------
 (async () => {
@@ -2294,13 +2259,13 @@ async function versionCheck() {
     // 带时间戳把任何缓存层顶掉（WebView 对接口响应的缓存很顽固，实测踩过）
     const j = await (await fetch(API + '/api/version?t=' + Date.now(), { cache: 'no-store' })).json();
     if (j && j.version && MY_VER && MY_VER !== VER_SENTINEL && j.version !== MY_VER) {
-      markNewVersion();       // ★ 2026-09-19：服务端换新版 ⇒ 只点红点，由主人自己按 ⟳
+      markNewVersion();       // ★ 2026-09-19：服务端换新版 ⇒ 只点红点，由用户自己按 ⟳
     }
   } catch (e) { /* 断网忽略 */ }
 }
 </script>
 
-<!-- ⭐ 2026-09-19 19:05 图片放大层（主人：「加个点击图片，能放大看的功能」） -->
+<!-- ⭐ 2026-09-19 19:05 图片放大层（用户：「加个点击图片，能放大看的功能」） -->
 <div id="imgView">
   <img id="imgBig" alt="">
   <button id="imgClose" aria-label="关闭">✕</button>
@@ -2423,7 +2388,7 @@ async function versionCheck() {
   var mainView = { mapId: 'loMap', msgId: 'loMapMsg', map: null, startMarker: null, endMarker: null, line: null };
   var navView  = { mapId: 'loNvMap', msgId: 'loNvMsg', map: null, startMarker: null, endMarker: null, line: null };
   var amapPromise = null;
-  var ROUTE_COLOR = '#ff8a3d';   // ⭐ 2026-09-30 路线折线改回**暖橙**（跟 ds酱 暖色调一致；浅色地图上看得很清，别用蓝）
+  var ROUTE_COLOR = '#ff8a3d';   // 路线折线用**暖橙**（浅色地图上看得很清）
   var currentPoi = null;
   var routes = {};              // mode -> {ok,distance,duration,cost,steps,polyline,...}
   var curMode = 'driving';
@@ -2591,7 +2556,7 @@ async function versionCheck() {
         setStat('⚠️ 浏览器定位失败：' + (err && err.message ? err.message : err), true); done();
       }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
     } else {
-      setStat('⚠️ 定位只能在 ds酱 App 里用（网页没有定位能力）', true); done();
+      setStat('⚠️ 定位只能在手机 App 里用（网页没有定位能力）', true); done();
     }
   }
 
@@ -2822,7 +2787,7 @@ async function versionCheck() {
     drawLineOf(navView, (r.polyline && r.polyline.length > 1) ? r.polyline : []);
   }
 
-  // ---- 开始导航（唯一会跳出 ds酱 的按钮；语音播报只有地图 App 有）----
+  // ---- 开始导航（唯一会跳出本页的按钮；语音播报只有地图 App 有）----
   function startNav() {
     if (!currentPoi) { setStat('先搜一个地方、点开路线', true); return; }
     var p = currentPoi;

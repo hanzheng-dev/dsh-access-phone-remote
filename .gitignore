@@ -47,6 +47,13 @@ docs/_test_push.json
 docs/_sc*.js
 docs/shots/
 
+test/_qr_ref*.json
+
+.edge-*/
+.edge-*
+.test-run/
+.shot-run/
+
 # ---- 系统杂项 ----
 .DS_Store
 Thumbs.db
