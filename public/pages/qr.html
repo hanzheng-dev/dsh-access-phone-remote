@@ -6,118 +6,249 @@
 <title>扫码连接 · dsj-open</title>
 <style>
   :root {
-    --bg: #faf8f4;
-    --fg: #3a382f;
-    --dim: #8f8a7d;
-    --line: rgba(58,56,47,.12);
-    --card: #fffefb;
+    --bg: #faf9f6;
+    --fg: #26241f;
+    --mid: #5c584e;
+    --dim: #928c7e;
+    --line: #e6e2d9;
+    --line-strong: #d5cfc2;
+    --card: #ffffff;
+    --accent: #2f2c25;
+    --warn: #8a6d3b;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#1c1b19; --fg:#e8e5df; --dim:#8f8a7d; --line:rgba(255,255,255,.12); --card:#252422; }
+    :root {
+      --bg: #171614;
+      --fg: #ebe8e1;
+      --mid: #a8a396;
+      --dim: #7a7568;
+      --line: #2e2c28;
+      --line-strong: #3d3a34;
+      --card: #1f1e1b;
+      --accent: #ebe8e1;
+      --warn: #c9a961;
+    }
   }
   * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
   body {
-    margin: 0; min-height: 100vh;
-    background: var(--bg); color: var(--fg);
-    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    margin: 0;
+    padding: 20px 16px 32px;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.65 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap { width: 100%; max-width: 380px; }
-  .card {
+  .wrap {
+    max-width: 392px;
+    margin: 0 auto;
+  }
+
+  .head { margin-bottom: 20px; }
+  .head h1 { margin: 0 0 4px; font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+  .head p { margin: 0; font-size: 12.5px; color: var(--dim); }
+
+  .qrbox {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 22px 20px 20px;
-    box-shadow: 0 6px 28px rgba(0,0,0,.07);
+    border-radius: 14px;
+    padding: 18px;
     text-align: center;
   }
-  .title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
-  .sub { font-size: 12.5px; color: var(--dim); margin-bottom: 18px; }
   #qr { display: inline-block; line-height: 0; }
-  #qr svg { border-radius: 8px; }
-  .url {
-    margin-top: 16px; padding: 10px 12px;
-    background: rgba(127,127,127,.08);
-    border-radius: 10px;
-    font-family: ui-monospace, Consolas, monospace;
-    font-size: 11.5px; color: var(--dim);
-    word-break: break-all; line-height: 1.5;
-    user-select: all;
+  #qr svg { border-radius: 4px; }
+
+  .addr {
+    margin-top: 14px;
+    padding: 9px 11px;
+    background: rgba(128,128,128,.06);
+    border-radius: 8px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--mid);
+    word-break: break-all;
+    line-height: 1.5;
+    text-align: left;
   }
-  .hint { margin-top: 16px; font-size: 12.5px; color: var(--dim); line-height: 1.7; text-align: left; }
-  .hint b { color: var(--fg); font-weight: 600; }
-  .btns { margin-top: 18px; display: flex; gap: 8px; }
+
+  .section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .section-h {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 10px;
+  }
+  .item {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+  }
+  .item:last-child { border-bottom: 0; }
+  .item .mark { flex: none; width: 14px; font-size: 11px; color: var(--dim); }
+  .item.on .mark { color: var(--fg); font-weight: 700; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .ip { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: var(--fg); }
+  .item.on .ip { font-weight: 600; }
+  .item .note { font-size: 11.5px; color: var(--dim); margin-top: 1px; }
+  .item .tag {
+    flex: none; font-size: 10.5px; padding: 2px 7px; border-radius: 4px;
+    border: 1px solid var(--line-strong); color: var(--dim);
+  }
+  .item.on .tag { border-color: var(--accent); color: var(--accent); }
+
+  .notes {
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--dim); line-height: 1.85;
+  }
+  .notes b { color: var(--mid); font-weight: 600; }
+  .warn { color: var(--warn); }
+
+  .btns { margin-top: 20px; display: flex; gap: 8px; }
   button {
-    flex: 1; padding: 11px 14px; border-radius: 11px;
-    border: 1px solid var(--line); background: transparent;
-    color: var(--fg); font: inherit; font-size: 13.5px; cursor: pointer;
+    flex: 1; padding: 10px 14px; border-radius: 9px;
+    border: 1px solid var(--line-strong); background: transparent;
+    color: var(--fg); font: inherit; font-size: 13px; cursor: pointer;
+    transition: opacity .15s;
   }
-  button:active { opacity: .6; }
-  .err { color: #c0392b; font-size: 13px; padding: 20px 0; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  button:active { opacity: .55; }
+
+  .empty { padding: 24px 0; text-align: center; color: var(--dim); font-size: 12.5px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="card">
-    <div class="title">📱 扫码连接</div>
-    <div class="sub">用手机扫一下，自动打开并完成鉴权</div>
-    <div id="qr"></div>
-    <div class="url" id="url">—</div>
-    <div class="hint">
-      · 手机和电脑要在<b>同一个网络</b>（WiFi 或 Tailscale）<br>
-      · 扫完会种一个 <b>180 天</b>的凭证，之后直接访问即可<br>
-      · <b>别截图分享</b> —— 这张码等于你的访问权限
-    </div>
-    <div class="btns">
-      <button id="copy">复制链接</button>
-      <button id="close">关闭</button>
-    </div>
+
+  <div class="head">
+    <h1>扫码连接</h1>
+    <p>用手机扫下面的码，自动打开并完成鉴权</p>
   </div>
+
+  <div class="qrbox">
+    <div id="qr"><div class="empty">生成中</div></div>
+    <div class="addr" id="addr">&nbsp;</div>
+  </div>
+
+  <div class="section" id="listSection" style="display:none">
+    <div class="section-h">可用地址</div>
+    <div id="list"></div>
+  </div>
+
+  <div class="notes">
+    <div>手机与电脑需在<b>同一网络</b>。</div>
+    <div>扫码后会记住 <b>180 天</b>的访问凭证，之后直接打开即可。</div>
+    <div class="warn">此码等同访问权限，请勿截图分享。</div>
+  </div>
+
+  <div class="btns">
+    <button id="copy">复制链接</button>
+    <button id="close" class="primary">关闭</button>
+  </div>
+
 </div>
 
 <script src="/qr.js"></script>
 <script>
 (function () {
-  const $ = (id) => document.getElementById(id);
+  var $ = function (id) { return document.getElementById(id); };
+  var list = [];
+  var current = null;
 
-  // 目标地址：?u=<encoded> —— 没给就用当前页面的 origin
-  function targetUrl() {
-    const q = new URLSearchParams(location.search).get('u');
-    if (q) return q;
-    // 兜底：用当前 origin（去掉 /qr.html）
-    return location.origin + '/';
-  }
+  var KIND_TAG = { lan: '局域网', tailscale: 'Tailscale', virtual: '虚拟', loopback: '本机', public: '公网' };
 
-  const url = targetUrl();
-  $('url').textContent = url;
-
-  // 生成二维码（本地、离线、不联网）
-  try {
-    if (!window.QRLite) throw new Error('qr.js 没加载');
-    window.QRLite.into($('qr'), url, 240);
-  } catch (e) {
-    $('qr').innerHTML = '<div class="err">二维码生成失败：' + e.message + '</div>';
-  }
-
-  // 复制
-  $('copy').onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      $('copy').textContent = '已复制 ✓';
-      setTimeout(() => ($('copy').textContent = '复制链接'), 1500);
-    } catch {
-      // 降级：选中文本
-      const r = document.createRange();
-      r.selectNodeContents($('url'));
-      const s = getSelection();
-      s.removeAllRanges(); s.addRange(r);
-      $('copy').textContent = '已选中，手动复制';
+  function render() {
+    if (!current) {
+      $('qr').innerHTML = '<div class="empty">没有可用地址</div>';
+      $('addr').textContent = '—';
+      return;
     }
+    try {
+      if (!window.QRLite) throw new Error('qr.js 未加载');
+      window.QRLite.into($('qr'), current.url, 232);
+    } catch (e) {
+      $('qr').innerHTML = '<div class="empty">二维码生成失败<br>' + e.message + '</div>';
+    }
+    $('addr').textContent = current.url;
+
+    var box = $('list');
+    box.innerHTML = '';
+    if (list.length <= 1) { $('listSection').style.display = 'none'; return; }
+    $('listSection').style.display = '';
+
+    list.forEach(function (a) {
+      var row = document.createElement('div');
+      row.className = 'item' + (a.ip === current.ip ? ' on' : '');
+
+      var mark = document.createElement('div');
+      mark.className = 'mark';
+      mark.textContent = a.ip === current.ip ? '●' : '○';
+
+      var body = document.createElement('div');
+      body.className = 'body';
+      var ip = document.createElement('div');
+      ip.className = 'ip';
+      ip.textContent = a.ip;
+      var note = document.createElement('div');
+      note.className = 'note';
+      note.textContent = a.label || '';
+      body.appendChild(ip);
+      body.appendChild(note);
+
+      var tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = KIND_TAG[a.kind] || '地址';
+
+      row.appendChild(mark);
+      row.appendChild(body);
+      row.appendChild(tag);
+      row.addEventListener('click', function () { current = a; render(); });
+      box.appendChild(row);
+    });
+  }
+
+  fetch('/api/addresses', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var q = new URLSearchParams(location.search).get('u');
+      if (j && j.ok && j.addresses && j.addresses.length) {
+        list = j.addresses.filter(function (a) { return a.kind !== 'loopback'; });
+        if (!list.length) list = j.addresses;
+        current = (j.recommended && list.indexOf(j.recommended) >= 0) ? j.recommended : list[0];
+      } else {
+        list = [{ ip: location.hostname, url: location.origin + '/', kind: 'lan', label: '当前地址' }];
+        current = list[0];
+      }
+      if (q) {
+        list = [{ ip: '链接指定', url: q, kind: 'lan', label: '由链接参数指定' }].concat(list);
+        current = list[0];
+      }
+      render();
+    })
+    .catch(function () {
+      var q = new URLSearchParams(location.search).get('u');
+      list = [{ ip: location.hostname, url: q || (location.origin + '/'), kind: 'lan', label: '当前地址' }];
+      current = list[0];
+      render();
+    });
+
+  $('copy').onclick = function () {
+    if (!current) return;
+    var btn = $('copy');
+    var done = function () {
+      btn.textContent = '已复制';
+      setTimeout(function () { btn.textContent = '复制链接'; }, 1400);
+    };
+    var fallback = function () {
+      var r = document.createRange();
+      r.selectNodeContents($('addr'));
+      var s = getSelection();
+      s.removeAllRanges(); s.addRange(r);
+      btn.textContent = '已选中';
+      setTimeout(function () { btn.textContent = '复制链接'; }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(current.url).then(done, fallback);
+    } else { fallback(); }
   };
 
-  // 关闭（如果是被 openWebLayer 打开的浮层，就关掉；否则返回）
-  $('close').onclick = () => {
+  $('close').onclick = function () {
     if (window.DsNative && typeof window.DsNative.closeWeb === 'function') {
       try { window.DsNative.closeWeb(); return; } catch (e) {}
     }

@@ -34,13 +34,13 @@ function ps(script, timeout = 20000) {
 // ============================================================
 const COMMANDS = [
   {
-    id: 'open_web', label: '🌐 浏览器', group: 'control', confirm: false,
+    id: 'open_web', label: '浏览器', group: 'control', confirm: false,
     desc: '手机端在浮层里打开网页（前端特判，不经过电脑）',
     // 打开网页是手机端的事 ⇒ 前端对 id==='open_web' 特判；这里留 no-op 占位。
     async run() { return { ok: false, text: '这个按钮由手机前端直接处理' }; },
   },
   {
-    id: 'screenshot', label: '🖥️ 桌面截图', group: 'control', confirm: false,
+    id: 'screenshot', label: '桌面截图', group: 'control', confirm: false,
     desc: '截屏并返回图片',
     async run() {
       const hh = new Date().getHours();
@@ -49,21 +49,21 @@ const COMMANDS = [
       fs.mkdirSync(path.dirname(out), { recursive: true });
       const r = await ps(`Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b = New-Object System.Drawing.Bitmap([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width, [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height); $g = [System.Drawing.Graphics]::FromImage($b); $g.CopyFromScreen(0,0,0,0,$b.Size); $b.Save('${out.replace(/\\/g, '\\\\')}'); $g.Dispose(); $b.Dispose(); 'ok'`, 30000);
       if (!r.ok || !fs.existsSync(out)) return { ok: false, text: '截图失败: ' + (r.err || '文件未生成') };
-      return { ok: true, text: '📸 已截图', image: '/shots/' + path.basename(out) };
+      return { ok: true, text: '已截图', image: '/shots/' + path.basename(out) };
     },
   },
   {
-    id: 'show_desktop', label: '🗔 显示桌面', group: 'control', confirm: false,
+    id: 'show_desktop', label: '显示桌面', group: 'control', confirm: false,
     desc: '最小化所有窗口（Win+D 效果）',
     async run() {
       const r = await ps(`(New-Object -ComObject Shell.Application).MinimizeAll(); 'ok'`, 12000);
       return (r.ok && r.out.indexOf('ok') >= 0)
-        ? { ok: true, text: '🗔 已最小化所有窗口' }
+        ? { ok: true, text: '已最小化所有窗口' }
         : { ok: false, text: '最小化失败: ' + (r.err || '未知') };
     },
   },
   {
-    id: 'stop', label: '🛑 停', group: 'control', confirm: false,
+    id: 'stop', label: '停', group: 'control', confirm: false,
     desc: '中断当前任务（开源版占位实现）',
     // ⭐ 占位实现（拍板 (b)）：保留 id，前端不报 400。
     //   接入你自己的长任务 / 中断系统（消息队列、子进程句柄、AI 回合取消…）时，
@@ -71,7 +71,7 @@ const COMMANDS = [
     async run() { return { ok: true, text: '当前没有进行中的任务' }; },
   },
   {
-    id: 'status', label: '📈 状态', group: 'query',
+    id: 'status', label: '状态', group: 'query',
     desc: '服务运行状态（通用信息）',
     async run() {
       const up = Math.round(process.uptime());
@@ -82,7 +82,7 @@ const COMMANDS = [
       try { version = require(path.join(config.projectRoot, 'package.json')).version || '?'; } catch (e) { /* 没有 package.json 就算了 */ }
       return {
         ok: true, text:
-          `📈 服务状态\n` +
+          `服务状态\n` +
           `运行: ${Math.floor(up / 3600)}h ${Math.floor(up % 3600 / 60)}m\n` +
           `内存: ${used}/${total} MB（${Math.round(used / total * 100)}%）\n` +
           `平台: ${process.platform} ${process.arch}\n` +

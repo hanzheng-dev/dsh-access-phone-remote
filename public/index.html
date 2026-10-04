@@ -225,6 +225,9 @@
   .btn:active{background:#e9e9e6;transform:scale(.99)}
   .btn .ico{font-size:18px;flex:none;line-height:1}
   .btn .tx{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 无图标时（开源版去掉了 emoji）—— 文字居中、稍大，撑起视觉重心 */
+  .btn.no-ico{justify-content:center}
+  .btn.no-ico .tx{flex:none;text-align:center;font-size:15px;font-weight:500;letter-spacing:.01em}
   .btn.warn{background:rgba(180,50,47,.09)}
   .btn.warn:active{background:rgba(180,50,47,.15)}
   /* 2026-09-19：🍶 酒馆面板里"关闭X"状态的**警示色**（红底白字，手机上一眼看出正在跑） */
@@ -924,7 +927,7 @@
 </div><!-- /#home -->
 
 <!-- ⭐⭐ 2026-09-30 op：位置页 = **站内极简导航**（地图 + 附近搜索 + 四种方式时间 / 路线分段）。
-     从主页「控制」板块的「📍 位置」进（render 里对 id==='loc' 特判）。
+     从主页「控制」板块的「位置」进（render 里对 id==='loc' 特判）。
      ⛔ 默认全在站内看，**不跳转**；只有「↗ 开始导航（跳高德）」那颗小按钮才跳地图 App。 -->
 <div id="loc">
   <div id="loBar">
@@ -933,7 +936,7 @@
         <path d="M17.4 4.4L5.2 12l12.2 7.6"/>
       </svg>
     </button>
-    <b>📍 导航</b>
+    <b>导航</b>
     <button id="loRefresh" title="重新定位" aria-label="重新定位">⟳</button>
   </div>
   <div id="loBody">
@@ -950,10 +953,10 @@
     <div id="loPois"></div>
     <div id="loRoute" hidden>
       <div id="loModes">
-        <button data-mode="driving">🚗<span class="t">…</span></button>
-        <button data-mode="walking">🚶<span class="t">…</span></button>
-        <button data-mode="bicycling">🚲<span class="t">…</span></button>
-        <button data-mode="transit">🚌<span class="t">…</span></button>
+        <button data-mode="driving">驾车<span class="t">…</span></button>
+        <button data-mode="walking">步行<span class="t">…</span></button>
+        <button data-mode="bicycling">骑行<span class="t">…</span></button>
+        <button data-mode="transit">公交<span class="t">…</span></button>
       </div>
       <div id="loRouteHead">
         <div id="loRouteTo">—</div>
@@ -963,8 +966,8 @@
       <button id="loNavStart">↗ 开始导航（跳高德 App）</button>
     </div>
     <div class="lo-btns">
-      <button id="loGet" class="primary">📍 定位</button>
-      <button id="loCopy">📋 复制坐标</button>
+      <button id="loGet" class="primary">定位</button>
+      <button id="loCopy">复制坐标</button>
     </div>
     <details id="loCoordBox">
       <summary>坐标信息</summary>
@@ -996,10 +999,10 @@
   <div id="loNvHead">
     <div id="loNvSum">—</div>
     <div id="loNvModes">
-      <button data-mode="driving">🚗<span class="t">…</span></button>
-      <button data-mode="walking">🚶<span class="t">…</span></button>
-      <button data-mode="bicycling">🚲<span class="t">…</span></button>
-      <button data-mode="transit">🚌<span class="t">…</span></button>
+      <button data-mode="driving">驾车<span class="t">…</span></button>
+      <button data-mode="walking">步行<span class="t">…</span></button>
+      <button data-mode="bicycling">骑行<span class="t">…</span></button>
+      <button data-mode="transit">公交<span class="t">…</span></button>
     </div>
   </div>
   <div id="loNvMapWrap">
@@ -1046,7 +1049,7 @@ async function sendImageToDsh(file) {
     if (!j.ok) { bubble('sys', '✗ 上传失败：' + (j.error || '未知')); return; }
     const p = await fetch(API + '/api/push', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: '📷 拍照', image: j.url, kind: 'chat' }),
+      body: JSON.stringify({ text: '拍照', image: j.url, kind: 'chat' }),
     });
     if (!p.ok) bubble('sys', '✗ 推送失败');
   } catch (e) { bubble('sys', '✗ 上传失败：' + e.message); }
@@ -1155,7 +1158,7 @@ function render() {
   top.style.marginBottom = '8px';
   const up = document.createElement('button');
   up.className = 'btn';
-  up.innerHTML = '<span class="ico">📎</span><span class="tx">传文件 / 拍照</span>';
+  up.innerHTML = '<span class="ico">+</span><span class="tx">传文件 / 拍照</span>';
   up.onclick = () => openPlusPanel();
   top.appendChild(up);
   app.appendChild(top);
@@ -1169,9 +1172,13 @@ function render() {
     grid.className = 'grid';
     g.items.forEach((c) => {
       const b = document.createElement('button');
-      b.className = 'btn' + (c.confirm ? ' warn' : '');
+      // label 形如「图标 文字」时拆开渲染；纯文字（开源版去掉了 emoji）就只渲染文字
       const parts = c.label.split(' ');
-      b.innerHTML = `<span class="ico">${parts[0]}</span><span class="tx">${parts.slice(1).join(' ') || parts[0]}</span>`;
+      const hasIcon = parts.length > 1;
+      b.className = 'btn' + (c.confirm ? ' warn' : '') + (hasIcon ? '' : ' no-ico');
+      const icoHtml = hasIcon ? `<span class="ico">${parts[0]}</span>` : '';
+      const txText = hasIcon ? parts.slice(1).join(' ') : parts[0];
+      b.innerHTML = icoHtml + `<span class="tx">${txText}</span>`;
       b.onclick = () => {
         if (c.id === 'open_web') { openWebBrowser(); return; }
         if (c.id === 'loc') { openLoc(); return; }
@@ -1202,7 +1209,7 @@ function renderGuide() {
   try { done = !!localStorage.getItem('dsj_onboard_done'); } catch (e) {}
   if (!done) {
     box.innerHTML = '<div class="guide">'
-      + '<div class="guide-h">👋 dsj-open 已启动</div>'
+      + '<div class="guide-h">dsj-open 已启动</div>'
       + '<div class="guide-addr">手机访问：<b>' + escapeHtml(addr) + '</b></div>'
       + '<div class="guide-sub">下一步：</div>'
       + '<ul class="guide-list">'
@@ -1211,7 +1218,7 @@ function renderGuide() {
       + '<li>□ 装 APK（可选，体验更好）</li>'
       + '</ul>'
       + '<div class="guide-act">'
-      + '<button class="btn" id="guideQr"><span class="tx">📱 二维码</span></button>'
+      + '<button class="btn" id="guideQr"><span class="tx">二维码</span></button>'
       + '<button class="btn" id="guideOk"><span class="tx">知道了</span></button>'
       + '</div>'
       + '</div>';
@@ -1289,7 +1296,7 @@ function enterEdit(fb, path, origText) {
   const row = document.createElement('div');
   row.className = 'feact';
   const saveBtn = document.createElement('button');
-  saveBtn.type = 'button'; saveBtn.className = 'fed-btn primary'; saveBtn.textContent = '💾 保存';
+  saveBtn.type = 'button'; saveBtn.className = 'fed-btn primary'; saveBtn.textContent = '保存';
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button'; cancelBtn.className = 'fed-btn'; cancelBtn.textContent = '↩️ 取消';
   row.appendChild(saveBtn); row.appendChild(cancelBtn);
@@ -1311,11 +1318,11 @@ function enterEdit(fb, path, origText) {
         fb._editing = false;
         toast('已保存'); stickToBottom();
       } else {
-        saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+        saveBtn.disabled = false; saveBtn.textContent = '保存';
         toast('保存失败: ' + ((jj && jj.error) || '未知'));
       }
     } catch (e) {
-      saveBtn.disabled = false; saveBtn.textContent = '💾 保存';
+      saveBtn.disabled = false; saveBtn.textContent = '保存';
       toast('保存失败: ' + e.message);
     }
   };
@@ -1334,7 +1341,7 @@ function renderFileFold(file) {
   const sum = document.createElement('summary');
   const ft = document.createElement('span'); ft.className = 'ft';
   const fn = document.createElement('span'); fn.className = 'fn';
-  ft.textContent = '📄 ' + ((file && file.name) || '(文件)');
+  ft.textContent = '' + ((file && file.name) || '(文件)');
   fn.textContent = (file && file.size)
     ? (file.size >= 1024 ? Math.round(file.size / 1024) + ' KB' : file.size + ' B') : '';
   sum.appendChild(ft); sum.appendChild(fn);
@@ -1474,7 +1481,7 @@ function openWebLayer(url, title) {
   }
   window.open(url, '_blank');
 }
-// ⭐ 2026-09-22 op：主页「控制」板块的 🌐 浏览器按钮走这里（前端特判，**不经过电脑**）。
+// ⭐ 2026-09-22 op：主页「控制」板块的 浏览器按钮走这里（前端特判，**不经过电脑**）。
 //   手机有原生桥 ⇒ 弹浮层（独立 WebView、带 cookie）；电脑浏览器 ⇒ 降级新标签页。
 //   ⭐ 2026-09-26：手机端默认页改成 **APK 内置的本地首页**（GG公益站 / DeepSeek用量 两个快捷入口，
 //     离线可用）；电脑浏览器没有桥 ⇒ 仍开 hub 的 start.html 搜索页（保持原样）。
@@ -1497,7 +1504,7 @@ function renderWebFold(web) {
   const sum = document.createElement('summary');
   const ft = document.createElement('span'); ft.className = 'ft';
   const fn = document.createElement('span'); fn.className = 'fn';
-  ft.textContent = '🌐 ' + (title || webHost(url) || '(网页)');
+  ft.textContent = '' + (title || webHost(url) || '(网页)');
   fn.textContent = webHost(url);
   sum.appendChild(ft); sum.appendChild(fn);
   const fb = document.createElement('div');
@@ -1510,7 +1517,7 @@ function renderWebFold(web) {
   fb.appendChild(hint);
   const go = document.createElement('button');
   go.type = 'button'; go.className = 'fed-btn primary';
-  go.textContent = '🌐 打开网页';
+  go.textContent = '打开网页';
   go.onclick = (ev) => { ev.preventDefault(); openWebLayer(url, title); det.open = false; };
   fb.appendChild(go);
   det.appendChild(sum); det.appendChild(fb);
@@ -1863,13 +1870,13 @@ function setFoldText(el, raw) {
   const s = String(raw || '');
   if (el._mk === 'reasoning') {
     const n = [...s].length;
-    el._sum.textContent = (el._done ? '💭 思考' : '💭 思考中') + ' · ' + n.toLocaleString() + ' 字';
+    el._sum.textContent = (el._done ? '思考' : '思考中') + ' · ' + n.toLocaleString() + ' 字';
     renderFoldBody(el, s);
     return;
   }
   // 工具：上面一行是短摘要，展开看到的是**完整命令 / 完整参数**（+ 看图时把图也放进来）。
   // 用户 10:11：「工具调用以前总结成一句短句也是因为不能折叠，现在能折叠了，你也完整发出来吧」
-  el._sum.textContent = s || '🔧 工具';
+  el._sum.textContent = s || '工具';
   renderFoldBody(el, el._detail || s);
 }
 
@@ -2163,7 +2170,7 @@ async function pullInbox() {
 // ★ 滚动监听：由 dshScroll.bind() 统一挂（2026-09-18 重做，见上面的模块注释）。
 dshScroll.bind();
 
-// ---------- 📎 传文件 / 拍照（开源版：只保留上传，去除 adb）----------
+// ---------- 传文件 / 拍照（开源版：只保留上传，去除 adb）----------
 async function uploadFiles(files) {
   if (!files || !files.length) return;
   for (const f of files) {
@@ -2174,7 +2181,7 @@ async function uploadFiles(files) {
       if (!j.ok) { bubble('sys', '✗ 上传失败：' + (j.error || '未知')); continue; }
       const imgUrl = j.url || ('/uploads/' + j.name);
       const isImg = /\.(png|jpe?g|gif|webp)$/i.test(j.name || '');
-      bubble('pc', '📎 已上传：' + j.name, isImg ? imgUrl : null, null, 'chat', null, null, false,
+      bubble('pc', '已上传：' + j.name, isImg ? imgUrl : null, null, 'chat', null, null, false,
         isImg ? null : { path: 'uploads/' + j.name, name: j.name, size: j.size });
     } catch (e) { bubble('sys', '✗ 上传失败：' + e.message); }
   }
@@ -2192,12 +2199,12 @@ function pickWebFile(capture) {
 function openPlusPanel() {
   const hasNative = !!(window.DsNative && window.DsNative.pickPhoto);
   if (!hasNative) { pickWebFile(false); return; }
-  openDlg('📎 传文件', '<div class="plustx">选择来源</div>', []);
+  openDlg('传文件', '<div class="plustx">选择来源</div>', []);
   const box = document.getElementById('dBody');
   if (!box) return;
   box.innerHTML = '<div style="display:flex;gap:8px;margin:2px 0 4px">'
-    + '<button class="minibtn" id="btnCam" style="flex:1;height:46px;font-size:15px">📷 拍照</button>'
-    + '<button class="minibtn" id="btnGal" style="flex:1;height:46px;font-size:15px">🖼 相册</button>'
+    + '<button class="minibtn" id="btnCam" style="flex:1;height:46px;font-size:15px">拍照</button>'
+    + '<button class="minibtn" id="btnGal" style="flex:1;height:46px;font-size:15px">相册</button>'
     + '</div>';
   const c = box.querySelector('#btnCam');
   if (c) c.onclick = () => { closeDlg(); window.DsNative.takePhoto(); };
@@ -2236,7 +2243,7 @@ applyTheme();
   } catch (e) { /* 保持空 */ }
   // 兜底：位置页是前端自绘（不依赖后端），确保按钮在
   if (!CMDS.some((c) => c.id === 'loc')) {
-    CMDS.unshift({ id: 'loc', label: '📍 位置', group: 'control', confirm: false });
+    CMDS.unshift({ id: 'loc', label: '位置', group: 'control', confirm: false });
   }
   render();
   const rb = $('chReload');
@@ -2394,7 +2401,7 @@ async function versionCheck() {
   var curMode = 'driving';
   var navOpen = false;
   var MODES = ['driving', 'walking', 'bicycling', 'transit'];
-  var MODE_ICON = { driving: '🚗', walking: '🚶', bicycling: '🚲', transit: '🚌' };
+  var MODE_ICON = { driving: '驾车', walking: '步行', bicycling: '骑行', transit: '公交' };
 
   function $(id) { return document.getElementById(id); }
   function APIb() { return (typeof API === 'string') ? API : ''; }
@@ -2705,7 +2712,7 @@ async function versionCheck() {
     steps.forEach(function (s) {
       var row = document.createElement('div'); row.className = 'loStep';
       var ic = document.createElement('span'); ic.className = 'ic';
-      ic.textContent = s.kind === 'bus' ? '🚌' : ((s.kind === 'walk' || s.kind === 'walking') ? '🚶' : (s.kind === 'bicycling' ? '🚲' : '↑'));
+      ic.textContent = s.kind === 'bus' ? '公交' : ((s.kind === 'walk' || s.kind === 'walking') ? '步行' : (s.kind === 'bicycling' ? '骑行' : '↑'));
       var tx = document.createElement('span'); tx.className = 'tx'; tx.textContent = s.instruction || '';
       var dt = document.createElement('span'); dt.className = 'dt'; dt.textContent = (s.distance != null ? fmtDist(s.distance) : '');
       row.appendChild(ic); row.appendChild(tx); row.appendChild(dt);

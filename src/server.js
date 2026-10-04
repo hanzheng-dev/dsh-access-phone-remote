@@ -25,6 +25,7 @@ const auth = require('./routes/auth');
 const loc = require('./routes/loc');
 const push = require('./routes/push');
 const file = require('./routes/file');
+const addresses = require('./routes/addresses');
 
 // 启动时载入消息池（读盘，不监听；不存在则空池）
 loadStore();
@@ -149,6 +150,7 @@ const server = createServer();
 loc.register(server, config);
 push.register(server, config);
 file.register(server, config);
+addresses.register(server, config);
 
 module.exports = { server, config };
 

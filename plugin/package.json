@@ -4,6 +4,7 @@
   "description": "把手机变成你电脑的遥控器：消息推送 / 文件传输 / 位置服务。数据全部留在自己电脑上。 · Turn your phone into a remote console for your PC: push, file transfer, location. Everything stays on your own machine.",
   "type": "module",
   "license": "MIT",
+  "author": "REPLACE_WITH_AUTHOR",
   "keywords": [
     "deepseek-harness",
     "dsh",
@@ -13,8 +14,16 @@
     "remote",
     "mobile",
     "push",
-    "tailscale"
+    "tailscale",
+    "phone",
+    "pc"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/REPLACE_WITH_USERNAME/dsj-open.git"
+  },
+  "homepage": "https://github.com/REPLACE_WITH_USERNAME/dsj-open#readme",
+  "bugs": "https://github.com/REPLACE_WITH_USERNAME/dsj-open/issues",
   "exports": {
     ".": "./src/index.js",
     "./package.json": "./package.json"
@@ -22,7 +31,8 @@
   "files": [
     "src",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
