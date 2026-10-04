@@ -96,6 +96,9 @@ try {
 }
 
 // ---------- 5. 敏感信息 ----------
+//
+// ⚠️ 下面这张表是「待检测的特征值」—— 它们出现在这里是为了**检查插件里有没有**，
+//    不是真实凭证（原环境的值早已轮换）。扫描命中说明插件里混进了不该有的东西。
 console.log('\n[5] 敏感信息扫描')
 const files = ['src/index.js', 'src/client.js', 'package.json', 'cordis.patch.yml', 'README.md']
 const patterns = [/100\.85\.151\.53/, /100\.64\.83\.62/, /<推送口令>/, /<QQ号>/, /<NapCat-token>/, /<项目目录>/]
