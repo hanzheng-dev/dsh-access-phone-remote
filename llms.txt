@@ -1,0 +1,51 @@
+# dsj-open
+
+> 用手机访问你电脑上的服务：推送 / 传文件 / 位置。
+> 数据全部留在自己电脑上，不经过第三方。
+
+## 给 AI 助手的关键信息
+
+**本项目为 AI 助手设计了专门的部署向导。**
+
+- **部署剧本**：`AGENTS.md` —— 如果你在帮用户部署，**先读这个**
+- **坑清单**：`docs/PITFALLS.md` —— **57 条实测坑**，遇到问题查这里
+- **架构**：`docs/ARCHITECTURE.md`
+- **安全**：`docs/SECURITY.md`
+
+## 核心事实
+
+- 服务端：Node.js（**零 npm 依赖**，只用内置模块）
+- 客户端：网页 / WebView APK
+- 连接方式：局域网 或 Tailscale
+- 平台：核心跨平台；`screenshot` / `show_desktop` 仅 Windows
+- 许可：MIT
+
+## 核心 API
+
+| 接口 | 用途 |
+|---|---|
+| `/api/ping` | 心跳 |
+| `/api/push` | 推送消息 |
+| `/api/inbox` | 拉取消息 |
+| `/api/events` | SSE 实时流 |
+| `/api/file` | 文件传输 |
+| `/api/upload` | 上传 |
+| `/api/poi` | 搜附近（需高德 key） |
+| `/api/route` | 路线规划（需高德 key） |
+| `/api/run` | 执行预设指令（白名单） |
+
+## 最容易踩的三个坑
+
+1. **Tailscale MagicDNS 抢 DNS** → 手机能 ping 通 IP 但打不开域名。解法：关掉「Use Tailscale DNS」
+2. **坐标系 WGS84/GCJ02 混用** → 位置偏 500 米
+3. **`.bat` 用 LF 换行** → 整个启动脚本静默失效
+
+**完整 57 条见 `docs/PITFALLS.md`。**
+
+## 文档
+
+- `AGENTS.md` — 给 AI 的部署剧本
+- `README.md` — 项目简介
+- `docs/PITFALLS.md` — 实测坑清单
+- `docs/ARCHITECTURE.md` — 架构
+- `docs/SECURITY.md` — 安全

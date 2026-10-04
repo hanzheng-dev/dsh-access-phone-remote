@@ -1,0 +1,48 @@
+# ---- 敏感配置（绝不能进仓库）----
+config.json
+.hub-token
+
+# ---- 依赖 ----
+node_modules/
+
+# ---- 运行期目录 ----
+logs/
+uploads/
+shots/
+data/
+
+# ---- 运行期数据文件 ----
+messages.json
+messages.json.*
+pending.json
+pending.json.*
+screen-state.json
+server.log
+
+# ---- 日志与临时 ----
+*.log
+*.tmp
+*.bak
+*.bak-*
+
+# ---- 内部工作文件（不进公开仓库）----
+docs/TASK.md
+docs/DECISION-*.md
+docs/op-report-*.md
+docs/PROJECT-STATE.md
+docs/PROJECT-LOG.md
+docs/VISION-V2.md
+docs/ONBOARDING-PLAN.md
+docs/DSH-MARKET-PLAN.md
+docs/PITFALLS-草稿.md
+docs/op-watchdog.js
+docs/op-watch-v2.js
+docs/watch-*.json
+docs/watchdog-*.json
+docs/_test_push.json
+docs/shots/
+
+# ---- 系统杂项 ----
+.DS_Store
+Thumbs.db
+desktop.ini

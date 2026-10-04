@@ -1,0 +1,21 @@
+{
+  "name": "dsj-open",
+  "version": "1.0.0",
+  "description": "手机管家服务端骨架：消息推送 / 文件传输 / 位置服务 / 指令分发（Windows-only MVP）",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node -e \"const fs=require('fs'),path=require('path'),cp=require('child_process');const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);const list=walk('src').filter(f=>f.endsWith('.js'));list.forEach(f=>cp.execFileSync(process.execPath,['--check',f],{stdio:'inherit'}));console.log('[check] '+list.length+' files OK');\""
+  },
+  "keywords": [
+    "hub",
+    "push",
+    "tailscale",
+    "self-hosted"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}

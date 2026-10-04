@@ -1,0 +1,17 @@
+{
+  "port": 3099,
+  "listenHost": "0.0.0.0",
+  "root": ".",
+  "authToken": "",
+  "allowDirs": [
+    "./data"
+  ],
+  "uploadsDir": "./uploads",
+  "shotsDir": "./shots",
+  "docsDir": "./docs",
+  "amap": {
+    "webKey": "",
+    "jsKey": "",
+    "jsSecurityCode": ""
+  }
+}
