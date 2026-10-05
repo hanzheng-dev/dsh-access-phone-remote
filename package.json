@@ -1,23 +1,33 @@
 {
   "name": "dsj-open",
   "version": "1.0.0",
-  "description": "手机管家服务端骨架：消息推送 / 文件传输 / 位置服务 / 指令分发（Windows-only MVP）",
+  "description": "把手机变成你电脑的遥控器：消息推送 / 文件传输 / 位置服务 / 可扩展动作。数据全部留在自己电脑上，零 npm 依赖。 · Turn your phone into a remote console for your own PC. Everything stays local.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "test": "node test/integration.mjs && node test/qr-verify.mjs && node test/discover-test.mjs",
     "check": "node --check src/server.js && node --check src/config.js && node --check src/store.js && node --check src/commands.js && node --check src/routes/auth.js && node --check src/routes/push.js && node --check src/routes/file.js && node --check src/routes/loc.js && node --check src/routes/addresses.js",
+    "lint:html": "node scripts/lint-html.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "doctor": "node src/doctor.js",
     "test:plugin": "node plugin/test/static.mjs",
     "test:qr": "node test/qr-verify.mjs",
-    "doctor": "node src/doctor.js",
-    "test:stress": "node test/stress.mjs",
-    "test:discover": "node test/discover-test.mjs"
+    "test:discover": "node test/discover-test.mjs",
+    "test:stress": "node test/stress.mjs"
   },
   "keywords": [
-    "hub",
+    "self-hosted",
+    "remote-control",
+    "phone",
     "push",
+    "notification",
+    "file-transfer",
     "tailscale",
-    "self-hosted"
+    "local-first",
+    "privacy",
+    "zero-dependency",
+    "android",
+    "windows"
   ],
   "license": "MIT",
   "engines": {
