@@ -36,5 +36,14 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "author": "Mare S. Ephemeral <hanzheng-dev@users.noreply.github.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hanzheng-dev/dsj-open.git"
+  },
+  "homepage": "https://github.com/hanzheng-dev/dsj-open#readme",
+  "bugs": {
+    "url": "https://github.com/hanzheng-dev/dsj-open/issues"
+  }
 }
