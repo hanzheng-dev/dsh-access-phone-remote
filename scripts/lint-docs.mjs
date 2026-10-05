@@ -77,6 +77,31 @@ if (broken.length === 0) {
   if (broken.length > 15) console.log(`      …还有 ${broken.length - 15} 个`)
 }
 
+// ---------- 1b. HTML 图片引用 ----------
+console.log('\n[1b] 图片引用有效性')
+const brokenImg = []
+let imgCount = 0
+for (const doc of DOCS) {
+  const content = readFileSync(join(ROOT, doc), 'utf8')
+  const baseDir = dirname(join(ROOT, doc))
+  // <img src="...">
+  for (const m of content.matchAll(/<img[^>]+src=["']([^"']+)["']/g)) {
+    let target = m[1].trim()
+    if (/^(https?:|data:)/.test(target)) continue
+    imgCount++
+    if (!existsSync(resolve(baseDir, target))) {
+      brokenImg.push({ doc, target })
+    }
+  }
+}
+checked++
+if (brokenImg.length === 0) {
+  good(`${imgCount} 个图片引用全部有效`)
+} else {
+  bad(`${brokenImg.length} 个图片找不到：`)
+  brokenImg.forEach((b) => console.log(`      ${b.doc} → ${b.target}`))
+}
+
 // ---------- 2. 文档里提到的代码路径 ----------
 console.log('\n[2] 提到的文件是否存在')
 const pathRefs = new Set()
