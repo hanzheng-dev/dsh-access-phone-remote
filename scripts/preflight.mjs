@@ -187,11 +187,25 @@ if (problems.length) {
 
 console.log('\n\x1b[1m发布步骤：\x1b[0m');
 if (err === 0) {
-  console.log('  1. 填好 package.json / plugin/package.json 的 repository + author');
-  console.log('  2. git remote add origin https://github.com/<你>/dsj-open.git');
-  console.log('     git push -u origin main');
-  console.log('  3. cd plugin && npm publish --access public');
-  console.log('  4. 去 awesome-dsh-plugin 提 PR（见 docs/RELEASE-CHECKLIST.md）');
+  // 从 package.json 里读真实仓库地址、从 git 里读当前分支 ——
+  // 提示要是写死的，就会出现"作者信息早填好了，它还在叫你填"这种脱节。
+  let repoUrl = '';
+  try {
+    const j = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+    const u = (j.repository && j.repository.url) || '';
+    repoUrl = u.replace(/^git\+/, '').replace(/\.git$/, '');
+  } catch { /* 忽略 */ }
+
+  const branch = (sh('git branch --show-current').out || 'main').trim() || 'main';
+  const slug = repoUrl || 'https://github.com/<你>/dsj-open';
+
+  if (repoUrl) pass(`作者信息已填：${repoUrl}`);
+  else note('作者信息还没填 —— 跑 node scripts/set-identity.mjs --user <你的用户名>');
+
+  console.log(`  1. git remote add origin ${slug}.git`);
+  console.log(`     git push -u origin ${branch}`);
+  console.log('  2. cd plugin && npm publish --access public');
+  console.log('  3. 去 awesome-dsh-plugin 提 PR（见 docs/RELEASE-CHECKLIST.md）');
 } else {
   console.log('  先解决上面标 ✗ 的问题。');
 }
