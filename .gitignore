@@ -2,6 +2,10 @@
 config.json
 .hub-token
 
+# 发布前检查用的「本机特征值」清单：仓库里只有 secrets.example.json 空模板，
+# 真实值在这个文件里，必须始终被忽略。
+scripts/.secrets.json
+
 # ---- 依赖 ----
 node_modules/
 

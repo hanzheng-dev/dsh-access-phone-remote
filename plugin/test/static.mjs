@@ -97,21 +97,48 @@ try {
 
 // ---------- 5. 敏感信息 ----------
 //
-// ⚠️ 下面这张表是「待检测的特征值」—— 它们出现在这里是为了**检查插件里有没有**，
-//    不是真实凭证（原环境的值早已轮换）。扫描命中说明插件里混进了不该有的东西。
+// 这里**不该**出现真实的口令 / IP / 私有路径 —— 插件是要单独发布到 npm 的，
+// 把特征值写进测试等于把它们一起发出去。真实值放仓库的 scripts/.secrets.json
+// （已 gitignore）；插件被单独安装、拿不到那份清单时，退化成下面那组通用启发式。
 console.log('\n[5] 敏感信息扫描')
 const files = ['src/index.js', 'src/client.js', 'package.json', 'cordis.patch.yml', 'README.md']
-const patterns = [/100\.85\.151\.53/, /100\.64\.83\.62/, /<推送口令>/, /<QQ号>/, /<NapCat-token>/, /<项目目录>/]
+
+let searcher = null
+let localSecrets = []
+try {
+  searcher = await import('../../scripts/secrets.mjs')
+  localSecrets = searcher.loadSecrets(join(__dirname, '..', '..')).list
+} catch {
+  // 插件单独安装时没有 scripts/ 目录，正常
+}
+
+// 通用启发式：不依赖任何本机配置，因此对任何人都能跑
+//
+// 刻意**不**匹配 127.x / 0.0.0.0 —— 回环地址人人相同，把它当敏感值只会制造
+// 噪声（插件的健康检查就必须写 127.0.0.1）。这里要抓的是「只对某一台机器
+// 成立」的地址：私有网段和 Tailscale 的 CGNAT 段。
+const PRIVATE_IP =
+  /\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7]))\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/
+const GENERIC = [
+  [/\b(?:x-auth|token|secret|passwd|password)\b\s*[:=]\s*['"][^'"]{8,}['"]/i, '疑似硬编码凭证'],
+  [PRIVATE_IP, '疑似内网 / Tailscale IP'],
+  [/C:\\Users\\[A-Za-z0-9_.-]+/i, '疑似 Windows 用户目录'],
+]
+
 let hits = 0
 for (const f of files) {
-  try {
-    const c = readFileSync(join(pluginDir, f), 'utf8')
-    for (const p of patterns) {
-      if (p.test(c)) { bad(`${f} 命中 ${p}`); hits++ }
-    }
-  } catch { }
+  let content
+  try { content = readFileSync(join(pluginDir, f), 'utf8') } catch { continue }
+  if (searcher && localSecrets.length) {
+    for (const label of searcher.scanText(content, localSecrets)) { bad(`${f} 命中「${label}」`); hits++ }
+  }
+  for (const [re, label] of GENERIC) {
+    if (re.test(content)) { bad(`${f} ${label}`); hits++ }
+  }
 }
-if (!hits) ok('0 命中')
+if (!hits) {
+  ok(localSecrets.length ? '0 命中' : '0 命中（通用启发式；本机 scripts/.secrets.json 未配置）')
+}
 
 // ---------- 汇总 ----------
 console.log('\n' + '='.repeat(40))

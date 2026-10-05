@@ -13,6 +13,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { loadSecrets, scanText } from './secrets.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -131,11 +132,12 @@ else note(`${emojiHits} 处（如果只在日志/提示里可以接受）`)
 
 // ---------- 7. 敏感信息 ----------
 console.log('\n[7] 敏感信息')
-const SECRETS = [/100\.85\.151\.53/, /100\.64\.83\.62/, /<推送口令>/, /<QQ号>/, /192\.168\.2\.(35|39|5)\b/]
+// 真实特征值不写在这里 —— 见 scripts/secrets.mjs 顶部说明。
+const { list: SECRETS, ok: hasSecrets } = loadSecrets(ROOT)
 let secretHits = 0
-for (const re of SECRETS) if (re.test(html)) { bad(`命中 ${re}`); secretHits++ }
+for (const label of scanText(html, SECRETS)) { bad(`命中「${label}」`); secretHits++ }
 checked++
-if (secretHits === 0) good('0 命中')
+if (secretHits === 0) good(hasSecrets ? '0 命中' : '0 命中（⚠️ 未配置 scripts/.secrets.json，只做了通用扫描）')
 
 // ---------- 汇总 ----------
 console.log('\n' + '='.repeat(50))

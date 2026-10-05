@@ -20,6 +20,7 @@ import { execSync, spawnSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadSecrets, scanText } from './secrets.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -46,16 +47,11 @@ console.log('='.repeat(52));
 // ---------- 1. 敏感信息 ----------
 head('[1] 敏感信息扫描');
 
-const SECRETS = [
-  ['Tailscale 电脑 IP', /100\.85\.151\.53/],
-  ['Tailscale 手机 IP', /100\.64\.83\.62/],
-  ['本机局域网 IP', /192\.168\.2\.(35|39|5)\b/],
-  ['推送口令', /<推送口令>/],
-  ['QQ 号', /<QQ号>/],
-  ['NapCat token', /<NapCat-token>/],
-  ['私人路径', /<项目目录>/],
-  ['Windows 用户名路径', /C:\\Users\\yhz/i],
-];
+// ⚠️ 这张表**不能**写死在源码里 —— 检查脚本自己会进公开仓库，
+//    把口令/IP 写在这里等于把要防的东西印在门上。
+//    真实值放本机 `scripts/.secrets.json`（已 gitignore），仓库里只有
+//    `scripts/secrets.example.json` 这份空模板。见 scripts/secrets.mjs 顶部说明。
+const { list: SECRETS, ok: hasSecrets } = loadSecrets(ROOT);
 
 // 只扫会被发布的文件（git 已跟踪的）
 const tracked = sh('git ls-files');
@@ -70,23 +66,22 @@ const files = tracked.ok
 
 let secretHits = 0;
 for (const f of files) {
-  // ⚠️ 检查脚本自己含「待检测模式表」—— 那是模式，不是真凭证。跳过它们。
-  const isCheckerItself =
-    /scripts\/preflight\.mjs$/.test(f) ||
-    /scripts\/lint-html\.mjs$/.test(f) ||
-    /plugin\/test\/static\.mjs$/.test(f);
-  if (isCheckerItself) continue;
-
+  // 注意：这里**不跳过检查脚本自己**。上一版的检查脚本把口令/QQ 号当「模式表」
+  // 硬编码在源码里，于是扫描器本身成了泄漏源，还得靠一句 skip 把眼睛蒙上。
+  // 现在真实值在 scripts/.secrets.json（gitignore），脚本里没有任何特征值，
+  // 所以检查脚本可以、也应该被自己扫。
   let content;
   try { content = readFileSync(join(ROOT, f), 'utf8'); } catch { continue; }
-  for (const [label, re] of SECRETS) {
-    if (re.test(content)) {
-      fail(`${f} 命中「${label}」`);
-      secretHits++;
-    }
+  for (const label of scanText(content, SECRETS)) {
+    fail(`${f} 命中「${label}」`);
+    secretHits++;
   }
 }
-if (!secretHits) pass(`已跟踪的 ${files.length} 个文件，0 命中`);
+if (!secretHits) {
+  pass(hasSecrets
+    ? `已跟踪的 ${files.length} 个文件，0 命中`
+    : `已跟踪的 ${files.length} 个文件，0 命中（⚠️ 未配置 scripts/.secrets.json，只做了通用模式扫描）`);
+}
 
 // ---------- 2. 语法 ----------
 head('[2] 语法检查');
