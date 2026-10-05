@@ -830,14 +830,104 @@ adb shell cmd role add-role-holder android.app.role.BROWSER com.android.chrome
 - git 直接读 NTFS 目录项，看得见；PowerShell 走 Win32 API，摸不着
 
 **解法**：
-1. 用 `Get-ChildItem -Force` 拿到目录**对象**，再用 `-LiteralPath $_.FullName` 删
-   （对象里的 `FullName` 保留了尾空格）
-2. 实在不行上长路径前缀：`\\?\D:\path\.shot-run `
+1. ⭐ **长路径前缀**（实测唯一可靠的）：
+   ```powershell
+   Remove-Item -LiteralPath "\\?\D:\path\.shot-run " -Recurse -Force
+   ```
+   `\\?\` 让系统**跳过 Win32 路径规范化**，尾空格才得以保留
+2. ⚠️ **别信**「`Get-ChildItem -Force` 拿对象 + `-LiteralPath $_.FullName` 删」——
+   **实测会"报成功但没删掉"**（内部仍要过一次 Win32 规范化）。
+   这个假成功特别坑：你以为删干净了，下次 `git status` 发现警告还在。
+
+**补充**：删之前先看看里面是什么。本例里躺着测试生成的 `messages.json`
+—— 说明它是某次测试把工作目录设成了这个名字，**不是凭空出现的**，
+而是"删不掉"造成的长期残留。
 
 **教训**：**Windows 上「看得见但摸不着」的文件是真实存在的。**
-遇到删不掉的路径，先怀疑名字里有没有 Windows 不容许的字符（尾空格、尾点）。
+遇到删不掉的路径，先怀疑名字里有没有 Windows 不容许的字符（尾空格、尾点）；
+删完要**再确认一次**，别信那句"成功"。
 
 ---
 
-**END（72 条）**
+## P73 · ★ 判断只做一次，后面全错（浮层代理那个 bug）
+
+**症状**（原话）："下面的知乎点得有反应，上面的 GitHub 就没有。"
+搜索正常、国内站正常，**只有被墙站点了没反应**。
+
+**根因**：代理**只在「打开浮层」那一刻判断一次**：
+
+```java
+void setupProxy() {
+    if (!needProxy(pageUrl)) { loadOnce(); return; }   // pageUrl = 打开浮层时的地址
+    ...
+}
+```
+
+首页打开时 `pageUrl` 是 `null` ⇒ 判为「直连」，之后 WebView 内部跳转
+（点搜索结果、点站内链接）**完全不重新判断**。于是从首页点进 github.com 时，
+`needProxy()` 里明明写着 github.com 要走代理 —— 但那次判断早就过去了。
+
+**为什么极难定位**：
+- 国内站和搜索都正常 ⇒ 容易误判成「链接点不动」（WebView 多窗口问题，P74）
+- 也会误判成「代理挂了」—— 而实测代理好好的（200 OK / 0.16 秒）
+- 日志里那行 `直连加载（不走代理）: null` 是唯一线索
+
+**解法**：把判断挪到**每次导航**，并用一个状态字段记住当前挂没挂代理：
+
+```java
+static class WebClient extends WebViewClient {
+    public boolean shouldOverrideUrlLoading(WebView v, String url) {
+        if (act.switchProxyFor(url)) return true;   // 该走代理就走，该直连就直连
+        v.loadUrl(url);
+        return true;
+    }
+}
+```
+
+**验证方式**：看日志里有没有 `切到代理: https://github.com/`。
+**有这行才算真通了** —— 不要靠"应该好了"收工。
+
+**教训**：**任何「打开时判定一次」的状态，都撑不过页面内的后续导航。**
+缓存状态一旦和真实页面脱节，症状会伪装成完全不相干的问题。
+
+---
+
+## P74 · WebView 里 `target="_blank"` 的链接点了没反应
+
+**症状**：网页里有一部分链接**点了毫无反应** —— 不跳转、不报错、不弹窗。
+但同一页面的**输入框、搜索框一切正常**。
+
+**根因**：Android WebView 默认 `setSupportMultipleWindows(false)` ⇒
+`target="_blank"` 和 `window.open()` 开出来的新窗口被**静默丢弃**。
+
+**最快的判据**：**页内 JS 好用、链接点不动**。
+搜索走 JS（不经过导航），链接走导航 —— 这个对比一出来就能定位。
+
+**解法**：
+
+```java
+s.setSupportMultipleWindows(true);
+s.setJavaScriptCanOpenWindowsAutomatically(true);
+
+// WebChromeClient 里接住新窗口
+@Override
+public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+    WebView probe = new WebView(view.getContext());
+    probe.setWebViewClient(new WindowCatcher(view));   // 具名类！匿名内部类会让 d8 崩
+    ((WebView.WebViewTransport) resultMsg.obj).setWebView(probe);
+    resultMsg.sendToTarget();
+    return true;
+}
+```
+
+`WindowCatcher` 接住目标地址后转回**主 WebView** 加载（返回键历史保持连续），随即 `destroy()` 探针。
+
+**教训**：**「点了没反应」是症状，不是原因。**
+同一个症状底下可能叠着好几层 —— 本例就是两个独立 bug 叠在一起：
+先修好了 P74，页面**仍然**点不动，才挖出 P73。
+别在第一个假设上收工。
+
+---
+
+**END（74 条）**
 

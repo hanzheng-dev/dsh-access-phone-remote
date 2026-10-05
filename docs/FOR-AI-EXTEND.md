@@ -30,7 +30,7 @@ src/
 | `routes/*.js` | HTTP 接口 | 加**新的 API 端点** |
 | `server.js` | 挂载 | **几乎不用动** |
 
-**⚠️ 修改前必读 `docs/PITFALLS.md`** —— 里面有 72 条实测坑，很多是你一定会踩的。
+**⚠️ 修改前必读 `docs/PITFALLS.md`** —— 里面有 74 条实测坑，很多是你一定会踩的。
 
 ---
 
@@ -181,7 +181,7 @@ function register(server, config) {
 
 ### 1. 改之前先读 PITFALLS.md
 
-**72 条坑，每一条都是真金白银换来的。** 不读就改，大概率重踩。
+**74 条坑，每一条都是真金白银换来的。** 不读就改，大概率重踩。
 
 ### 2. 不要引入 npm 依赖
 
@@ -227,7 +227,7 @@ function register(server, config) {
 
 **如果用户报了一个你没见过的问题**：
 
-1. **先查 `docs/PITFALLS.md`**（72 条，覆盖了绝大部分）
+1. **先查 `docs/PITFALLS.md`**（74 条，覆盖了绝大部分）
 2. **没找到 → 问用户要详细信息**：
    - 完整报错文本
    - 他做了什么操作
@@ -262,7 +262,7 @@ function register(server, config) {
 | 文件 | 内容 |
 |---|---|
 | `AGENTS.md` | 部署剧本（**部署时看**） |
-| `docs/PITFALLS.md` | **72 条实测坑**（**改代码前必读**） |
+| `docs/PITFALLS.md` | **74 条实测坑**（**改代码前必读**） |
 | `docs/ARCHITECTURE.md` | 架构说明（**理解结构时看**） |
 | `docs/SECURITY.md` | 安全说明（**涉及安全时看**） |
 | 本文 | 扩展指南（**加功能时看**） |
@@ -273,4 +273,4 @@ function register(server, config) {
 
 > **这个项目很小、很干净、零依赖。加功能主要就是改 `commands.js`（加按钮）和 `routes/*.js`（加接口）。**
 >
-> **但改之前，一定先读 `docs/PITFALLS.md` —— 那 72 条坑能帮你省下几个小时。**
+> **但改之前，一定先读 `docs/PITFALLS.md` —— 那 74 条坑能帮你省下几个小时。**
