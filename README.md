@@ -21,7 +21,7 @@
 |---|---|
 | **同一 WiFi 下零配置** | 服务端每 3 秒广播一次，手机 App 自动发现电脑 —— **连地址都不用填** |
 | **可扩展** | 加一个按钮**不用改代码**：`config.json` 里加一行就行（见 `docs/FOR-AI-EXTEND.md`） |
-| **文档写给 AI 读** | `AGENTS.md` 是部署剧本，`docs/PITFALLS.md` 是 70 条实测坑 —— **出问题让你的 AI 查** |
+| **文档写给 AI 读** | `AGENTS.md` 是部署剧本，`docs/PITFALLS.md` 是 72 条实测坑 —— **出问题让你的 AI 查** |
 
 **跟云服务不同**：所有数据留在这台电脑上，不经过任何第三方。
 
@@ -102,7 +102,7 @@ node src/doctor.js      # 或 npm run doctor
 - 给 AI：`AGENTS.md`
 - 给人：`docs/ARCHITECTURE.md`
 - **遇到问题**：`docs/TROUBLESHOOT.md`（按症状走决策树）
-- **坑清单**：`docs/PITFALLS.md`（**70 条实测坑**）
+- **坑清单**：`docs/PITFALLS.md`（**72 条实测坑**）
 
 ---
 
@@ -116,7 +116,7 @@ node src/doctor.js      # 或 npm run doctor
 
 ### 2. `docs/PITFALLS.md` 是两个月踩出来的
 
-**70 条真实坑**，每条都有**症状 → 根因 → 解法**：
+**72 条真实坑**，每条都有**症状 → 根因 → 解法**：
 
 - `adb tcpip 5555` vs Android「无线调试」的本质区别
 - Tailscale MagicDNS 把自己当 DNS → 手机上不了网
@@ -160,7 +160,7 @@ node src/doctor.js      # 或 npm run doctor
 | 文件 | 给谁 | 内容 |
 |---|---|---|
 | **`AGENTS.md`** | **AI** | **部署剧本（核心）** |
-| `docs/PITFALLS.md` | 都行 | **70 条实测坑** |
+| `docs/PITFALLS.md` | 都行 | **72 条实测坑** |
 | `docs/TROUBLESHOOT.md` | AI | 排障决策树（按症状走） |
 | `docs/ONBOARDING.md` | 人 | 上手引导 |
 | `docs/FOR-AI-EXTEND.md` | AI | 扩展指南（**含「不改代码加功能」**） |

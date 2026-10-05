@@ -302,7 +302,7 @@ java.lang.NullPointerException: Cannot invoke "String.length()" because "<parame
 
 **你的处理流程**：
 
-1. **先查 `docs/PITFALLS.md`**（70 条，覆盖绝大部分）
+1. **先查 `docs/PITFALLS.md`**（72 条，覆盖绝大部分）
 2. **再查本文的决策树**
 3. **还是不行 → 要用户提供**：
    - 完整报错文本
