@@ -25,6 +25,12 @@ import { loadSecrets, scanText } from './secrets.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
+// --ci：在 GitHub Actions 里跑。
+// 跳过那些「属于发布动作、不属于代码质量」的检查（比如 package.json 里还没填
+// GitHub 用户名），其余照旧 —— 于是 CI 仍然会因为敏感信息命中或测试失败而变红，
+// 而不是被一句 continue-on-error 变成摆设。
+const CI_MODE = process.argv.includes('--ci');
+
 let ok = 0, warn = 0, err = 0;
 const problems = [];
 
@@ -100,7 +106,9 @@ head('[3] 测试套件');
 
 const SUITES = [
   ['端到端集成', 'test/integration.mjs'],
+  ['文件互传 + 安全边界', 'test/transfer.mjs'],
   ['QR 交叉验证', 'test/qr-verify.mjs'],
+  ['局域网发现', 'test/discover-test.mjs'],
   ['插件静态检查', 'plugin/test/static.mjs'],
 ];
 
@@ -127,7 +135,10 @@ for (const [pkgPath, label] of [['package.json', '根'], ['plugin/package.json',
   const repo = JSON.stringify(j.repository || '');
   const author = String(j.author || '');
   if (repo.includes('REPLACE_WITH') || author.includes('REPLACE_WITH')) {
-    fail(`${label}：repository / author 还是占位符（需要填真实 GitHub 信息）`);
+    // CI 里还没填 GitHub 信息是正常的（那是发布动作，不是代码问题），
+    // 所以 --ci 下降级为提示，别让 CI 因为"还没起名字"变红。
+    if (CI_MODE) note(`${label}：repository / author 还是占位符（CI 模式，不阻塞）`);
+    else fail(`${label}：repository / author 还是占位符（需要填真实 GitHub 信息）`);
   } else if (!j.repository || !j.author) {
     note(`${label}：缺 repository 或 author`);
   } else {

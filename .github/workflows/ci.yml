@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # 本项目的主要目标平台是 Windows：`screenshot` / `show_desktop` 两个内置动作
+    # 依赖 PowerShell + Win32，Android 构建链也依赖 Windows 工具。
+    # 所以 CI 直接跑在 Windows 上 —— 让 CI 环境和用户环境一致，比"在 Linux 上跑绿、
+    # 用户那儿挂掉"更有意义。
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+
+    name: Node ${{ matrix.node }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 零 npm 依赖 —— 没有 npm install 这一步，这正是本项目的卖点之一
+      - name: 零依赖自检
+        shell: pwsh
+        run: |
+          if (Test-Path node_modules) {
+            Write-Error "出现了 node_modules —— 本项目不应有任何依赖"
+            exit 1
+          }
+          Write-Host "确认无 node_modules"
+
+      - name: 源文件语法
+        shell: pwsh
+        run: |
+          $failed = 0
+          Get-ChildItem src -Recurse -Filter *.js | ForEach-Object {
+            node --check $_.FullName
+            if ($LASTEXITCODE -ne 0) { $failed++ }
+          }
+          if ($failed -gt 0) { exit 1 }
+
+      - name: 端到端集成测试
+        run: node test/integration.mjs
+
+      - name: 文件互传 + 安全边界
+        run: node test/transfer.mjs
+
+      - name: QR 编码器交叉验证
+        run: node test/qr-verify.mjs
+
+      - name: 局域网发现
+        run: node test/discover-test.mjs
+
+      - name: dsh 插件静态检查
+        run: node plugin/test/static.mjs
+
+      - name: 前端静态检查
+        run: node scripts/lint-html.mjs
+
+      - name: 文档检查
+        run: node scripts/lint-docs.mjs
+
+      # 敏感信息扫描是这一环里最有意思的：它从本机清单（scripts/.secrets.json，
+      # 已被 gitignore）读特征值。CI 上没有这份清单，于是自动退化成通用模式扫描，
+      # 并在输出里明确标注「未配置」—— 宁可说清楚跳过了什么，也不要假装通过。
+      # --ci 只把「还没填 GitHub 用户名」这类发布动作降级为提示；敏感命中、测试失败
+      # 依然会让这一步真正变红。详见 docs/PITFALLS.md P71。
+      - name: 发布前检查（含敏感信息扫描）
+        run: node scripts/preflight.mjs --ci
