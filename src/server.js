@@ -26,6 +26,7 @@ const loc = require('./routes/loc');
 const push = require('./routes/push');
 const file = require('./routes/file');
 const addresses = require('./routes/addresses');
+const chat = require('./routes/chat');
 const { printTerminalQR } = require('./terminal-qr');
 const discover = require('./discover');
 
@@ -156,6 +157,9 @@ loc.register(server, config);
 push.register(server, config);
 file.register(server, config);
 addresses.register(server, config);
+// 会话页（在手机上跟电脑的 AI 对话）—— 受 config.dsh.enabled 控制，
+// 没开时它的全部接口一律 404，前端也据此隐藏入口。
+chat.register(server, config);
 
 module.exports = { server, config };
 

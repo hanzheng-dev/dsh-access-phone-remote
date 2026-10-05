@@ -51,6 +51,51 @@ const DEFAULTS = {
       //   "desc": "锁定电脑屏幕" }
     ],
   },
+
+  // ⭐⭐ dsh 会话页 —— 在手机上跟电脑里的 AI 对话。
+  //
+  //   这是本项目的核心能力，但**默认关闭**：它要求你电脑上装并运行着
+  //   DeepSeek Harness（dsh）。没装的用户打开页面不该看到一堆坏入口。
+  //
+  //   开启后，手机只是**中转**：模型、会话、推理、上下文全在电脑的 dsh 里，
+  //   手机不跑模型、不存会话。链路：
+  //     手机 → hub → 桥(每消息一个进程) → dsh 的 HTTP RPC / WebSocket → 原路回传
+  dsh: {
+    enabled: false,
+    // dsh web 服务地址（它的 Web GUI 监听在哪）
+    base: 'http://127.0.0.1:3080',
+    // 鉴权 cookie 绑定的 authority —— 必须和 dsh 实际监听的 host:port 一致
+    authority: '127.0.0.1:3080',
+    // dsh 的数据目录（含 .credentials.yaml 与 sessions/）
+    //   留空 = 自动探测：环境变量 DSH_HOME → 常见位置 → 扫含 .credentials.yaml 的目录
+    home: '',
+    // 会话的工作目录（新建会话时用）。留空 = dsh 自己的默认值
+    cwd: '',
+    // dsh web 的启动日志（换票兜底要从里面抓 ?token=）
+    //   留空 = 在 home 附近自动找 *.log
+    webLog: '',
+    // ws 模块路径（逐字流要用）。
+    //   留空 = 依次试：dsh 安装目录的 node_modules/ws → require('ws')；
+    //   都失败则自动降级为「仅轮询」——功能照常，只是回复一次冒出来而不是逐字
+    wsPath: '',
+  },
+
+  // ⭐ 可选功能开关 —— 默认全关，想要哪个开哪个。
+  //   关掉的功能**连入口都不会出现**（前端按这张表决定显不显示）。
+  //   这些原本是作者自用的东西，开源时保留代码但默认隐藏：
+  //   别人的 dsh 环境不一定有对应依赖，摆一屏不能用的按钮不如不摆。
+  features: {
+    cost: false,        // 余额 / 花费统计
+    effort: false,      // 思考档位（dsh 的模型档位）
+    askUser: false,     // AI 提问 → 手机选择（dsh 的 ask_user_question）
+    switches: false,    // 本机开关状态（屏幕 / 代理）
+    op: false,          // 任务调度（作者自用的 op 体系）
+    agents: false,      // 多 agent 状态与回传
+    adb: false,         // 手机联机（adb 推拉文件）
+    reminders: false,   // 定时提醒任务
+    tavern: false,      // 网页中转（SillyTavern）
+    hitchhike: false,   // 剪贴板「搭便车」注入
+  },
 };
 
 function readJson(file) {

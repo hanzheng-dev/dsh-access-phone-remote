@@ -40,7 +40,7 @@
 
 | 报错 | 原因 | 解法 |
 |---|---|---|
-| `EADDRINUSE` | 端口被占 | 换 `config.json` 的 `port`，或关掉占用的进程 |
+| `EADDRINUSE` | 端口被占 | 改端口（见下），或关掉占用的进程 |
 | `Cannot find module './config'` | 目录不对 | 确认在项目根目录运行 |
 | `Cannot find module 'xxx'` | 缺依赖 | 本项目**零依赖**，检查是不是 node_modules 缺失（不应该有） |
 | 其他 | 收集完整报错问用户 | — |
