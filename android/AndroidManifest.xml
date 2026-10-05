@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hz.hub"
+    package="io.github.hanzhengdev.dsjopen"
     android:versionCode="1"
     android:versionName="1.0">
 
@@ -81,7 +81,7 @@
              只读、只放行 DCIM/dsj-open 与 Download/dsj-open 两棵树。 -->
         <provider
             android:name=".FileProviderMini"
-            android:authorities="com.hz.hub.files"
+            android:authorities="io.github.hanzhengdev.dsjopen.files"
             android:exported="false"
             android:grantUriPermissions="true" />
 

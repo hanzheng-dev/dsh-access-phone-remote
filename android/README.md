@@ -153,7 +153,7 @@ android/
 ├── build.sh                 # 手工构建链（aapt2 → javac → d8 → 7z → zipalign → 签名）
 ├── make-icons.js            # 零依赖生成 App 图标到 res/
 ├── res/                     # 图标资源（由 make-icons.js 生成）
-└── src/com/hz/hub/
+└── src/io/github/hanzhengdev/dsjopen/
     ├── MainActivity.java    # 主界面：WebView 壳 + 首次配置页 + JS 桥
     ├── NotifyService.java   # 前台服务：SSE 通知（断线补发 + 心跳看门狗）
     ├── FileReceiver.java    # 接收电脑推来的文件：下载 → 相册/下载目录 → 通知可点开

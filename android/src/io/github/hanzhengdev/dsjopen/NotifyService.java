@@ -1,4 +1,4 @@
-package com.hz.hub;
+package io.github.hanzhengdev.dsjopen;
 
 import android.app.AlarmManager;
 import android.app.Notification;

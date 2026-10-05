@@ -90,7 +90,7 @@ echo "[3/8] javac"
 javac -encoding UTF-8 --release 8 -nowarn \
   -classpath "$(w $AJAR)" \
   -d "$(w $OUT/classes)" \
-  "$(w $ROOT)"/src/com/hz/hub/*.java
+  "$(w $ROOT)"/src/io/github/hanzhengdev/dsjopen/*.java
 
 echo "[4/8] d8 -> classes.dex"
 find "$OUT/classes" -name '*.class' | while read -r f; do w "$f"; done > "$OUT/classlist.txt"
@@ -137,8 +137,8 @@ echo "[9/9] 安装并重启 app（没连设备则跳过）"
 ADB="${ADB:-adb}"
 if command -v "$ADB" >/dev/null 2>&1 && "$ADB" get-state >/dev/null 2>&1; then
   "$ADB" install -r "$(w $ROOT/$APKNAME)" \
-    && "$ADB" shell am force-stop com.hz.hub \
-    && "$ADB" shell am start -n com.hz.hub/.MainActivity \
+    && "$ADB" shell am force-stop io.github.hanzhengdev.dsjopen \
+    && "$ADB" shell am start -n io.github.hanzhengdev.dsjopen/.MainActivity \
     || echo "      ⚠ 安装/重启失败，请手动处理"
 else
   echo "      没连 adb 设备（或没装 adb），跳过（APK 已生成；手动装完务必 force-stop 再开）"

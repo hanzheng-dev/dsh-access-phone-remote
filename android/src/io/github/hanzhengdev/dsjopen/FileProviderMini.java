@@ -1,4 +1,4 @@
-package com.hz.hub;
+package io.github.hanzhengdev.dsjopen;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -29,7 +29,7 @@ import java.util.Locale;
  *   它的核心本来就只是一个几十行的 ContentProvider ⇒ 自己写一个。
  *
  * 用法：
- *   FileProviderMini.uriFor(file) → content://com.hz.hub.files/open?p=<绝对路径>
+ *   FileProviderMini.uriFor(file) → content://io.github.hanzhengdev.dsjopen.files/open?p=<绝对路径>
  *   随 Intent 带 FLAG_GRANT_READ_URI_PERMISSION 发给系统应用（看图 / 打开方式）。
  *
  * 安全：
@@ -43,7 +43,7 @@ import java.util.Locale;
  */
 public class FileProviderMini extends ContentProvider {
 
-    static final String AUTHORITY = "com.hz.hub.files";
+    static final String AUTHORITY = "io.github.hanzhengdev.dsjopen.files";
 
     /** 保存根目录（与 FileReceiver 的保存位置保持一致：DCIM/dsj-open、Download/dsj-open） */
     static List<File> allowedRoots() {

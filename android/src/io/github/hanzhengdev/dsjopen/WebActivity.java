@@ -1,4 +1,4 @@
-package com.hz.hub;
+package io.github.hanzhengdev.dsjopen;
 
 import android.app.Activity;
 import android.content.Context;
