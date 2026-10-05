@@ -1218,16 +1218,18 @@ function renderGuide() {
       + '<li>□ 装 APK（可选，体验更好）</li>'
       + '</ul>'
       + '<div class="guide-act">'
-      + '<button class="btn" id="guideQr"><span class="tx">二维码</span></button>'
       + '<button class="btn" id="guideHelp"><span class="tx">帮助</span></button>'
       + '<button class="btn" id="guideOk"><span class="tx">知道了</span></button>'
       + '</div>'
       + '</div>';
     const hp = document.getElementById('guideHelp');
     if (hp) hp.onclick = () => { location.href = '/pages/help.html'; };
-    const q = document.getElementById('guideQr');
-    // ⭐ 本地生成二维码（零依赖、离线）—— 原来打 api.qrserver.com 会把「地址+token」发给第三方
-    if (q) q.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
+    // ⭐ 2026-10-05 去掉手机端的「二维码」入口。
+    //   理由：主流程是**电脑终端打印二维码 → 手机扫**，那才是给人扫的。
+    //   手机屏幕上再放一个二维码，用户得再找第三台设备来扫它 —— 场景想不出来，
+    //   还容易被误会成"这东西在联网传什么"。手机端有「复制地址」就够了。
+    //   页面 /pages/qr.html 本身保留：在**电脑浏览器**里打开它是有用的
+    //   （不方便看终端时），只是不再从手机首页给入口。
     const ok = document.getElementById('guideOk');
     if (ok) ok.onclick = () => { try { localStorage.setItem('dsj_onboard_done', '1'); } catch (e) {} renderGuide(); };
     return;
@@ -1235,12 +1237,9 @@ function renderGuide() {
   box.innerHTML = '<div class="guide-line"><span class="dot on"></span>'
     + '<span class="guide-addr2">' + escapeHtml(addr) + '</span>'
     + '<button class="minibtn" id="guideCopy">复制</button>'
-    + '<button class="minibtn" id="guideQr2">二维码</button>'
     + '<button class="minibtn" id="guideHelp2">帮助</button></div>';
   const c = document.getElementById('guideCopy');
   if (c) c.onclick = () => { try { navigator.clipboard.writeText(addr); toast('已复制地址'); } catch (e) { toast(addr); } };
-  const q2 = document.getElementById('guideQr2');
-  if (q2) q2.onclick = () => openWebLayer('/pages/qr.html?u=' + encodeURIComponent(addr), '二维码');
   const h2 = document.getElementById('guideHelp2');
   if (h2) h2.onclick = () => { location.href = '/pages/help.html'; };
 }

@@ -99,6 +99,13 @@
   }
   .notes b { color: var(--mid); font-weight: 600; }
   .warn { color: var(--warn); }
+  /* 安全说明：和警告区分开 —— 这条是"解释原理"，不是"提醒风险"，
+     所以用低调的底色块，别和 .warn 抢注意力 */
+  .safe {
+    margin: 8px 0; padding: 9px 11px; border-radius: 8px;
+    background: var(--card, rgba(127,127,127,.08));
+    border-left: 2px solid var(--line);
+  }
 
   .btns { margin-top: 20px; display: flex; gap: 8px; }
   button {
@@ -118,7 +125,7 @@
 
   <div class="head">
     <h1>扫码连接</h1>
-    <p>用手机扫下面的码，自动打开并完成鉴权</p>
+    <p>用<b>另一台设备</b>扫下面的码，自动打开并完成鉴权</p>
   </div>
 
   <div class="qrbox">
@@ -134,7 +141,9 @@
   <div class="notes">
     <div>手机与电脑需在<b>同一网络</b>。</div>
     <div>扫码后会记住 <b>180 天</b>的访问凭证，之后直接打开即可。</div>
-    <div class="warn">此码等同访问权限，请勿截图分享。</div>
+    <div class="safe">这个码是<b>本地生成</b>的：不联网、不调用任何第三方接口，
+      内容只有你自己电脑的地址和一个访问口令。它不会把任何数据发出去。</div>
+    <div class="warn">但它<b>等同于你的家门钥匙</b> —— 谁扫到谁就能连上你的电脑。别截图发群里、别发到网上。</div>
   </div>
 
   <div class="btns">
