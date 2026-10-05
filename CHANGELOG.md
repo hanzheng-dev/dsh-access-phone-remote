@@ -32,7 +32,42 @@
 - **内置帮助页** `/pages/help.html` —— 9 个常见问题的排查步骤
 - 极简排版（无 emoji，强调文字层级）
 
-**零依赖 QR 编码器**（`public/qr.js`）
+**局域网零配置发现**
+- 服务端每 3 秒广播 UDP 包（含端口 / 口令 / **完整地址列表 + 类型**）
+- 手机 App 在同一 WiFi 下自动发现电脑 —— 连地址都不用填
+- 广播内容带 `addresses` 字段是因为：本机可能有多张网卡（含虚拟网卡），
+  广播来源 IP 不一定是手机能连的那个，要让客户端自己挑
+- 可配置开关（`discovery.enabled`，默认开）；失败静默降级
+
+**配置化动作（不用改代码就能加按钮）**
+- `config.json` 里加一行即可：
+  ```json
+  { "customActions": { "enabled": true, "list": [
+      { "id": "lock_screen", "label": "锁屏",
+        "command": "rundll32.exe user32.dll,LockWorkStation" }
+  ]}}
+  ```
+- 非法 id 自动规范化；缺字段的条目静默跳过；不覆盖内置指令
+- **默认 `enabled: false`**（安全默认 —— 开了才执行）
+
+**环境自检** `node src/doctor.js`
+- 12 项检查：Node 版本 / 端口（能区分"本服务在跑"和"被别的程序占了"）/
+  网络地址（局域网 / Tailscale / 虚拟网卡分别标注）/ 高德 key /
+  目录写权限 / 前端资源完整性 / 依赖情况
+- 输出「建议」与「下一步」
+
+**内置帮助页** `/pages/help.html`
+- 9 个常见问题的排查步骤（连不上 / 很慢 / 断线 / 收不到推送 /
+  位置偏差 / 高德 key / 传文件报错 / 开机自启 / 想加功能）
+
+**启动即见二维码**
+- 服务端启动时在终端打印二维码（Unicode 半格字符渲染）
+- 自动挑一个手机能连的地址（局域网优先），并列出其他可用地址
+
+**优雅退出**
+- 挂 SIGINT / SIGTERM / beforeExit：保存数据再退出（防 Ctrl+C 丢最近的改动）
+
+****零依赖 QR 编码器**（`public/qr.js`）
 - Byte mode + ECC L + 版本 1-9（最多 230 字节）
 - 完整实现 Reed-Solomon 纠错、掩码选择、格式信息
 - 用 Python `qrcode` 标准库**逐格交叉验证**（5 用例 × 8 掩码，全 0 差异）
@@ -58,11 +93,19 @@
 - `docs/ARCHITECTURE.md` —— 架构说明
 - `docs/SECURITY.md` —— 安全说明
 
-**测试**（50 项，全绿）
+**测试**（64 项，全绿）
 - `test/integration.mjs` —— 端到端集成（16 项）
+- `test/transfer.mjs` —— 文件互传 + 安全边界（7 项）
 - `test/qr-verify.mjs` —— QR 交叉验证（15 项）
+- `test/discover-test.mjs` —— 局域网发现（7 项）
 - `plugin/test/static.mjs` —— 插件静态检查（19 项）
+- `test/stress.mjs` —— 压力测试（1639 条/秒，p99 18ms，0 丢失）
+
+**检查工具**
 - `scripts/preflight.mjs` —— 发布前检查（敏感扫描 + 测试 + 字段完整性）
+- `scripts/lint-html.mjs` —— 前端静态检查（id 引用 / 死 API / 敏感信息）
+- `scripts/lint-docs.mjs` —— 文档检查（死链 / 图片引用 / 坑数一致性）
+- `scripts/stats.mjs` —— 项目统计
 
 ### 设计特点
 
