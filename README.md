@@ -27,6 +27,18 @@
 
 ---
 
+## 截图
+
+<p align="center">
+  <img src="docs/images/screenshot-home.png" width="230" alt="手机端首页">
+  <img src="docs/images/screenshot-qr.png" width="230" alt="扫码连接">
+  <img src="docs/images/screenshot-help.png" width="230" alt="内置帮助">
+</p>
+
+<p align="center"><sub>手机端首页（含上手引导） · 扫码连接（多地址选择） · 内置帮助（9 个常见问题）</sub></p>
+
+---
+
 ## 给 AI 用的部署向导
 
 **如果你在用 Claude / ChatGPT / Cursor 等 AI 助手帮你部署**：
