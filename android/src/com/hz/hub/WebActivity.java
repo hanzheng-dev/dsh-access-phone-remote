@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -247,6 +248,45 @@ public class WebActivity extends Activity {
         Chrome(WebActivity a) { act = a; }
         @Override
         public void onReceivedTitle(WebView v, String t) { act.applyTitle(t); }
+
+        // ⭐ 2026-10-05：接住 target="_blank" / window.open 开出来的新窗口。
+        //
+        //   Android WebView 默认 setSupportMultipleWindows(false) ⇒ 这类链接点下去是
+        //   **完全静默**的：不导航、不报错、什么都不发生。用户看到的只是"链接点不动"。
+        //   症状特别好认：**页内搜索好用，链接全点不动** —— 因为搜索走 JS，链接走导航。
+        //
+        //   这里造一个探针 WebView 接住目标地址，立刻转回主 WebView 里加载：
+        //   返回键的历史保持连续，也不会弹出第二个窗口。
+        @Override
+        public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+            try {
+                if (resultMsg == null || !(resultMsg.obj instanceof WebView.WebViewTransport)) return false;
+                WebView probe = new WebView(view.getContext());
+                probe.setWebViewClient(new WindowCatcher(view));
+                ((WebView.WebViewTransport) resultMsg.obj).setWebView(probe);
+                resultMsg.sendToTarget();
+                return true;
+            } catch (Throwable t) {
+                Log.w(TAG, "onCreateWindow 失败: " + t);
+                return false;
+            }
+        }
+    }
+
+    /** 只负责把新窗口的目标地址转交给主 WebView（禁止匿名内部类 —— d8/JDK24 会崩） */
+    static class WindowCatcher extends WebViewClient {
+        private final WebView main;
+        private boolean done = false;
+        WindowCatcher(WebView m) { main = m; }
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView v, String url) {
+            if (!done) {
+                done = true;
+                try { if (url != null && url.length() > 0) main.loadUrl(url); } catch (Throwable t) { /* 忽略 */ }
+                try { v.destroy(); } catch (Throwable t) { /* 忽略 */ }
+            }
+            return true;
+        }
     }
 
     int dp(float v) {
@@ -403,6 +443,11 @@ public class WebActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        // ⭐ 2026-10-05：**必须开**。WebView 默认不支持多窗口 ⇒ target="_blank" /
+        //    window.open 的链接会被**静默丢弃**（不导航、不报错）。开着才有下面的
+        //    Chrome.onCreateWindow 回调，那种链接才点得动。
+        s.setSupportMultipleWindows(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(true);
         // ⭐ 持久 cookie：WebView 的 CookieManager 默认写自己的数据目录 ⇒
         //    登录一次以后都认得（重启 App 也还在）。**与电脑 Edge 不共享**（Android 跨 App 隔离）。
         try {
