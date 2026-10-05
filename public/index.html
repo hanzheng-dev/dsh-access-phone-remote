@@ -1200,28 +1200,51 @@ let rendered = new Set();
 let es = null;
 
 // ---------- 上手引导（开源版新增）----------
-// 服务端暂无"配置状态"接口 ⇒ 用本地标记判断：第一次进来显示完整引导，点"知道了"收起为一行状态。
+// 服务端暂无"配置状态"接口 ⇒ 用本地标记判断：第一次进来显示完整引导，收起后变一行状态。
+//
+// ⭐ 2026-10-05：这套引导原本是照着「在电脑浏览器里打开」写的，搬到手机上就自相矛盾了 ——
+//   标题写「手机访问：…」、清单写「手机打开上面地址试试」「装 APK」，可用户此刻**就在手机
+//   （很可能就是 APK）里**。所以按设备分两套文案：电脑上说"去手机上做什么"，手机上直接说"能干什么"。
 function renderGuide() {
   const box = document.getElementById('guide');
   if (!box) return;
   const addr = location.origin;
+  const isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
   let done = false;
   try { done = !!localStorage.getItem('dsj_onboard_done'); } catch (e) {}
   if (!done) {
-    box.innerHTML = '<div class="guide">'
-      + '<div class="guide-h">dsj-open 已启动</div>'
-      + '<div class="guide-addr">手机访问：<b>' + escapeHtml(addr) + '</b></div>'
-      + '<div class="guide-sub">下一步：</div>'
-      + '<ul class="guide-list">'
-      + '<li>□ 手机打开上面地址试试</li>'
-      + '<li>□ 配置位置功能（可选，需要高德 key）</li>'
-      + '<li>□ 装 APK（可选，体验更好）</li>'
-      + '</ul>'
-      + '<div class="guide-act">'
-      + '<button class="btn" id="guideHelp"><span class="tx">帮助</span></button>'
-      + '<button class="btn" id="guideOk"><span class="tx">知道了</span></button>'
-      + '</div>'
-      + '</div>';
+    if (isPhone) {
+      // 手机端：不重复地址（已经在用了），只告诉他能干什么
+      box.innerHTML = '<div class="guide">'
+        + '<div class="guide-h">已连上电脑</div>'
+        + '<div class="guide-sub">可以试试：</div>'
+        + '<ul class="guide-list">'
+        + '<li>□ 传个文件过去，或让电脑传过来</li>'
+        + '<li>□ 电脑上的脚本 / AI 能往这里推消息</li>'
+        + '<li>□ 下面的按钮可以遥控电脑</li>'
+        + '</ul>'
+        + '<div class="guide-act">'
+        + '<button class="btn" id="guideHelp"><span class="tx">帮助</span></button>'
+        + '<button class="btn" id="guideOk"><span class="tx">收起</span></button>'
+        + '</div>'
+        + '</div>';
+    } else {
+      // 电脑端：他在电脑前，所以要告诉他"去手机上做什么"
+      box.innerHTML = '<div class="guide">'
+        + '<div class="guide-h">dsj-open 已启动</div>'
+        + '<div class="guide-addr">手机访问：<b>' + escapeHtml(addr) + '</b></div>'
+        + '<div class="guide-sub">下一步：</div>'
+        + '<ul class="guide-list">'
+        + '<li>□ 用手机扫码或打开上面地址</li>'
+        + '<li>□ 配置位置功能（可选，需要高德 key）</li>'
+        + '<li>□ 装 APK（可选，体验更好）</li>'
+        + '</ul>'
+        + '<div class="guide-act">'
+        + '<button class="btn" id="guideHelp"><span class="tx">帮助</span></button>'
+        + '<button class="btn" id="guideOk"><span class="tx">收起</span></button>'
+        + '</div>'
+        + '</div>';
+    }
     const hp = document.getElementById('guideHelp');
     if (hp) hp.onclick = () => { location.href = '/pages/help.html'; };
     // ⭐ 2026-10-05 去掉手机端的「二维码」入口。
