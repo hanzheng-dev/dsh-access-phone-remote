@@ -135,6 +135,7 @@ for (const f of testFiles) {
 // 用固定值（来自各测试脚本的实际输出）
 const KNOWN_TESTS = {
   'test/integration.mjs': 16,
+  'test/transfer.mjs': 7,
   'test/qr-verify.mjs': 15,
   'test/discover-test.mjs': 7,
   'plugin/test/static.mjs': 19,
