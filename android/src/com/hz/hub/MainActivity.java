@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PICK = 202;
     private static final int REQ_FILE = 203;
     private static final int REQ_LOC = 301;   // ⭐ 2026-09-30：定位权限动态申请
+    private static final int REQ_STORE = 302; // ⭐ 2026-10-05（阶段7）：存储权限（仅 API<29 收文件用）
 
     // ⭐ 2026-09-22 op：**全屏（edge-to-edge）后，状态栏图标黑/白的自动同步脚本**。
     //   为什么由原生注入、不改 index.html：index.html 是主人手机正在用的生产页面，
@@ -1214,6 +1215,15 @@ public class MainActivity extends Activity {
             }
         }
 
+        // ⭐ 2026-10-05（阶段7 op）：**接收电脑推来的文件** —— Android 9 及以下要写外部存储，
+        //   必须在这里申请（29+ 走 MediaStore，分区存储天然免权限）。
+        if (Build.VERSION.SDK_INT < 29
+                && checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORE);
+        }
+
         // ★ 2026-10-05 开源版：先读运行期配置；没配过 ⇒ 进配置页，配好再走正常流程
         loadConfig();
         if (HUB.isEmpty()) {
@@ -1247,6 +1257,12 @@ public class MainActivity extends Activity {
             boolean granted = grantResults != null && grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED;
             Log.i("DsMain", "通知权限请求结果: granted=" + granted);
+        }
+        // ⭐ 2026-10-05（阶段7）：存储权限结果（仅 API<29 用；拒绝时接收文件会失败并在通知里说明）
+        if (requestCode == REQ_STORE) {
+            boolean granted = grantResults != null && grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            Log.i(TAG, "存储权限请求结果: granted=" + granted);
         }
         // ⭐ 2026-09-30：定位权限结果 —— 给了就继续定位，拒了就回页面提示
         if (requestCode == REQ_LOC) {

@@ -82,6 +82,44 @@ writeFileSync(pcFile, pcContent, 'utf8')
   }
 }
 
+// ---------- 1b. raw=1 二进制下载（App 接收附件用） ----------
+console.log('\n[1b] raw 二进制下载（APK 阶段 7）')
+{
+  // 二进制文件（造一个假 PNG）：字节必须原样到达
+  const bin = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff, 0x10, 0x80])
+  const pngPath = join(testRoot, 'uploads', 'tiny.png')
+  writeFileSync(pngPath, bin)
+  const r = await fetch(BASE + '/api/file?path=' + encodeURIComponent(pngPath) + '&raw=1', { headers: auth })
+  const got = Buffer.from(await r.arrayBuffer())
+  const ct = r.headers.get('content-type') || ''
+  if (r.status === 200 && ct.includes('image/png') && Buffer.compare(got, bin) === 0) {
+    ok(`raw 下载二进制逐字节一致（${got.length} B，${ct}）`)
+  } else {
+    bad(`raw 下载二进制失败：HTTP ${r.status} ${ct}，收到 ${got.length} B`)
+  }
+  if ((r.headers.get('content-disposition') || '').includes('tiny.png')) {
+    ok('raw 响应带 Content-Disposition（文件名给客户端）')
+  } else {
+    bad('raw 响应缺 Content-Disposition')
+  }
+
+  // 文本文件也能 raw 下载（不限文本白名单后缀）
+  const r2 = await fetch(BASE + '/api/file?path=' + encodeURIComponent(pcFile) + '&raw=1', { headers: auth })
+  const t2 = Buffer.from(await r2.arrayBuffer()).toString('utf8')
+  if (r2.status === 200 && t2.includes('中文测试')) ok('raw 下载文本正常')
+  else bad(`raw 下载文本失败：HTTP ${r2.status}`)
+
+  // 无 raw 的旧链路不受影响：二进制文件仍按"只支持文本"拒掉（网页阅读链路还是老行为）
+  const r3 = await fetch(BASE + '/api/file?path=' + encodeURIComponent(pngPath), { headers: auth })
+  if (r3.status === 403) ok('无 raw 时二进制仍被旧逻辑拒（403，行为未变）')
+  else bad(`⚠️ 无 raw 拉二进制返回 ${r3.status}（原行为被破坏？）`)
+
+  // raw 同样受白名单管：外面文件必须拒
+  const r4 = await fetch(BASE + '/api/file?path=' + encodeURIComponent(join(ROOT, 'package.json')) + '&raw=1', { headers: auth })
+  if (r4.status === 403) ok('raw 白名单外被拒（403）')
+  else bad(`⚠️ raw 白名单外竟然给了！HTTP ${r4.status}`)
+}
+
 // ---------- 2. 手机 → 电脑（上传）----------
 console.log('\n[2] 手机 → 电脑')
 {

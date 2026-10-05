@@ -5,7 +5,7 @@ dsj-open 的安卓客户端：**全屏 WebView 套壳 + 原生增强**。
 - 页面 UI 全在电脑端（改 UI 不用重装 APK）
 - 首次启动填一次地址（含口令），之后自动连
 - 原生增强：系统通知（SSE 长连接 + 断线补发）、拍照 / 相册直发、GPS 定位、
-  网页浮层（带 Cookie）、真全屏状态栏适配
+  网页浮层（带 Cookie）、真全屏状态栏适配、**接收电脑推来的文件（自动存相册/下载）**
 
 > 服务端在仓库根目录（`node src/server.js`），本目录只是手机端。
 
@@ -130,6 +130,7 @@ App 会自动拆开：
 | 主页打不开、右上角出现「⚙ 配置」 | 地址不对 / 服务没开 / 手机和电脑不在同一网络 → 点 ⚙ 改地址；查电脑防火墙是否放了 3099 端口 |
 | 一进就跳回登录页 | 口令不对 → 重新复制带 `?t=` 的完整地址 |
 | 收不到系统通知 | 系统设置里给 App 开通知权限 + 电池白名单（国产 ROM 尤其要） |
+| 电脑推来的文件没存进相册/下载 | ①电脑端升级到最新版（旧版没有文件下载接口，App 会提示"请升级电脑端"）②Android 13+ 给通知权限、Android 9 及以下给存储权限 ③通知栏会写"接收失败：原因" |
 | 构建报 `找不到 aapt2 / android.jar` | 设置 `ANDROID_BT` / `ANDROID_JAR`（见构建节） |
 | 构建报 `找不到 7z / keytool` | 装 7-Zip / JDK 并加入 PATH，或用 `SEVENZ=…` / `KEYTOOL=…` 指定 |
 | `d8` 崩 `NullPointerException` | 踩了 JDK24 + 匿名内部类的坑 → 本工程**禁止匿名内部类**，改代码时保持具名嵌套类（见 `docs/PITFALLS.md` P24） |
@@ -155,6 +156,8 @@ android/
 └── src/com/hz/hub/
     ├── MainActivity.java    # 主界面：WebView 壳 + 首次配置页 + JS 桥
     ├── NotifyService.java   # 前台服务：SSE 通知（断线补发 + 心跳看门狗）
+    ├── FileReceiver.java    # 接收电脑推来的文件：下载 → 相册/下载目录 → 通知可点开
+    ├── FileProviderMini.java # 自写极简 FileProvider（Android 9 及以下打开已存文件用）
     ├── WebActivity.java     # 网页浮层（持久 Cookie）
     └── BootReceiver.java    # 开机自启通知服务
 ```

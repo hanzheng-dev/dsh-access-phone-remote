@@ -1,6 +1,7 @@
 // routes/file.js —— 文件传输 + 静态资源
 //
 //   · GET  /api/file        读文本文件内容（嵌进消息里展开看）
+//   · GET  /api/file?raw=1  二进制下载（手机 App "接收电脑推的文件"用；任意后缀，≤50MB）
 //   · POST /api/file/save   把编辑后的内容写回（写前自动备份）
 //   · POST /api/upload      手机用系统文件选择器上传（手写 multipart，单文件 ≤20MB）
 //
@@ -23,6 +24,7 @@ const path = require('path');
 const { config } = require('../config');
 const {
   json, readBody, readBodyRaw, log, htmlVersion, isAllowedDir, addPendingImg,
+  fileRef,   // ⭐ 阶段7：二进制下载复用「附件指针」同一份校验（目录/后缀/敏感名/大小）
 } = require('../store');
 
 const TEXT_EXT_RE = /\.(md|txt|json|log|csv|js|ts|html|css|ya?ml)$/i;
@@ -63,12 +65,37 @@ function contentType(f) {
 //  /api/* 文件接口
 // ============================================================
 async function handleApi(req, res, url, p) {
-  // ---------- 读文本文件 ----------
+  // ---------- 读文件 ----------
   if (p === '/api/file') {
     const raw = url.searchParams.get('path') || '';
     if (!raw) return json(res, 400, { ok: false, error: '没给 path' }), true;
     const abs = resolveInputPath(raw);
     if (!abs) return json(res, 400, { ok: false, error: '路径不合法' }), true;
+
+    // ⭐⭐ 2026-10-05（APK 阶段 7 op）：`raw=1` = **二进制下载**（手机 App 接收附件用）。
+    //   原来的 /api/file 只服务"网页里嵌文本看"（白名单后缀 + ≤2MB + 返回 JSON），
+    //   而 App 要收的图 / PDF / zip 全是二进制 ⇒ 加这条：
+    //   · 校验共用 `fileRef`（允许目录 + 非可执行 + 非敏感名 + 0 < size ≤ 50MB），
+    //     与 /api/push 收附件时**同一份判据**，不会对手机放出电脑上本就不能推的文件
+    //   · 流式直出（Content-Length + Content-Disposition），不整读进内存
+    //   ⚠️ 不改变无 raw 时的原有行为（网页阅读链路一字不动）
+    if (url.searchParams.get('raw') === '1') {
+      const meta = fileRef(abs);
+      if (!meta) {
+        return json(res, 403, { ok: false, error: '文件不可下载（不存在 / 不在允许目录 / 可执行或敏感名 / >50MB）' }), true;
+      }
+      res.writeHead(200, {
+        'Content-Type': contentType(abs),
+        'Content-Length': meta.size,
+        'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(meta.name),
+        'Cache-Control': 'no-store',
+      });
+      const rs = fs.createReadStream(abs);
+      rs.on('error', function () { try { res.destroy(); } catch (e) { /* 已断 */ } });
+      rs.pipe(res);
+      return true;
+    }
+
     if (!isAllowedDir(abs)) {
       return json(res, 403, { ok: false, error: '不在允许的目录（config.allowDirs / uploads / shots / docs）' }), true;
     }

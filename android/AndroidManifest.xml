@@ -22,6 +22,21 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- ⭐ 2026-10-05（APK 阶段 7 op）：**接收电脑推来的文件**。
+         Android 10+（API 29+）用 MediaStore 存相册/下载，**不需要权限**；
+         只有 9 及以下写传统路径才要 WRITE_EXTERNAL_STORAGE（maxSdkVersion 卡住即可）。 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- ⭐ 2026-10-05（阶段7）：通知里"点开文件"要先探测有没有应用能处理 ACTION_VIEW；
+         Android 11+ 包可见性默认看不到别人 ⇒ 声明 queries，否则 resolveActivity 永为 null。 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="*/*" />
+        </intent>
+    </queries>
+
     <application
         android:label="dsj-open"
         android:icon="@mipmap/ic_launcher"
@@ -59,6 +74,16 @@
             android:name=".NotifyService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- ⭐ 2026-10-05（阶段7 op）：**自写极简 FileProvider**（零依赖）。
+             用途：Android 9 及以下把"已保存的文件"以 content:// 分享给系统应用打开
+             （file:// 在 targetSdk 33 上必崩 FileUriExposedException）。
+             只读、只放行 DCIM/dsj-open 与 Download/dsj-open 两棵树。 -->
+        <provider
+            android:name=".FileProviderMini"
+            android:authorities="com.hz.hub.files"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <receiver
             android:name=".BootReceiver"

@@ -47,7 +47,7 @@ public class NotifyService extends Service {
     //     · 静默 = 不弹系统通知（工具播报/思考/自己发的）
     //   ⚠️ 旧渠道 chatv2 / chat / chatquiet 全部删掉，免得设置里三个同义渠道。
     private static final String ALERT_CH = "dsalert";
-    private static final String NORMAL_CH = "dsmsg";
+    static final String NORMAL_CH = "dsmsg";   // 包可见：FileReceiver 的文件通知也走这个渠道
     private static final String OLD_CHAT_CH = "chat";        // 旧 HIGH
     private static final String OLD_QUIET_CH = "chatquiet";  // 旧 LOW
     private static final String OLD_CHATV2_CH = "chatv2";    // 上一版 HIGH
@@ -80,6 +80,8 @@ public class NotifyService extends Service {
     // 看门狗判僵死：连接活着但这么久没收到任何字节 ⇒ 踢掉强制重连（hub 心跳 15s，3 倍余量）
     private static final long STALE_MS = 75 * 1000;
     private static final long WATCHDOG_MS = 15L * 60 * 1000;
+    // ⭐ 2026-10-05（阶段7）：断线窗口里补收附件的时限（更老的文件不重下）
+    private static final long FILE_CATCHUP_MS = 5 * 60 * 1000;
 
     // ⭐ 2026-09-18 op 修「退出 app 后收不到通知」的真凶：
     //   原来是 setReadTimeout(0)（永不超时）。手机切后台/息屏后连接会变"半死"
@@ -299,6 +301,10 @@ public class NotifyService extends Service {
         if ("new".equals(type)) {
             JSONObject msg = o.optJSONObject("msg");
             if (msg == null) return;
+            // ⭐⭐ 2026-10-05（APK 阶段 7 op）：**带附件的消息 ⇒ 自动接收存相册/下载**。
+            //   与提示级别无关（file 消息可能被判 silent 不弹通知，但文件必须收）。
+            //   只入队、不阻塞（下载在 FileReceiver 的单线程队列里跑）。
+            FileReceiver.maybeReceive(this, msg);
             // ⭐⭐⭐ 2026-09-28 op：**提示体系** —— 按 level 分级弹，不再只认向日葵。
             //   level 字段（hub /api/push 透传）：alert / normal / silent；没有字段时向后兼容
             //   （向日葵含图 ⇒ alert；回话类 chat/text ⇒ normal；工具/思考/自己发的 ⇒ silent）。
@@ -448,8 +454,18 @@ public class NotifyService extends Service {
             if (arr == null) return;
             JSONObject newest = null;
             long newestTs = -1;
+            long nowMs = System.currentTimeMillis();
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject m = arr.optJSONObject(i);
+                if (m == null) continue;
+                // ⭐ 2026-10-05（阶段7 op）：断线窗口里漏掉的**附件**也补收。
+                //   只收 5 分钟内的（太老的不重下）；FileReceiver 内部按消息 id 幂等。
+                if (m.optJSONObject("file") != null) {
+                    long fts = m.optLong("ts", 0);
+                    if (fts > 0 && nowMs - fts <= FILE_CATCHUP_MS) {
+                        FileReceiver.maybeReceive(this, m);
+                    }
+                }
                 if (levelOf(m) != LV_ALERT) continue;
                 long ts = m.optLong("ts", 0);
                 if (ts <= lastSunTs) continue;
