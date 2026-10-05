@@ -81,12 +81,17 @@ else {
 
 // ---------- 4. 已删除的 API ----------
 console.log('\n[4] 已删除的 API 引用')
+// ⚠️ 2026-10-05 移出会话层 6 个（/api/chat /api/delta /api/sessions /api/stop
+//    /api/busy /api/effort）：**会话层已回归开源版**，这些路由都在 src/routes/chat.js
+//    实现、被页面合法引用（第一步接线 + 第二步逐字流 + features.effort 的档位切换）。
+//    ⇒ 别再往这个清单里加它们，否则 lint 会把正常功能当"死引用"报错、卡发布自检。
+//    剩下的是真·已裁剪、开源版不提供的接口。
 const DEAD_API = [
-  '/api/chat', '/api/delta', '/api/cost', '/api/sessions',
+  '/api/cost',
   '/api/op/', '/api/op-return', '/api/ask-answer',
   '/api/adb', '/api/phone-', '/api/screen-state',
-  '/api/proxy-state', '/api/toggle-states', '/api/stop',
-  '/api/busy', '/api/effort', '/api/say', '/api/personas',
+  '/api/proxy-state', '/api/toggle-states',
+  '/api/say', '/api/personas',
   '/st/', '/api/agent-', '/api/fht-',
 ]
 const deadHits = []

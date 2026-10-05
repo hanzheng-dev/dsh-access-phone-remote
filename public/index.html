@@ -170,6 +170,14 @@
   }
   header #themeBtn svg{display:block;width:21px;height:21px}
   header #themeBtn:active{color:var(--fg)}
+  /* 刷新键与主题键同规格（同一水平面） */
+  header #homeReload{
+    background:none;border:0;padding:0;margin:0;flex:none;color:var(--dim);
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    font-family:inherit;line-height:1;
+  }
+  header #homeReload svg{display:block;width:21px;height:21px}
+  header #homeReload:active{color:var(--fg)}
   .dot{
     width:8px;height:8px;border-radius:50%;
     border:1px solid var(--line-hi);background:#333;
@@ -882,9 +890,58 @@
   .guide-line .dot{flex:none}
   .guide-addr2{font-family:ui-monospace,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
   .guide-line .minibtn{flex:none}
-  .ch-body{max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:6px 2px;overflow-anchor:none;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.5)}
-  html.dark .ch-body{background:rgba(255,255,255,.04)}
-  .ch-body:empty::after{content:'暂无消息';color:var(--dim);font-size:12.5px;padding:10px}
+  /* ══════════ ⭐⭐ 全屏对话层（从生产版照搬，裁剪）══════════
+     #chat 是盖在主页上的全屏层（与位置页同一套 .show 开合机制）。
+     ⚠️ 对话层必须**自成一体**：自己一块底色盖住下面主页（两层叠着没法看）。 */
+  #chat{
+    position:fixed;inset:0;background:#faf8f3;z-index:60;
+    display:none;flex-direction:column;
+    padding:0 0 env(safe-area-inset-bottom);
+  }
+  #chat.show{display:flex}
+  /* 对话页自己的背景层（和 body::before 同款：开源版去掉了私有背景图，用同色） */
+  #chat::before{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:#faf8f3;
+  }
+  html.dark #chat{background:#111}
+  html.dark #chat::before{background:#111}
+  #chat > *{position:relative;z-index:1}
+  /* ★ 有层盖着时藏掉底层页面的滚动条（否则右边多出一条"看得见滑不动"的条） */
+  html.overlay-open, html.overlay-open body{ overflow:hidden }
+  .ch-h{
+    display:flex;align-items:center;gap:9px;flex:none;
+    padding:calc(env(safe-area-inset-top) + 2px) 12px 5px;
+    background:rgba(255,255,255,.97);
+  }
+  html.dark .ch-h{ background:rgba(17,17,17,.97) }
+  .ch-h b{font-size:15px;font-weight:600;flex:1}
+  .ch-h .sub{font-size:11.5px;color:var(--dim);font-weight:400;margin-left:8px}
+  /* ★ 头部图标必须有**完全相同的外框**，否则对不齐（全换 24×24 viewBox 的 SVG） */
+  .ch-h button{
+    background:none;border:0;color:var(--dim);
+    width:30px;height:30px;padding:0;margin:0;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:inherit;line-height:1;
+  }
+  .ch-h button svg{display:block;width:21px;height:21px}
+  .ch-h button:active{color:var(--fg)}
+  /* 标题 = 会话切换入口（点一下弹选择器） */
+  .ch-h b#chTitleBtn{cursor:pointer;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
+  .ch-h b#chTitleBtn .ch-car{
+    font-style:normal;font-size:10px;line-height:1;color:var(--dim);margin-left:5px;
+    transition:transform .15s ease;transform:translateY(1px);
+  }
+  /* ★ 禁止自动重载：检测到服务端换新版只**点亮刷新键上的小红点**，刷不刷用户自己决定 */
+  #chReload,#homeReload{position:relative}
+  #chReload.hasnew::after,#homeReload.hasnew::after{
+    content:'';position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;
+    background:#ff3b30;box-shadow:0 0 0 1.5px rgba(255,255,255,.95);pointer-events:none;
+  }
+  html.dark #chReload.hasnew::after,html.dark #homeReload.hasnew::after{box-shadow:0 0 0 1.5px rgba(17,17,17,.95)}
+  /* ★ 关掉浏览器的滚动锚定 —— 它会在删顶部老消息时把 scrollTop 打到 0（跳顶），
+     我们改用 makeSticky.trim() 自己补偿高度 */
+  .ch-body{flex:1;overflow-y:auto;padding:16px 16px 28px;display:flex;flex-direction:column;gap:4px;overflow-anchor:none}
 </style>
 </head>
 <body>
@@ -906,7 +963,7 @@
       </g>
     </svg>
   </button>
-  <button id="chReload" title="刷新页面" aria-label="刷新页面">
+  <button id="homeReload" title="刷新页面" aria-label="刷新页面">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.75-6.46"/><path d="M21 3.11v6.56h-6.56"/></svg>
   </button>
 </header>
@@ -917,14 +974,54 @@
 <!-- 控制台：按钮由 render() 按 /api/commands 动态生成 -->
 <div id="app"></div>
 
-<!-- 消息推送 -->
-<div class="sec">
-  <div class="sec-t">消息</div>
-  <div class="ch-body" id="chBody"></div>
-</div>
-
 <footer id="ver">—</footer>
 </div><!-- /#home -->
+
+<!-- ⭐⭐ 全屏对话页（从生产版照搬布局）——手机跟电脑里的 AI 对话。
+     抬头：[‹ 返回] [会话 ▾] [⊕ 传文件] [📷 拍照] [▤ 切换会话] [⟳ 刷新]；
+     下面消息区 #chBody + 输入区 .ch-f。
+     ⚠️「发送」与「停」是**两个按钮**（同位置放相反语义 = 人会按习惯误点杀桥）。 -->
+<div id="chat">
+  <div class="ch-h">
+    <button id="chX" title="返回主页" aria-label="返回主页">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M17.4 4.4L5.2 12l12.2 7.6"/>
+      </svg>
+    </button>
+    <b id="chTitleBtn" title="切换会话">会话<span class="sub" id="chSid"></span><i class="ch-car">▾</i></b>
+    <input type="file" id="chCamFile" accept="image/*" capture="environment" style="display:none">
+    <button id="chPlus" title="传文件" aria-label="传文件">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 8.2v7.6M8.2 12h7.6"/>
+      </svg>
+    </button>
+    <button id="chCam" title="拍照 / 选图 发给 AI" aria-label="拍照 / 选图">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.6 8.6A1.8 1.8 0 0 1 4.4 6.8h2.3l1.2-1.8h8.2l1.2 1.8h2.3A1.8 1.8 0 0 1 21.4 8.6v9a1.8 1.8 0 0 1-1.8 1.8H4.4A1.8 1.8 0 0 1 2.6 17.6z"/>
+        <circle cx="12" cy="13.1" r="3.4"/>
+      </svg>
+    </button>
+    <button id="chSess" title="切换会话" aria-label="切换会话">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20.72 11.1c0 4.09-3.89 7.35-8.72 7.35-.95 0-1.89-.13-2.73-.37l-4.41 2.15a.42.42 0 0 1-.59-.47l.73-3.26C3.6 15.2 3.28 13.2 3.28 11.1c0-4.09 3.89-7.35 8.72-7.35s8.72 3.26 8.72 7.35z"/>
+      </svg>
+    </button>
+    <button id="chReload" title="刷新页面" aria-label="刷新页面">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 1 1-2.75-6.46"/>
+        <path d="M21 3.11v6.56h-6.56"/>
+      </svg>
+    </button>
+  </div>
+  <div class="ch-body" id="chBody"></div>
+  <div class="ch-f">
+    <textarea id="chIn" rows="1" placeholder="说点什么…（回车发送）"></textarea>
+    <button id="chEffort" title="切换思考档位" style="display:none">🧠 ?</button>
+    <button id="chStop" title="中断当前回复" aria-label="中断当前回复" style="display:none">⏹</button>
+    <button id="chSend">发送</button>
+  </div>
+</div>
 
 <!-- ⭐⭐ 2026-09-30 op：位置页 = **站内极简导航**（地图 + 附近搜索 + 四种方式时间 / 路线分段）。
      从主页「控制」板块的「位置」进（render 里对 id==='loc' 特判）。
@@ -1152,6 +1249,20 @@ function render() {
   const app = $('app');
   app.innerHTML = '';
 
+  // ⭐ 会话入口（config.dsh.enabled 时才有；DSH_ON 由启动时探测 /api/sessions 得出）
+  if (DSH_ON) {
+    const top0 = document.createElement('div');
+    top0.className = 'grid one';
+    top0.style.marginBottom = '8px';
+    const cb = document.createElement('button');
+    cb.className = 'btn';
+    cb.id = 'chatBtn';
+    cb.innerHTML = '<span class="ico">💬</span><span class="tx">对话</span><span id="chatBadge"></span>';
+    cb.onclick = openChat;
+    top0.appendChild(cb);
+    app.appendChild(top0);
+  }
+
   // 传文件 / 拍照入口
   const top = document.createElement('div');
   top.className = 'grid one';
@@ -1193,11 +1304,34 @@ function render() {
   renderGuide();
 }
 
-// ---------- 消息流（推送）----------
+// ---------- 消息流（推送）+ 全屏对话（会话页）状态 ----------
 // 收推送：SSE(/api/events) 实时 + /api/inbox 兜底轮询。消息渲染复用下面的 bubble()。
-let inboxSince = 0;
-let rendered = new Set();
-let es = null;
+let chSince = 0;              // 消息增量拉取游标（按 ts）
+let chOpen = false;           // 对话页是否开着（SSE 用它决定消息画在哪 / 是否点"新"标）
+let chFirstPull = true;       // 首屏（刚进对话页/刷新）第一次拉完历史 ⇒ 无条件贴底
+let rendered = new Set();     // 已画过的消息 id —— SSE 与兜底轮询都可能送到同一条，去重
+let streamEls = {};           // messageId → 正在逐字蹦的那个气泡
+let es = null;                // EventSource
+let DSH_ON = false;           // 会话功能是否启用（/api/sessions 非 404；启动时探测）
+const msgKeys = new Map();    // id -> [round, seq, ts, id]（按 (round,seq) 排位用）
+
+// 功能开关（config.features，由服务端注入 window.__DSJ_FEATURES__；没有就全 false）。
+// 关掉的功能**连入口都不出现** —— 前端按这张表决定显不显示。
+const FEATURES = Object.assign({
+  cost: false, effort: false, askUser: false, switches: false, op: false,
+  agents: false, adb: false, reminders: false, tavern: false, hitchhike: false,
+}, (typeof window !== 'undefined' && window.__DSJ_FEATURES__) || {});
+function featOn(k) { return !!FEATURES[k]; }
+
+// ---------- 逐字流 / 忙锁状态（生产版照搬）----------
+// ★ 发送按钮不能看"POST 请求返回"（它一眨眼就返回，那时 AI 还在生成）——
+//   恢复时机看两条：hub 的忙锁（权威）+ 本地流登记（宽限）。
+const liveIds = new Map();    // 消息 id -> 最后活动时间（Map 而不是计数器：断线重连不丢账）
+const STREAM_DEAD_MS = 45 * 1000;   // 45 秒没动静认它死了（覆盖正常空档，又不让"生成中"僵死太久）
+let busyTimer = null, busySince = 0;
+let remoteBusy = false;       // hub 说的（/api/busy）—— 权威
+let stopMuteUntil = 0;        // 按停后这段时间忽略"忙"信号（防止桥没死透时按钮又亮回来）
+let chatHistoryPushed = false; // 手机返回键：对话页 push 一条 history，返回键能关它
 
 // ---------- 上手引导（开源版新增）----------
 // 服务端暂无"配置状态"接口 ⇒ 用本地标记判断：第一次进来显示完整引导，收起后变一行状态。
@@ -1694,7 +1828,14 @@ function bubble(kind, text, image, buttons, mkind, detail, detailImage, streamin
         el.dataset.done = '1';
         el.classList.add(b.warn ? 'done-bad' : 'done-ok');
         el.textContent = (b.warn ? '✗ ' : '✓ ') + String(b.label).replace(/^[^\p{L}\p{N}]+/u, '');
+        // 非静默按钮 = "要说点什么"，那种才需要出现在对话里；静默 = 一个确定的动作，只变样子。
         if (!b.silent) bubble('me', b.value);
+        const payload = { text: b.value };
+        if (b.silent) payload.silent = true;   // 静默 = 不惊动 AI（hub 只落消息池）
+        fetch(API + '/api/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
         toast('已选择：' + b.value);
       };
       row.appendChild(el);
@@ -1733,6 +1874,11 @@ function renderOptions(o) {
     });
     const val = o.multi ? vals.join(' + ') : (vals[0] || '');
     bubble('me', val);
+    // 选完一次把结果回传（走桥进对话历史）
+    fetch(API + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: val }),
+    }).catch(() => {});
     toast('已选择：' + val);
   }
   o.items.forEach((it, i) => {
@@ -1945,14 +2091,52 @@ function setMsgText(el, raw, force) {
 }
 
 function syncOverlayLock() {
-  const on = !!document.querySelector('#loc.show');
+  const on = !!document.querySelector('#chat.show, #loc.show');
   document.documentElement.classList.toggle('overlay-open', on);
 }
 
-// 开源版：主页就是唯一页面（不再有会话页/抽屉）
+// 开源版：主页就是底页（对话层 / 位置页都是盖上去的全屏层）
 function openHome() { try { window.scrollTo(0, 0); } catch (e) {} }
 function closeHome() {}
 function closeHomeNow() {}
+
+// ⭐⭐ 对话页开关（从生产版裁剪：不再有"抽屉"，close 就是回主页）
+function openChat() {
+  if (!$('chat')) return;
+  chOpen = true;
+  try { localStorage.setItem('dshPage', 'chat'); } catch (e) {}   // 刷新后还停在这页
+  $('chat').classList.add('show'); syncOverlayLock();
+  chSince = 0;
+  chFirstPull = true;      // 本次是"刚进对话页" ⇒ 历史拉完无条件贴底
+  rendered = new Set();
+  streamEls = {};
+  msgKeys.clear();
+  $('chBody').innerHTML = '';
+  liveIds.clear(); if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+  showBusyLine(false);     // 「生成中…」行先建出来（钉在末尾）
+  dshScroll.hardForce();   // 刚进对话页：强制贴底（是用户点进来的）
+  watchChBodyResize();     // 挂上"内容长高就再贴底"的观察器
+  // 手机返回键：APK 把 BACK 映射成 WebView goBack ⇒ push 一条历史，返回键就能关掉对话页
+  if (!chatHistoryPushed) {
+    try { history.pushState({ dshChat: 1 }, '', location.pathname); chatHistoryPushed = true; } catch (e) {}
+  }
+  pullChat();
+  connectSSE();
+  if (DSH_ON) pollBusy();
+  // ⚠️ 不自动 focus 输入框（否则手机键盘一开就弹出来）
+}
+function closeChat() {
+  // 点 ‹ 关：把刚才那条历史**消费掉**（否则返回键会"多退一次"，退到桌面）
+  if (chatHistoryPushed) { chatHistoryPushed = false; suppressPop = true; try { history.back(); } catch (e) {} }
+  closeChatNow();
+}
+function closeChatNow() {
+  chOpen = false;
+  const el = $('chat');
+  if (el) el.classList.remove('show');
+  syncOverlayLock();
+  try { localStorage.removeItem('dshPage'); } catch (e) {}   // 关掉了就忘掉它：刷新回主页
+}
 
 // 手机返回键：APK 映射成 WebView goBack ⇒ 触发 popstate。
 let suppressPop = false;
@@ -1960,6 +2144,7 @@ window.addEventListener('popstate', function () {
   if (suppressPop) { suppressPop = false; return; }
   const dlg = $('mask');
   if (dlg && dlg.classList.contains('show')) { closeDlg(); return; }
+  if (chOpen) { chatHistoryPushed = false; closeChatNow(); return; }
   if (window.__locOpen) { window.__closeLocNow(); return; }
 });
 
@@ -2152,54 +2337,509 @@ function watchChBodyResize() { dshScroll.bind(); }
 //     要不要刷由用户自己按 ⟳ 决定（按 ⟳ 照旧 reload，重载后红点自然消失）。
 //   ⚠️ 版本检测本身保留 —— 红点就靠它亮。
 function markNewVersion() {
+  // ★ 只点亮刷新键上的小红点（禁止自动重载 —— 自动重载会吞掉打了一半的字）
   try {
-    const b = document.getElementById('chReload');
+    const a = document.getElementById('chReload');
+    if (a) a.classList.add('hasnew');
+    const b = document.getElementById('homeReload');
     if (b) b.classList.add('hasnew');
   } catch (e) {}
 }
+
+// ---------- ⭐ 消息按 (round, seq) 插入（生产版"一劳永逸"的排序基准）----------
+// 正文走 /api/delta（带 streamId，天然有序），工具走 /api/push（生产版曾无序）⇒
+// 两条管道没有共同排序基准时谁先落地谁在前，时序一抖工具就整批堆到正文下面。
+// ⇒ 桥给所有东西统一领号，页面按 (轮次, seq) 插入 —— 落地时间不再是排序依据。
+function sortKeyOf(m) {
+  const round = (typeof m.round === 'number') ? m.round : m.ts;
+  const seq = (typeof m.seq === 'number') ? m.seq : 0;
+  return [round, seq, m.ts, m.id];
+}
+function cmpKey(a, b) { for (let i = 0; i < 4; i++) { if (a[i] !== b[i]) return a[i] - b[i]; } return 0; }
+
+/** 把元素插到它该在的位置。没有序号的老消息退回"追加"（= 老行为）。 */
+function placeMsg(el, m) {
+  const body = $('chBody');
+  if (!body) return el;
+  el.dataset.mid = String(m.id);
+  if (typeof m.seq !== 'number') { msgKeys.set(m.id, null); body.appendChild(el); return el; }
+  const key = sortKeyOf(m);
+  msgKeys.set(m.id, key);
+  let anchor = null;
+  for (const child of body.children) {
+    const k = msgKeys.get(Number(child.dataset.mid));
+    if (k && cmpKey(k, key) > 0) { anchor = child; break; }
+  }
+  if (anchor) body.insertBefore(el, anchor); else body.appendChild(el);
+  // ★ 「生成中…」那一行要**永远在最底下** —— 新消息插进来后把它挪回末尾
+  const bl = document.getElementById('chBusyLine');
+  if (bl && body.lastElementChild !== bl) body.appendChild(bl);
+  return el;
+}
+
+/** 挂载一条新消息：走 placeMsg 的 (round,seq) 排序（工具/思考也平铺，跟 dsh 网页一致）。 */
+function placeMsgTyped(el, m) {
+  placeMsg(el, m);
+  return el;
+}
+
+// ---------- 逐字流记账（生产版踩了三次坑才定下来的模型）----------
+// ★ 只有"真流"（带 streamId 的）才能开一条流 —— 因为它有配对的 `end` 事件；
+//   工具/思考没有 streamId ⇒ 永远收不到 end，给它们开流就只能等 45 秒超时。
+//   ⇒ 工具/思考只能"续命"（刷新已有流的时间戳），自己不成为新流。
+// ★ 必须记时间戳（而不只是集合）：`end` 在刷新/重连期间错过时，那个 id 会永远挂着
+//   ⇒「生成中…」永久亮着。超过 STREAM_DEAD_MS 没动静就认它死了。
+function liveMark(id) { if (id != null) liveIds.set(id, Date.now()); }
+function liveClear(id) { if (id != null) liveIds.delete(id); }
+function liveMarkSafe(id, ts) {
+  if (id == null) return;
+  const lastT = liveIds.get(id);
+  if (lastT == null) {
+    if (ts != null && (Date.now() - (Number(ts) || 0)) > 30000) return;   // 补历史的老消息不算"在跑"
+    liveMark(id);
+  } else if (Date.now() - lastT > STREAM_DEAD_MS) liveClear(id);          // 僵死的不许续命
+  else liveMark(id);
+}
+function liveTouchAll() {   // 新鲜的工具/思考 = 还在干活 ⇒ 给已有流续命
+  const now = Date.now();
+  for (const id of Array.from(liveIds.keys())) liveIds.set(id, now);
+}
+function liveCount() {
+  const now = Date.now();
+  for (const [id, t] of Array.from(liveIds.entries())) {
+    if (now - t > STREAM_DEAD_MS) liveClear(id);
+  }
+  return liveIds.size;
+}
+
+// ---------- 发送/停 按钮状态 + 「生成中…」行 ----------
+function setSendBusy(on) {
+  const btn = $('chSend');
+  if (!btn) return;
+  btn.classList.toggle('busy', on);
+  // ⚠️ 发送永远是"发送"；生成时**旁边多出一个「⏹」**，两个动作各占一个按钮。
+  //   （同位置换语义的翻车史：用户等我回答时按习惯点它 ⇒ 点了"杀桥"。）
+  const stopBtn = $('chStop');
+  if (stopBtn) stopBtn.style.display = on ? '' : 'none';
+}
+async function pollBusy() {
+  try {
+    const j = await (await fetch(API + '/api/busy', { cache: 'no-store' })).json();
+    const b = !!(j && j.busy) && Date.now() > stopMuteUntil;
+    if (b !== remoteBusy) { remoteBusy = b; refreshSendBusy(); }
+  } catch (e) { /* 网络抖动：保持上一次的值，别乱闪 */ }
+}
+function refreshSendBusy() {
+  const stuck = busySince && Date.now() - busySince > 8 * 60 * 1000;
+  if (stuck) { liveIds.clear(); if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; } busySince = 0; }
+  // ★ 判据：**以 hub 的忙锁为准**（remoteBusy），本地那两个只当"刚发出去"的宽限
+  const on = !stuck && (remoteBusy || busyTimer !== null || liveCount() > 0);
+  setSendBusy(on);
+  showBusyLine(on);
+}
+function showBusyLine(on) {
+  const body = $('chBody');
+  if (!body) return;
+  let el = document.getElementById('chBusyLine');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'chBusyLine';
+    el.className = 'chbusy';
+    el.textContent = '生成中…';
+  }
+  if (body.lastElementChild !== el) body.appendChild(el);   // 永远钉在末尾
+  el.style.display = on ? '' : 'none';
+}
+function streamBegin(id) {
+  liveMark(id);
+  busySince = Date.now();
+  if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+  refreshSendBusy();
+}
+function streamDone(id) {
+  if (id != null) liveClear(id);
+  if (liveCount() === 0) {
+    if (busyTimer) clearTimeout(busyTimer);
+    busyTimer = setTimeout(function () { busyTimer = null; refreshSendBusy(); }, 2500);
+  }
+  refreshSendBusy();
+}
+
 function connectSSE() {
   if (es) { try { es.close(); } catch (e) {} es = null; }
   try { es = new EventSource(API + '/api/events'); } catch (e) { return; }
-  es.onopen = () => { inboxSince = 0; pullInbox(); };
+  es.onopen = () => {
+    // ★★ 重连 = 丢掉了"哪些流还开着"的跟踪（hub 重启过、网络抖过）
+    //   ⇒ **必须先清空**，下面 pullChat 会按 hub 给的 streaming 标记**重建**。
+    liveIds.clear();
+    if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+    chSince = 0; pullChat();
+    refreshSendBusy();
+    if (DSH_ON) pollBusy();
+  };
   es.onmessage = (ev) => {
     let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+    // ★ 页面版本自检 —— 从 SSE 走（hub 连上时发 hello、之后每 15 秒心跳捎带）。
+    //   版本变了**只点红点**（禁止自动重载：会吞掉打了一半的字）。
     if (d.type === 'hello' || d.type === 'ping') {
-      if (d.version && MY_VER && MY_VER !== VER_SENTINEL && d.version !== MY_VER) markNewVersion();
+      if (d.version && MY_VER && MY_VER !== VER_SENTINEL && d.version !== MY_VER) {
+        markNewVersion();
+      }
+      return;
+    }
+    // 电脑端（dsh 网页 / 别处）改了档位 → 手机按钮跟着变（features.effort 开着才有意义）
+    if (d.type === 'effort') {
+      if (!featOn('effort')) return;
+      if (d.value && d.value !== 'default') { effortNow = d.value; paintEffort(); }
       return;
     }
     if (d.type === 'new' && d.msg) {
       const m = d.msg;
       if (m.from === 'phone') return;
-      if (m.kind === 'result') return;      // 指令结果不进消息流
+      if (m.kind === 'result') return;    // 指令结果不进对话流
       if (rendered.has(m.id)) return;
       rendered.add(m.id);
-      if (m.ts > inboxSince) inboxSince = m.ts;
-      bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, false, m.file, m.options, null, m.web);
+      if (m.ts > chSince) chSince = m.ts;
+      // ★ 忙状态的登记：
+      //   只有"真流"（带 streamId、且是刚发生的）才能开一条流；
+      //   工具/思考没有 streamId ⇒ 只给已有流续命，自己不成为新流。
+      if (m.streamId && (Date.now() - (Number(m.ts) || 0)) < 30000) {
+        streamBegin(m.id);
+      } else if (m.kind === 'tool' || m.kind === 'reasoning') {
+        liveTouchAll();
+      }
+      if (chOpen) {
+        const el = placeMsgTyped(bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, m.streaming, m.file, m.options, null, m.web, m.ask), m);
+        streamEls[m.id] = el;
+        if (m.kind === 'reasoning') el.classList.add('streaming');
+      } else {
+        const b = $('chatBadge');
+        if (b) b.innerHTML = '<span class="badge">新</span>';
+      }
+    } else if (d.type === 'append') {
+      liveMarkSafe(d.id, Date.now());   // 有增量 = 真在流，刷新时间戳
+      if (!chOpen) return;
+      const el = streamEls[d.id];
+      if (el) {
+        // ⚠️ 已收尾（_done）的思考块，不许被【迟到的尾巴字】重新点亮光标（会卡在「思考中…▍」）
+        if (el._mk === 'reasoning' && !el._done) el.classList.add('streaming');
+        bubbleAppend(el, d.text);
+      } else {
+        const nl = bubble('pc', d.text, null, null, d.mkind || 'chat');
+        if (nl._mk === 'reasoning') nl.classList.add('streaming');
+        if (nl._mk === 'reasoning' || nl._mk === 'tool') {
+          placeMsgTyped(nl, { id: d.id, kind: nl._mk, round: (typeof d.round === 'number') ? d.round : undefined, seq: (typeof d.seq === 'number') ? d.seq : undefined, ts: Date.now() });
+        } else {
+          const bb = $('chBody');
+          if (bb) { bb.appendChild(nl); dshScroll.trim(40); }
+        }
+        stickToBottom();
+        streamEls[d.id] = nl;
+      }
+    } else if (d.type === 'replace') {
+      if (!chOpen) return;
+      bubbleSet(streamEls[d.id], d.text);
+    } else if (d.type === 'end') {
+      // ★ 收掉闪烁光标，而且**强制重画一遍正文** —— 页面渲染有 60ms 节流，
+      //   最后几个字可能被吞掉后再也等不到新的 append 来触发重画。
+      const el = streamEls[d.id];
+      if (el) {
+        el.classList.remove('streaming');
+        el._done = true;
+        if (el._mk === 'reasoning' || el._mk === 'tool') setFoldText(el, el._raw || '');
+        else { setMsgText(el, el._raw || '', true); autoWebCards(el, el._raw || ''); }
+      }
+      streamDone(d.id);
+    } else if (d.type === 'busy') {
+      // ⭐ 激进停止：hub 广播"不忙了" ⇒ 立刻复位（不等下一次轮询）
+      remoteBusy = !!d.busy;
+      if (!d.busy) {
+        liveIds.clear();
+        if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+        busySince = 0;
+        stopMuteUntil = Date.now() + 15000;
+      }
+      refreshSendBusy();
     }
   };
-  es.onerror = () => { /* EventSource 自动重连 */ };
+  es.onerror = () => { /* EventSource 自己重连；onopen 时会再对齐一次 */ };
 }
 
-async function pullInbox() {
+async function pullChat() {
   try {
-    const r = await fetch(API + '/api/inbox?since=' + inboxSince, { cache: 'no-store' });
+    const r = await fetch(API + '/api/inbox?since=' + chSince, { cache: 'no-store' });
     const j = await r.json();
     (j.messages || []).forEach((m) => {
-      if (m.ts > inboxSince) inboxSince = m.ts;
+      if (m.ts > chSince) chSince = m.ts;
       if (m.from === 'phone') return;      // 自己发的已经本地画过
-      if (m.kind === 'result') return;
-      if (rendered.has(m.id)) return;      // SSE 已经画过的不重复画
+      if (m.kind === 'result') return;     // 指令结果不进对话流
+      // ★★ 重建"哪些流还开着"的记账 —— **必须放在 rendered 判断之前**：
+      //   已经画过的消息会被下面跳过，可它可能**还在流**（重连之后 hub 会告诉我们）。
+      if (m.streaming) liveMarkSafe(m.id, m.ts);
+      else if ((m.kind === 'tool' || m.kind === 'reasoning') && (Date.now() - (Number(m.ts) || 0)) < 30000) liveTouchAll();
+      if (rendered.has(m.id)) return;      // ★ SSE 已经画过的不重复画
       rendered.add(m.id);
-      bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, false, m.file, m.options, null, m.web);
+      if (chOpen) {
+        const el = placeMsgTyped(bubble('pc', m.text, m.image, m.buttons, m.kind, m.detail, m.detailImage, m.streaming, m.file, m.options, null, m.web, m.ask), m);
+        // ★ 必须登记进 streamEls：否则这条消息后续的 append / replace / end 找不到它
+        streamEls[m.id] = el;
+        if (m.streaming) { el.classList.add('streaming'); liveMarkSafe(m.id, m.ts); }
+        // ★ 补历史时，**已结束**的折叠块要标成完成，否则会一直显示"思考中"（真踩到）
+        else if (el._mk === 'reasoning' || el._mk === 'tool') { el._done = true; setFoldText(el, m.text); }
+      } else {
+        const b = $('chatBadge');
+        if (b) b.innerHTML = '<span class="badge">新</span>';
+      }
     });
   } catch (e) { /* 断网忽略 */ }
+  refreshSendBusy();
+  // ★ 首屏（刷新 / 刚进对话页）**无条件贴底**；之后（重连 / 增量）按"粘底才跟随"。
+  if (chFirstPull) { chFirstPull = false; dshScroll.bootBottom(); }
+  else if (dshScroll.S.stick) dshScroll.force();
 }
+
+// ---------- 发送 / 停 ----------
+async function sendChat() {
+  if (!DSH_ON) { bubble('sys', '会话功能未启用（config.json 里设 dsh.enabled = true）'); return; }
+  const el = $('chIn');
+  const t = el.value.trim();
+  if (!t) return;
+  el.value = ''; el.style.height = '42px';
+  bubble('me', t);
+  stickToBottom(true);   // ★ 自己发的 ⇒ 强制回底（要看回答，不是留在上面）
+  // ★ 发出去就先灰上，一直灰到"所有流都结束"（见 streamDone）。
+  //   ⚠️ 不能靠 `btn.disabled`：POST /api/chat 一眨眼就返回，那时 AI 还在生成。
+  busySince = Date.now();
+  if (busyTimer) clearTimeout(busyTimer);
+  busyTimer = setTimeout(function () { busyTimer = null; refreshSendBusy(); }, 2500);
+  refreshSendBusy();
+  try {
+    const r = await fetch(API + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: t })
+    });
+    const j = await r.json();
+    if (!j.ok) { bubble('sys', '发送失败：' + (j.error || '未知')); draftFail('chIn', t); }
+    else draftClear('chIn');   // ⭐ 发送成功才清草稿（失败留草稿，别白丢）
+  } catch (e) { bubble('sys', '发送失败：' + e.message); draftFail('chIn', t); }
+  refreshSendBusy();
+}
+
+// ⭐⭐ 「停」—— 一点立马停，不管在干什么（工作空间：三条缺一不可）
+//   ① 本地立刻复位（不等网络）：清流、清忙锁、按钮马上回「发送」
+//   ② 打后端 /api/stop（后端做：session/cancel + 杀桥 + 清忙锁；亚毫秒返回）
+//   ③ stopMuteUntil 让轮询在这 15 秒内忽略"忙"信号（防止桥没死透时按钮又亮回来）
+async function stopNow() {
+  const t0 = Date.now();
+  liveIds.clear();
+  if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+  busySince = 0;
+  remoteBusy = false;
+  stopMuteUntil = Date.now() + 15000;
+  refreshSendBusy();
+  const el = bubble('sys', '⏹ 已停');
+  try {
+    const ctl = new AbortController();
+    const tm = setTimeout(() => ctl.abort(), 2000);
+    const r = await fetch(API + '/api/stop', { method: 'POST', signal: ctl.signal });
+    clearTimeout(tm);
+    const j = await r.json().catch(() => null);
+    if (el) el.textContent = '⏹ 已停 · 收尾 ' + ((j && j.ended) || 0) + ' 条流 · ' + (Date.now() - t0) + 'ms';
+  } catch (e) {
+    if (el) el.textContent = '⏹ 已发停止请求（后端没回，可能没重启）';
+  }
+  liveIds.clear();
+  remoteBusy = false;
+  refreshSendBusy();
+}
+
+// ---------- 会话切换器 ----------
+//   列表来自 GET /api/sessions（chat.js 实现：dsh session/list + 磁盘过滤幽灵会话）。
+//   真正"切"还是发 `@会话 <id>` 走桥里那条唯一逻辑（写 sharedSid + 6 小时保护期）。
+async function openSessionPicker() {
+  openDlg('🗂 切换会话', '<span class="busy">正在拉会话列表…</span>', []);
+  let j = null;
+  try {
+    j = await (await fetch(API + '/api/sessions', { cache: 'no-store' })).json();
+  } catch (e) {
+    $('dBody').innerHTML = '<span class="busy">拉不到：' + escapeHtml(String(e.message || e)) + '</span>';
+    return;
+  }
+  if (!j || !j.ok) {
+    $('dBody').innerHTML = '<span class="busy">拉不到会话列表（dsh 没在跑？）<br>' +
+      escapeHtml(String((j && j.error) || '')) + '</span>';
+    return;
+  }
+
+  const cur = String(j.current || '').replace(/^session-/, '');
+  const body = $('dBody');
+  body.innerHTML = '';
+
+  const row = (label, sub, isCur, running, onClick) => {
+    const r = document.createElement('div');
+    r.className = 'sessrow' + (isCur ? ' cur' : '');
+    const t = document.createElement('div');
+    t.className = 'sessrow-t';
+    t.textContent = (isCur ? '✅ ' : (running ? '▶ ' : '')) + label;
+    const d = document.createElement('div');
+    d.className = 'sessrow-d';
+    d.textContent = sub;
+    r.appendChild(t); r.appendChild(d);
+    r.onclick = onClick;
+    body.appendChild(r);
+  };
+
+  const switchTo = (text, label) => {
+    closeDlg();
+    bubble('sys', '正在切到「' + label + '」…');
+    fetch(API + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    }).catch(() => {});
+  };
+
+  if (j.sessions && j.sessions.length) {
+    const h = document.createElement('div');
+    h.className = 'sessh';
+    h.textContent = '最近的会话（' + j.sessions.length + ' 个）';
+    body.appendChild(h);
+    j.sessions.forEach((s) => {
+      const label = s.title || s.id.slice(0, 18);
+      const sub = 'session-' + s.id + (s.id === cur ? '   ← 当前' : '') + (s.turns ? '   · ' + s.turns + ' 轮' : '');
+      row(label, sub, s.id === cur, s.running, () => switchTo('@会话 ' + s.id, label));
+    });
+  } else {
+    const h = document.createElement('div');
+    h.className = 'sessh';
+    h.textContent = '（没拉到会话列表）';
+    body.appendChild(h);
+  }
+}
+
+// ---------- 草稿自动保存（生产版 2026-09-19 事故修复照搬）----------
+// 起因：页面版本自检重载会吞掉打了一半的字。修法：一打字就存，加载时还原，发送成功才清。
+// ⚠️ localStorage 在 WebView 里可能失败 ⇒ 一律 try 包住。
+function draftKey(id) { return 'dsh_draft_' + id; }
+var draftTimers = {};
+function draftSave(id, val) {
+  if (draftTimers[id]) clearTimeout(draftTimers[id]);
+  draftTimers[id] = setTimeout(function () {
+    draftTimers[id] = null;
+    try {
+      if (val == null || val === '') localStorage.removeItem(draftKey(id));
+      else localStorage.setItem(draftKey(id), val);
+    } catch (e) {}
+  }, 300);   // 防抖 300ms
+}
+function draftClear(id) {
+  if (draftTimers[id]) { clearTimeout(draftTimers[id]); draftTimers[id] = null; }
+  try { localStorage.removeItem(draftKey(id)); } catch (e) {}
+}
+function draftRestore(id) {
+  var el = $(id); if (!el) return;
+  try {
+    var v = localStorage.getItem(draftKey(id));
+    if (v == null || v === '') return;   // ⚠️ 空草稿别填
+    el.value = v;
+    try { el.selectionStart = el.selectionEnd = el.value.length; } catch (e) {}
+    if (el.tagName === 'TEXTAREA') { el.style.height = '42px'; el.style.height = Math.min(120, el.scrollHeight) + 'px'; }
+  } catch (e) {}
+}
+function draftBind(id) {
+  var el = $(id); if (!el) return;
+  el.addEventListener('input', function () { draftSave(id, this.value); });
+  draftRestore(id);
+}
+function draftFail(id, t) {
+  var el = $(id); if (!el || el.value) return;
+  el.value = t;
+  if (el.tagName === 'TEXTAREA') { el.style.height = '42px'; el.style.height = Math.min(120, el.scrollHeight) + 'px'; }
+}
+
+// ---------- 思考档位（features.effort 开着才初始化；默认关）----------
+const EFFORT_LABEL = { off: '关', low: '低', high: '高', max: '最大' };
+const EFFORT_CYCLE = ['off', 'high', 'max'];
+let effortNow = null;
+function paintEffort() {
+  const b = $('chEffort'); if (!b) return;
+  b.dataset.v = effortNow || '';
+  b.textContent = '🧠 ' + (EFFORT_LABEL[effortNow] || effortNow || '?');
+}
+function effortFlash(msg) {
+  const b = $('chEffort'); if (!b) return;
+  b.textContent = msg;
+  setTimeout(paintEffort, 3000);
+}
+async function loadEffort() {
+  try {
+    const r = await fetch(API + '/api/effort', { cache: 'no-store' });
+    const j = await r.json();
+    if (j && j.ok) { effortNow = j.value; paintEffort(); }
+  } catch (e) { /* 忽略：拿不到就先显示 ? */ }
+}
+// ⚠️ 初始化放在启动区（features 可能来自 /api/features，要等它拉完再决定显不显示）
+function initEffort() {
+  if (!featOn('effort')) return;
+  const effortBtn = $('chEffort');
+  if (!effortBtn) return;
+  effortBtn.style.display = '';
+  effortBtn.addEventListener('click', async () => {
+    const i = EFFORT_CYCLE.indexOf(effortNow);
+    const next = EFFORT_CYCLE[(i + 1) % EFFORT_CYCLE.length];
+    effortBtn.disabled = true;
+    effortFlash('⏳');
+    try {
+      const r = await fetch(API + '/api/effort', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: next }),
+      });
+      const j = await r.json();
+      if (j && j.ok) {
+        effortNow = j.value; paintEffort();
+        effortFlash('🧠 ' + (EFFORT_LABEL[j.value] || j.value) + ' ✓');
+      } else {
+        effortFlash('✗ ' + ((j && j.error) ? '忙' : '失败'));
+      }
+    } catch (e) { effortFlash('✗ 网络'); }
+    effortBtn.disabled = false;
+  });
+  loadEffort();
+}
+
+// ---------- 对话页各按钮绑定（照生产版；op/ccd 分支已删）----------
+$('chX').onclick = closeChat;
+$('chReload').onclick = () => location.reload();
+$('chSess').onclick = openSessionPicker;
+$('chTitleBtn').onclick = openSessionPicker;
+$('chPlus').onclick = openPlusPanel;
+$('chSend').onclick = sendChat;
+$('chStop').onclick = stopNow;
+// ★ 拍照/选图：APK 有原生桥优先走原生；桌面浏览器退回隐藏 file input + uploadFiles
+const camBtn = $('chCam'), camIn = $('chCamFile');
+if (camBtn) {
+  camBtn.onclick = () => {
+    if (window.DsNative && window.DsNative.takePhoto) { window.DsNative.takePhoto(); }
+    else if (camIn) camIn.click();
+  };
+}
+if (camIn) camIn.onchange = () => { uploadFiles(camIn.files, true); camIn.value = ''; };
+$('chIn').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+$('chIn').addEventListener('input', function () {
+  this.style.height = '42px';
+  this.style.height = Math.min(120, this.scrollHeight) + 'px';
+});
+draftBind('chIn');
 
 // ★ 滚动监听：由 dshScroll.bind() 统一挂（2026-09-18 重做，见上面的模块注释）。
 dshScroll.bind();
 
 // ---------- 传文件 / 拍照（开源版：只保留上传，去除 adb）----------
-async function uploadFiles(files) {
+// ★ tellDsh=true ⇒ 上传完再发一条消息给 hub（/api/chat → 桥），让它去看图/文件。
+//   ⚠️ 图片会经 store 的「搭便车」队列（上传即入队）附给桥，见 store.addPendingImg。
+//   （APK 原生桥拍照固定走 /api/push —— 那是 APK 端行为，桌面/浏览器走这里。）
+async function uploadFiles(files, tellDsh) {
   if (!files || !files.length) return;
   for (const f of files) {
     try {
@@ -2209,8 +2849,17 @@ async function uploadFiles(files) {
       if (!j.ok) { bubble('sys', '✗ 上传失败：' + (j.error || '未知')); continue; }
       const imgUrl = j.url || ('/uploads/' + j.name);
       const isImg = /\.(png|jpe?g|gif|webp)$/i.test(j.name || '');
-      bubble('pc', '已上传：' + j.name, isImg ? imgUrl : null, null, 'chat', null, null, false,
+      bubble('pc', '📎 你发来的：' + j.name, imgUrl, null, 'chat', null, null, false,
         isImg ? null : { path: 'uploads/' + j.name, name: j.name, size: j.size });
+      if (tellDsh) {
+        bubble('sys', '📷 已发给 AI…');
+        try {
+          await fetch(API + '/api/chat', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: '📷 发来一张图片/文件，请看（附件：' + imgUrl + '）' }),
+          });
+        } catch (e) { bubble('sys', '✗ 通知失败：' + e.message); }
+      }
     } catch (e) { bubble('sys', '✗ 上传失败：' + e.message); }
   }
 }
@@ -2264,6 +2913,23 @@ applyTheme();
 // ---------- 启动 ----------
 (async () => {
   await ping();
+  // 功能开关：优先用服务端注入的 window.__DSJ_FEATURES__（同步读）；
+  // 没有全局再试 /api/features（两种对接方式都兼容，服务端实现一种即可）。
+  if (!window.__DSJ_FEATURES__) {
+    try {
+      const r = await fetch(API + '/api/features', { cache: 'no-store' });
+      if (r.ok) {
+        const j = await r.json();
+        if (j && j.features) Object.assign(FEATURES, j.features);
+      }
+    } catch (e) { /* 接口不存在就维持默认全 false */ }
+  }
+  // 探测会话功能是否启用：chat.js 未启用时 /api/sessions 一律 404；
+  // 其余状态（200 / 502 因为 dsh 没跑）都算"路由在" ⇒ 显示入口。
+  try {
+    const r = await fetch(API + '/api/sessions', { cache: 'no-store' });
+    DSH_ON = r.status !== 404;
+  } catch (e) { DSH_ON = false; }
   try {
     const r = await fetch(API + '/api/commands', { cache: 'no-store' });
     const j = await r.json();
@@ -2273,17 +2939,26 @@ applyTheme();
   if (!CMDS.some((c) => c.id === 'loc')) {
     CMDS.unshift({ id: 'loc', label: '位置', group: 'control', confirm: false });
   }
+  initEffort();   // features.effort 开着才显示「🧠」按钮
   render();
-  const rb = $('chReload');
+  const rb = $('homeReload');
   if (rb) rb.onclick = () => location.reload();
   setInterval(ping, 15000);
-  setInterval(() => { pullInbox(); }, 15000);
+  // 兜底拉消息：实时上屏由 SSE 负责，这条只当防漏（15 秒）
+  setInterval(pullChat, 15000);
+  // ★ 每 10 秒自己收一次「生成中…」（僵死的流 id 恰恰是在没有事件的时候挂着的）
+  setInterval(refreshSendBusy, 10000);
+  // ★ 忙状态轮询：2 秒一次（比 10 秒自检快，状态才跟手）
+  if (DSH_ON) { pollBusy(); setInterval(pollBusy, 2000); }
   setInterval(versionCheck, 8000);
   versionCheck();
   connectSSE();
-  // 刷新后若停在位置页，恢复它
+  // 刷新后恢复页面：对话页 / 位置页
   try {
-    if (localStorage.getItem('dshPage') === 'loc') {
+    const pg = localStorage.getItem('dshPage');
+    if (pg === 'chat' && DSH_ON) {
+      setTimeout(() => { try { openChat(); } catch (e) {} }, 150);
+    } else if (pg === 'loc') {
       setTimeout(() => { try { window.openLoc && window.openLoc(); } catch (e) {} }, 150);
     }
   } catch (e) { /* localStorage 不可用就算了 */ }

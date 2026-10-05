@@ -1,6 +1,8 @@
 # ---- 敏感配置（绝不能进仓库）----
 config.json
 .hub-token
+# dsh 鉴权 cookie 缓存（桥换票后落盘，含签名 cookie）
+src/dsh/.auth-cookie.json
 
 # 发布前检查用的「本机特征值」清单：仓库里只有 secrets.example.json 空模板，
 # 真实值在这个文件里，必须始终被忽略。

@@ -81,6 +81,12 @@ function createServer() {
       if (p === '/api/version') {                                  // 页面自检用：变了就自动重载
         return json(res, 200, { ok: true, version: htmlVersion() });
       }
+      if (p === '/api/features' && req.method === 'GET') {         // 功能开关（config.features）
+        // 前端启动时读它决定各入口显不显示；页面优先用注入的 window.__DSJ_FEATURES__，
+        // 没有全局时再走这个接口（两种对接方式都兼容）。
+        // 默认全 false ⇒ 页面行为不变、关掉的功能连入口都不出现。
+        return json(res, 200, { ok: true, features: config.features || {} });
+      }
       if (p === '/api/commands') {                                 // 指令列表（给前端画界面）
         const list = COMMANDS.map((c) => ({
           id: c.id, label: c.label, group: c.group,

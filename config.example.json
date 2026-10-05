@@ -49,5 +49,19 @@
         "timeout": 15000
       }
     ]
+  },
+  "_说明_dsh": "手机跟电脑里的 AI（dsh）对话。默认关闭：电脑上装了并运行着 dsh 再把 enabled 改 true。图片/文件的中转目录用顶层 shotsDir（运行期名 config.shotsPath），桥拷工具截图也用它。",
+  "dsh": {
+    "enabled": false,
+    "base": "http://127.0.0.1:3080",
+    "authority": "127.0.0.1:3080",
+    "home": "",
+    "cwd": "",
+    "webLog": "",
+    "wsPath": "",
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash",
+    "reasoningEffort": "high",
+    "agentPreset": ""
   }
 }

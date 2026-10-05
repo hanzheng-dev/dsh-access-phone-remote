@@ -78,6 +78,13 @@ const DEFAULTS = {
     //   留空 = 依次试：dsh 安装目录的 node_modules/ws → require('ws')；
     //   都失败则自动降级为「仅轮询」——功能照常，只是回复一次冒出来而不是逐字
     wsPath: '',
+    // 新建共享会话时尝试选择的模型（照生产版默认）。
+    //   ⚠️ 你的 dsh 没有这个 provider/model 时**只记一条日志**，继续用 dsh 当前模型（不阻断对话）
+    provider: 'deepseek-official',
+    model: 'deepseek-v4-flash',
+    reasoningEffort: 'high',
+    // 新建会话用的 agent 预设。留空 = 不传（开源用户不一定装了这个预设）
+    agentPreset: '',
   },
 
   // ⭐ 可选功能开关 —— 默认全关，想要哪个开哪个。
@@ -113,6 +120,12 @@ function load() {
     ...DEFAULTS,
     ...fileCfg,
     amap: { ...DEFAULTS.amap, ...(fileCfg.amap || {}) },
+    // ⚠️ dsh 必须**深合并**：顶层是浅合并，用户 config.json 里只写 dsh 的一部分字段时，
+    //    其余默认值（authority/home/webLog/wsPath…）会被整个顶掉变 undefined。
+    dsh: { ...DEFAULTS.dsh, ...(fileCfg.dsh || {}) },
+    // ⚠️ features 同理：用户只想开一个开关（如 { "features": { "effort": true } }）时，
+    //    浅合并会把其余开关整个顶掉变 undefined —— 深合并后未写的仍是默认 false。
+    features: { ...DEFAULTS.features, ...(fileCfg.features || {}) },
   };
 
   // ---- 环境变量覆盖 ----
