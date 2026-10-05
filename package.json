@@ -14,7 +14,8 @@
     "test:plugin": "node plugin/test/static.mjs",
     "test:qr": "node test/qr-verify.mjs",
     "test:discover": "node test/discover-test.mjs",
-    "test:stress": "node test/stress.mjs"
+    "test:stress": "node test/stress.mjs",
+    "stats": "node scripts/stats.mjs"
   },
   "keywords": [
     "self-hosted",
