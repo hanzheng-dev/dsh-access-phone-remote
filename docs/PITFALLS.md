@@ -277,6 +277,57 @@ dumpsys deviceidle whitelist +com.tailscale.ipn
 
 # 五、APK 构建（手工链）
 
+## P22 · ★ PowerShell 里内联 JS/Node 脚本 = 转义地狱
+
+**症状**：用 `powershell -Command "node -e \"...\""` 这种写法改文件，
+反复遇到：
+- `Invalid string escape`
+- `Expected ')', got '<eof>'`
+- `参数列表中缺少参数`
+- `-replace 运算符后只能跟两个元素，而不是 4`
+
+**根因**：**三层转义叠加** —— PowerShell 的双引号解析 → Node 的字符串字面量 → 正则/JSON 自己的转义。
+任何一层少一个反斜杠，整条命令就废。
+
+**解法**（按可靠性排序）：
+1. ⭐ **写成一个脚本文件再执行**（最稳）
+   ```bash
+   # 别这样：
+   node -e "const fs=require('fs');fs.writeFileSync('a.txt','\n')"
+   # 这样：
+   # 先写 _tmp.js，再 node _tmp.js，用完删掉
+   ```
+2. **用文件编辑工具**（write / edit）代替命令行改文件
+3. 实在要内联：**用单引号包 PowerShell 字符串**，且 JS 里**只用单引号**
+4. 用 `--%` 或 `--%`（PowerShell 的停止解析符）也很脆，不推荐
+
+**判据**：如果同一条命令你试了两次还没过 —— **停下来，改成写文件**。
+继续调转义只会浪费时间。
+
+---
+
+## P23 · ★ `.gitignore` 不会追溯已经跟踪的文件
+
+**症状**：给某个文件加了 `.gitignore` 规则，但 `git status` 里它**还在**，还是会被提交。
+
+**根因**：`.gitignore` **只对"未跟踪"的文件生效**。
+一个文件一旦被 `git add` 过，加规则不会自动把它移出去。
+
+**解法**：
+```bash
+git rm --cached <文件>        # 从索引里移除（保留磁盘文件）
+# 然后确认 .gitignore 里有规则
+git status                    # 应该看不到了
+```
+
+**一次实测**：
+写了个看门狗脚本 `docs/op-watch-v3.js`，加了 v1/v2 的忽略规则但**漏了 v3**，
+结果它进了仓库 —— 直到发布前检查里那 8 个"命中"才暴露出来。
+
+**教训**：**加了一类文件的忽略规则后，回头验证一遍**（`git check-ignore -v <文件>`）。
+
+---
+
 ## P24 · ★★ d8 在 JDK 24 上遇到「匿名内部类」必崩
 
 **症状**：
@@ -394,6 +445,29 @@ aapt2 link → javac --release 8 → d8 → 7z 塞 classes.dex
 **坑**：`guestcontrol copyto` + `-File` 会静默失败。
 
 **解法**：改用 **base64 `-EncodedCommand`**。
+
+---
+
+## P47 · 检查脚本扫到自己（自指问题）
+
+**症状**：写了个"敏感信息扫描"脚本，跑起来**报自己命中敏感信息**。
+
+**根因**：**模式表本身含那些字符串**。
+比如 `SECRETS = [/<推送口令>/, ...]` —— 脚本文件里当然有 `<推送口令>`。
+
+**解法**：**扫描时跳过检查脚本自己**：
+```javascript
+const isCheckerItself =
+  /scripts\/preflight\.mjs$/.test(f) ||
+  /scripts\/lint-html\.mjs$/.test(f) ||
+  /plugin\/test\/static\.mjs$/.test(f);
+if (isCheckerItself) continue;
+```
+
+**同类问题**：任何"扫描器扫自己"都会遇到 —— 病毒扫描器、linter、密钥检测工具都一样。
+
+**⚠️ 但别矫枉过正**：白名单要**精确到文件**，不能整个目录跳过，
+否则真出问题的地方也被放过了。
 
 ---
 
