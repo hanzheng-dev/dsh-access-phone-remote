@@ -3,3 +3,6 @@ build/
 *.apk
 *.apk.idsig
 *.keystore
+
+dsj-open.apk
+dsj-open.apk.idsig

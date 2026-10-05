@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 手工构建「ds酱」APK —— 不需要 Gradle / Android Studio
+# 手工构建「dsj-open」APK —— 不需要 Gradle / Android Studio
 # 用法: bash build.sh
 #
 # ══════════════════════════════════════════════════════════════
@@ -43,7 +43,7 @@ fi
 SEVENZ="${SEVENZ:-7z}"
 KEYTOOL="${KEYTOOL:-keytool}"
 OUT=$ROOT/build
-APKNAME=ds酱.apk
+APKNAME=dsj-open.apk
 
 # ---------- 工具链预检（给出看得懂的报错，别让用户对着 No such file 发愣） ----------
 if [ ! -e "$BT/aapt2.exe" ]; then

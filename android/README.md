@@ -1,4 +1,4 @@
-# dsj-open · Android 客户端（ds酱 APK）
+# dsj-open · Android 客户端
 
 dsj-open 的安卓客户端：**全屏 WebView 套壳 + 原生增强**。
 
@@ -61,17 +61,17 @@ bash build.sh
 
 | 文件 | 说明 |
 |---|---|
-| `ds酱.apk` | 装到手机的安装包（本目录下） |
+| `dsj-open.apk` | 装到手机的安装包（本目录下） |
 | `dsjiang.keystore` | 首次构建自动生成的签名密钥（**别提交到仓库**；发正式版请换成自己的） |
 | `build/` | 中间产物（可随时删） |
 
 ### 安装
 
 ```bash
-adb install -r ds酱.apk
+adb install -r dsj-open.apk
 ```
 
-或者把 `ds酱.apk` 传到手机（微信/网盘/数据线都行）手动点击安装。
+或者把 `dsj-open.apk` 传到手机（微信/网盘/数据线都行）手动点击安装。
 ⚠️ 如果手机上已装过旧版、且签名密钥不同，需要先卸载旧版。
 
 ---
@@ -140,7 +140,7 @@ App 会自动拆开：
 
 - **口令只存在手机本地**（`SharedPreferences`，App 私有目录），不经过任何第三方
 - 首次进站用 `/?t=口令` 换 180 天 Cookie，之后原生请求走 `X-Auth` 头
-- `dsjiang.keystore`（签名密钥）和 `ds酱.apk` 都不要提交到仓库（已在本目录 `.gitignore` 里）
+- `dsjiang.keystore`（签名密钥）和 `dsj-open.apk` 都不要提交到仓库（已在本目录 `.gitignore` 里）
 
 ---
 
