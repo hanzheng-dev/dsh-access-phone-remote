@@ -1,0 +1,5 @@
+# 构建产物（不进仓库）
+build/
+*.apk
+*.apk.idsig
+*.keystore

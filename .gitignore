@@ -41,6 +41,10 @@ docs/RELEASE-CHECKLIST.md
 docs/FINAL-REPORT.md
 docs/op-watchdog.js
 docs/op-watch-v2.js
+docs/op-watch-v3.js
+docs/watch-v3*.log
+docs/watch-v3*.json
+docs/ARTICLE.md
 docs/self-wake.js
 docs/self-wake-*.json
 docs/self-wake-*.log

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.hz.hub"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- ⭐ 2026-09-18 op：主人要"通知震动"，通知的 channel 震动由系统代劳，
+         但应用侧必须声明 VIBRATE（普通权限，装完自动授予）。 -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- ⭐⭐ 2026-09-30 op：**GPS 定位**（第一阶段，不依赖地图 key）。
+         主人需求：「给 ds酱 加一个 gps 功能…能应用网上地图，还有导航功能」。
+         ⚠️ Android 6+ 光声明不够，必须在「位置」页里**动态申请**（见 MainActivity）。
+         ⚠️ Android 12+ 用户可只给「大致位置」⇒ FINE 必须和 COARSE 一起申请。 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:label="dsj-open"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:theme="@android:style/Theme.Black.NoTitleBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="dsj-open"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ⭐ 2026-09-22 op：**网页浮层** —— 消息里的网页卡片点开弹的小窗口。
+             半透明主题（透出后面的 ds酱）+ 卡片 60% 屏高（网页里 .feta 同款）。
+             只有 App 自己（DsNative.openWeb）能拉起，exported=false。 -->
+        <activity
+            android:name=".WebActivity"
+            android:exported="false"
+            android:label="dsj-open · 网页"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:windowSoftInputMode="adjustResize" />
+
+        <service
+            android:name=".NotifyService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

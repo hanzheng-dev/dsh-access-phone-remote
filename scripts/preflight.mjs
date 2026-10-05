@@ -70,9 +70,12 @@ const files = tracked.ok
 
 let secretHits = 0;
 for (const f of files) {
-  // 测试文件里的"特征表"是故意的
-  const isTestFixture = /plugin\/test\/static\.mjs$/.test(f);
-  if (isTestFixture) continue;
+  // ⚠️ 检查脚本自己含「待检测模式表」—— 那是模式，不是真凭证。跳过它们。
+  const isCheckerItself =
+    /scripts\/preflight\.mjs$/.test(f) ||
+    /scripts\/lint-html\.mjs$/.test(f) ||
+    /plugin\/test\/static\.mjs$/.test(f);
+  if (isCheckerItself) continue;
 
   let content;
   try { content = readFileSync(join(ROOT, f), 'utf8'); } catch { continue; }
