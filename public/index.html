@@ -144,12 +144,40 @@
     overscroll-behavior:none;
   }
 
-  /* ---- 主页（开源版：直接就是主页面，不再是抽屉）---- */
+  /* ---- ⭐⭐⭐ 主页抽屉 ----
+     会话页是底层、默认打开；主页是**从左侧滑出的抽屉**，只盖 78%，
+     右边露出会话页一条 + 一层暗罩（点暗罩收回）。
+     · 平时 translateX(-100%) 藏在屏幕外；.open 归位；.dragging 时关掉过渡（跟手拖动）
+     · 自己滚（body 不再滚） */
   #home{
-    min-height:100%;
+    /* ⚠️ 这里**不能**用 `inset:0 auto 0 0` 简写 —— Android 9 的 WebView 内核约等于
+       Chrome 70，而 `inset` 是 Chrome 87+ 才有的。写了它整条会被丢弃，抽屉定位失效、
+       直接摊在屏幕上（实测：模拟器上抽屉"默认就是开着的"，就是这么来的）。
+       ⇒ 老老实实写 top/bottom/left。 */
+    position:fixed;top:0;bottom:0;left:0;z-index:62;
+    width:78%;max-width:430px;
+    background:#fff;
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
     padding:env(safe-area-inset-top) 14px calc(20px + env(safe-area-inset-bottom));
-    background:transparent;
+    -webkit-transform:translateX(-100%);
+    transform:translateX(-100%);
+    -webkit-transition:-webkit-transform .22s ease;
+    transition:transform .22s ease;
+    will-change:transform;
   }
+  #home > *{position:relative;z-index:1}
+  html.dark #home{background:#111111}
+  #home.open{-webkit-transform:translateX(0);transform:translateX(0)}
+  #home.dragging{-webkit-transition:none;transition:none}
+  /* 抽屉右侧露出的那条遮罩（点它收回抽屉） */
+  #homeMask{
+    position:fixed;top:0;right:0;bottom:0;left:0;z-index:61;
+    background:rgba(0,0,0,.30);
+    opacity:0;pointer-events:none;
+    -webkit-transition:opacity .22s;transition:opacity .22s;
+  }
+  #homeMask.show{opacity:1;pointer-events:auto}
+  html.dark #homeMask{background:rgba(0,0,0,.55)}
 
   /* ---- 顶栏 ---- */
   header{
@@ -975,17 +1003,22 @@
 <div id="app"></div>
 
 <footer id="ver">—</footer>
-</div><!-- /#home -->
+</div><!-- /#home（抽屉） -->
 
-<!-- ⭐⭐ 全屏对话页（从生产版照搬布局）——手机跟电脑里的 AI 对话。
-     抬头：[‹ 返回] [会话 ▾] [⊕ 传文件] [📷 拍照] [▤ 切换会话] [⟳ 刷新]；
+<!-- ⭐ 抽屉右侧的遮罩 —— 抽屉只盖 78%，露出的那条会话页上盖一层暗罩，点它收回抽屉 -->
+<div id="homeMask"></div>
+
+<!-- ⭐⭐ 全屏对话页 —— 手机跟电脑里的 AI 对话（**底层、默认打开**）。
+     抬头：[☰ 抽屉] [会话 ▾] [⊕ 传文件] [📷 拍照] [▤ 切换会话] [⟳ 刷新]；
      下面消息区 #chBody + 输入区 .ch-f。
      ⚠️「发送」与「停」是**两个按钮**（同位置放相反语义 = 人会按习惯误点杀桥）。 -->
 <div id="chat">
   <div class="ch-h">
-    <button id="chX" title="返回主页" aria-label="返回主页">
+    <button id="chX" title="打开主页" aria-label="打开主页">
+      <!-- ☰ 三条横线：会话页成了底层之后「返回」没意义了，这个键改成划出主页抽屉。
+           ⚠️ 规格照右边那几个图标：同 viewBox(24×24)、同线宽(1.7)、同 30×30 按钮盒。 -->
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M17.4 4.4L5.2 12l12.2 7.6"/>
+        <path d="M4 6.5h16M4 12h16M4 17.5h16"/>
       </svg>
     </button>
     <b id="chTitleBtn" title="切换会话">会话<span class="sub" id="chSid"></span><i class="ch-car">▾</i></b>
@@ -2095,10 +2128,107 @@ function syncOverlayLock() {
   document.documentElement.classList.toggle('overlay-open', on);
 }
 
-// 开源版：主页就是底页（对话层 / 位置页都是盖上去的全屏层）
-function openHome() { try { window.scrollTo(0, 0); } catch (e) {} }
-function closeHome() {}
-function closeHomeNow() {}
+// ⭐⭐ 主页抽屉（2026-10-05 从生产版搬回来）
+//
+// 会话页是**底层、默认打开**；主页是**从左侧滑出的抽屉**，只盖 78%，
+// 右边露出会话页一条 + 一层暗罩，点暗罩收回。
+//
+// 为什么是抽屉而不是"主页 + 一个按钮进对话页"：
+//   这个项目的主线就是"在外面跟电脑上的 AI 说话"，所以会话页该是打开即见的底层；
+//   那些按钮（传文件/位置/截图…）是辅助，收进抽屉里随用随取。
+//
+// history 的处理照生产版老规矩：开抽屉 push 一条 ⇒ APK 返回键能关抽屉；
+// 点遮罩关时把那条历史消费掉（否则返回键会"多退一次"退到桌面）。
+let homeHistoryPushed = false;
+function openHome() {
+  const h = $('home'), m = $('homeMask');
+  if (!h) return;
+  h.classList.add('open');
+  if (m) m.classList.add('show');
+  if (!homeHistoryPushed) {
+    try { history.pushState({ dshHome: 1 }, '', location.pathname); homeHistoryPushed = true; } catch (e) {}
+  }
+}
+function closeHome() {
+  // 点遮罩 / 左滑关：把刚才那条历史消费掉
+  // ⚠️ suppressPop：这次 back() 是我们自己发的，别让 popstate 再当成"返回键"
+  if (homeHistoryPushed) {
+    homeHistoryPushed = false;
+    try { suppressPop = true; history.back(); } catch (e) {}
+  }
+  closeHomeNow();
+}
+function closeHomeNow() {
+  const h = $('home'), m = $('homeMask');
+  if (h) h.classList.remove('open');
+  if (m) m.classList.remove('show');
+}
+
+// 手势：会话页上往右拖 ⇒ 抽屉跟手拉出；抽屉上往左拖 ⇒ 推回去（松手按 32% 阈值定去留）
+// 从生产版裁剪：去掉了它的"左右滑切 tab"（op/ccd 那套是私人的），只留抽屉。
+(function initHomeSwipe() {
+  const chat = $('chat'), home = $('home'), mask = $('homeMask');
+  if (!chat || !home) return;
+  let sx = 0, sy = 0, axis = null, dragging = false;
+  const isOpen = () => home.classList.contains('open');
+
+  function down(e) {
+    if (e.touches.length !== 1) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    axis = null; dragging = false;
+  }
+  function move(e) {
+    if (e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+    if (!axis) {
+      if (Math.abs(dx) < 9 && Math.abs(dy) < 9) return;
+      // 方向锁定：横向优先才算手势（纵向留给消息区滚动，不抢）
+      axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'n';
+      if (axis === 'x') {
+        if (isOpen()) {
+          if (dx > 0) { axis = 'n'; return; }        // 抽屉已开：只能往左推回去
+          dragging = true; home.classList.add('dragging');
+        } else if (dx > 0) {
+          dragging = true; home.classList.add('dragging');
+        } else {
+          axis = 'n'; return;                        // 关着还往左滑：不接
+        }
+      }
+    }
+    if (axis !== 'x' || !dragging) return;
+    if (e.cancelable) e.preventDefault();
+    const w = home.offsetWidth || 1;
+    const base = isOpen() ? 0 : -w;
+    const x = Math.max(-w, Math.min(0, base + dx));
+    home.style.transform = 'translateX(' + x + 'px)';
+    if (mask) {
+      mask.style.opacity = String((x + w) / w);
+      mask.style.pointerEvents = 'auto';
+    }
+  }
+  function up(e) {
+    const dx = e.changedTouches[0].clientX - sx;
+    if (dragging) {
+      home.classList.remove('dragging');
+      home.style.transform = '';
+      if (mask) { mask.style.opacity = ''; mask.style.pointerEvents = ''; }
+      const pass = Math.abs(dx) > (home.offsetWidth || 1) * 0.32;
+      if (!isOpen() && dx > 0 && pass) openHome();
+      else if (isOpen() && dx < 0 && pass) closeHome();
+    }
+    axis = null; dragging = false;
+  }
+
+  // ⚠️ touchmove 必须 passive:false —— 否则 preventDefault() 无效，拖抽屉时会连带滚动消息区
+  chat.addEventListener('touchstart', down, { passive: true });
+  chat.addEventListener('touchmove', move, { passive: false });
+  chat.addEventListener('touchend', up);
+  chat.addEventListener('touchcancel', up);
+  home.addEventListener('touchstart', down, { passive: true });
+  home.addEventListener('touchmove', move, { passive: false });
+  home.addEventListener('touchend', up);
+  home.addEventListener('touchcancel', up);
+})();
 
 // ⭐⭐ 对话页开关（从生产版裁剪：不再有"抽屉"，close 就是回主页）
 function openChat() {
@@ -2807,7 +2937,8 @@ function initEffort() {
 }
 
 // ---------- 对话页各按钮绑定（照生产版；op/ccd 分支已删）----------
-$('chX').onclick = closeChat;
+$('chX').onclick = openHome;          // ⭐ 会话页成了底层，「返回」没意义了 ⇒ 改成划出主页抽屉
+$('homeMask').onclick = closeHome;    // 点遮罩收回抽屉
 $('chReload').onclick = () => location.reload();
 $('chSess').onclick = openSessionPicker;
 $('chTitleBtn').onclick = openSessionPicker;
@@ -2953,14 +3084,20 @@ applyTheme();
   setInterval(versionCheck, 8000);
   versionCheck();
   connectSSE();
-  // 刷新后恢复页面：对话页 / 位置页
+  // ⭐⭐ 启动到底层哪一页
+  //
+  // 2026-10-05：会话页改成**底层、默认打开** —— 这个项目的主线就是"在外面跟电脑上的
+  // AI 说话"，一进来就该是它；那些按钮（传文件/位置/截图…）收进左侧抽屉随用随取。
+  // 位置页仍是"盖上去的层"，刷新后能回到它。
   try {
     const pg = localStorage.getItem('dshPage');
-    if (pg === 'chat' && DSH_ON) {
-      setTimeout(() => { try { openChat(); } catch (e) {} }, 150);
-    } else if (pg === 'loc') {
+    if (pg === 'loc') {
       setTimeout(() => { try { window.openLoc && window.openLoc(); } catch (e) {} }, 150);
+    } else if (DSH_ON) {
+      // 默认（也包括 pg === 'chat'）：打开会话页
+      setTimeout(() => { try { openChat(); } catch (e) {} }, 150);
     }
+    // DSH_ON 为 false（没装 dsh）时不打开会话页 —— 那时抽屉里的按钮就是全部
   } catch (e) { /* localStorage 不可用就算了 */ }
 })();
 
