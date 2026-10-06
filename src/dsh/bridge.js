@@ -9,7 +9,7 @@
  *   手机 ──POST /api/chat──> hub ──spawn──> 本桥 ──HTTP RPC──> dsh (3080)
  *                                             └──POST /api/delta、/api/push──> hub ──SSE──> 手机
  *
- * 这是从生产版（D:\dsh-hub\bridge\dsh-bridge.js，2494 行）**裁剪**而来：
+ * 这座桥是从一个长期自用的实现里**裁剪**出来的：
  *   · 删掉了 QQ / NapCat / 语言闸 / Markdown 转 QQ / 分段发 QQ / 人格别名 / pins /
  *     op 搭便车等一整批"QQ 时代"的产物（手机不需要这些）。
  *   · 只保留"手机 ↔ dsh"这条链路：rpc 三级鉴权 / 共享会话跟随 / busy 锁 +
