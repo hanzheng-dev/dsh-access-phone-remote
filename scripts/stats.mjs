@@ -133,12 +133,14 @@ for (const f of testFiles) {
   // 从脚本里数"检查点"不好做，改成跑一下拿数字太慢 —— 这里用已知值
 }
 // 用固定值（来自各测试脚本的实际输出）
+// ⚠️ 写死的项数 —— 改了对应测试文件要同步这里，否则统计就会悄悄说谎。
+//    （每项数是各文件末尾「通过 N · 失败 0」里的 N。）
 const KNOWN_TESTS = {
   'test/integration.mjs': 16,
   'test/transfer.mjs': 7,
   'test/qr-verify.mjs': 15,
   'test/discover-test.mjs': 7,
-  'plugin/test/static.mjs': 19,
+  'plugin/test/static.mjs': 24,
 }
 const totalTests = Object.values(KNOWN_TESTS).reduce((a, b) => a + b, 0)
 console.log('\n\x1b[1m测试\x1b[0m')
