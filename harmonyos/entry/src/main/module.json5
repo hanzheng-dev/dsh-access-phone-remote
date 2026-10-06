@@ -8,8 +8,12 @@
     "mainElement": "EntryAbility",
     // 手机为主；平板可选
     "deviceTypes": ["phone", "tablet"],
-    "deliveryWithInstall": true,
-    "installationFree": false,
+    "distro": {
+      "deliveryWithInstall": true,
+      "installationFree": false,
+      "moduleName": "entry",
+      "moduleType": "entry"
+    },
     "pages": "$profile:main_pages",
     "abilities": [
       {

@@ -1,0 +1,8 @@
+构建产物（不进仓库）
+*.hap
+*.hap.idsig
+build/
+.hvigor/
+oh_modules/
+*.abc
+

@@ -13,7 +13,7 @@
  *   · 窗口（状态栏）：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-window-Window
  *   · HTTP：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-http
  */
-import { common, Want, abilityAccessCtrl, Permissions } from '@kit.AbilityKit';
+import { common, Want, abilityAccessCtrl, Permissions, PermissionRequestResult } from '@kit.AbilityKit';
 import { promptAction, window, router } from '@kit.ArkUI';
 import { cameraPicker, camera } from '@kit.CameraKit';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
@@ -223,7 +223,7 @@ export class NativeOps {
     const perms: Permissions[] = ['ohos.permission.APPROXIMATELY_LOCATION', 'ohos.permission.LOCATION'];
     try {
       const atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
-      const result: abilityAccessCtrl.PermissionRequestResult =
+      const result: PermissionRequestResult =
         await atManager.requestPermissionsFromUser(ctx, perms);
       let granted: boolean = false;
       for (let i = 0; i < result.authResults.length; i++) {
