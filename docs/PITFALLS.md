@@ -3,7 +3,7 @@
 > **这份文件是给 AI 助手读的。** 当用户遇到问题时，先在这里查。
 >
 > **全部来自真实踩坑记录**（一手，非推测）。每条都标注了**症状 → 根因 → 解法**。
-> 更新：2026-10-06 · 共 80 条
+> 更新：2026-10-06 · 共 81 条
 
 ---
 
@@ -1161,6 +1161,67 @@ git push --force-with-lease origin main
 **教训**：**"推上去了"和"算你的"是两件事。**
 `git log` 里名字对不代表 GitHub 认；只有 `author.login` 有值才算。
 
+## P81 · ★ 桥「跟随网页当前会话」会把主人的手机切进子代理会话
+
+**症状**：手机上发消息，回一句
+`❌ 出错：dsh: session "…" is owned by subagent routing`，**之后每条都这样**。
+而电脑上网页一切正常 —— 因为网页根本没走桥。
+
+**根因**：桥的 `ensureSharedSession()` 会**无条件跟随「dsh 网页当前会话」**：
+
+```js
+const pool = running.length ? running : items.filter((s) => !s.blank);
+pool.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+activeSid = pool[0].sessionId;        // ← 只问"谁最活跃"
+...
+st.sharedSid = activeSid;             // ← 无条件覆盖
+```
+
+而**子代理会话在 `session/list` 里就是一条普通会话**。
+派子代理的那一刻，它正好是「running 里 `updatedAt` 最大」的那个
+⇒ 桥上钩，把主人的手机切进子代理。
+
+子代理会话由 dsh 的 subagent routing 独占
+（`session.header.origin === 'subagent'`），**不接受外部注入**，
+所以从那以后主人的每条消息都被拒。
+
+**日志铁证**（一条就够定案）：
+
+```
+22:15:52  QQ <QQ> 使用共享 dsh 会话 session-b6958f8c-…      ← 一直好好的
+22:30:19  跟随网页当前会话 session-b6958f8c-… -> 9b44a43c-…，@dsh 自动切换
+22:30:19  QQ <QQ> 出错: dsh: session "9b44a43c-…" is owned by subagent routing
+22:31:56  QQ <QQ> 出错: dsh: session "9b44a43c-…" is owned by subagent routing
+```
+
+**解法**：选会话时排除子代理。`session/list` 的条目带 `origin` 字段
+（普通会话**没有**这个字段，子代理会话是 `origin: 'subagent'`）：
+
+```js
+const items = (lval.items || []).filter((s) => s && s.sessionId && s.origin !== 'subagent');
+```
+
+`handleStop()` 里找「取消目标」时有一份同样的 filter，**要一起改**。
+
+**已经切坏了怎么手动救**：改 `dsh-bridge-state.json`，
+把 `sharedSid` 和 `sessions["<QQ>"]` 指回正确的会话 id：
+
+```json
+{"sessions":{"<QQ>":"session-<正确的>"},"sharedSid":"session-<正确的>", ...}
+```
+
+`hub /api/sessions` 返回的 `current` 字段就是它，改完立刻能核对。
+
+**教训**：
+
+- **「自动跟随」这类隐式选择，范围要从"我能不能用它"来定，不是从"它活不活跃"来定。**
+  这段代码问的是"哪个会话最活跃"，而它真正需要的是
+  "哪个会话**可以接收我的注入**" —— 两个问题不一样，差的就是子代理。
+- **症状是"静默 + 持续"**：只有一条切换日志，之后每条消息都失败，
+  而且电脑网页完全正常 ⇒ 很容易误判成"桥没了"或"dsh 挂了"。
+- **同一份语义写了两遍，就一定会漏一个。**
+  hub 的 `/api/sessions` 早就有 `!/session-title|subagent/.test(x.kind || '')` 这个过滤，
+  桥里没有 —— 发现这种不对称时，先问"哪边是对的"，然后把两边对齐。
 ---
 
-**END（80 条）**
+**END（81 条）**

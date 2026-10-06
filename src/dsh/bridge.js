@@ -653,7 +653,11 @@ async function ensureSharedSession(st) {
   try {
     const lr = await rpc('session/list', { _request: {} });
     const lval = rpcValue(lr);
-    const items = (lval.items || []).filter((s) => s && s.sessionId);
+    // ⚠️ 必须排除子代理会话（origin='subagent'）。
+    //    它们不接受外部注入 —— dsh 会回 `session "..." is owned by subagent routing`，
+    //    而派子代理时它恰好是「running 里 updatedAt 最大」的那个 ⇒ 一旦被选上，
+    //    主人的手机就会整条链路报错（2026-10-06 真实事故）。
+    const items = (lval.items || []).filter((s) => s && s.sessionId && s.origin !== 'subagent');
     if (items.length) {
       const running = items.filter((s) => s.running);
       const pool = running.length ? running : items.filter((s) => !s.blank);
@@ -799,7 +803,11 @@ async function handleStop() {
   try {
     const lr = await rpc('session/list', { _request: {} });
     const lval = rpcValue(lr);
-    const items = (lval.items || []).filter((s) => s && s.sessionId);
+    // ⚠️ 必须排除子代理会话（origin='subagent'）。
+    //    它们不接受外部注入 —— dsh 会回 `session "..." is owned by subagent routing`，
+    //    而派子代理时它恰好是「running 里 updatedAt 最大」的那个 ⇒ 一旦被选上，
+    //    主人的手机就会整条链路报错（2026-10-06 真实事故）。
+    const items = (lval.items || []).filter((s) => s && s.sessionId && s.origin !== 'subagent');
     running = items.filter((s) => s.running);
     if (!target || !items.some((s) => s.sessionId === target)) {
       if (running.length) {
