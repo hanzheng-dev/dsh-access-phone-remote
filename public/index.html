@@ -2503,9 +2503,18 @@ function placeMsg(el, m) {
     if (k && cmpKey(k, key) > 0) { anchor = child; break; }
   }
   if (anchor) body.insertBefore(el, anchor); else body.appendChild(el);
-  // ★ 「生成中…」那一行要**永远在最底下** —— 新消息插进来后把它挪回末尾
+  // ★ 「生成中…」那一行要**永远在最底下** —— 新消息插进来后把它挪回末尾。
+  //   花费行紧贴在它**上面**（顺序：余额/花费 → 生成中…），所以两行要一起挪，
+  //   只挪一行的话新消息会插进它们中间。
+  const cl = document.getElementById('chCostLine');
   const bl = document.getElementById('chBusyLine');
-  if (bl && body.lastElementChild !== bl) body.appendChild(bl);
+  if (cl || bl) {
+    const last = bl || cl;
+    const second = (cl && bl) ? cl : null;
+    const ordered = (body.lastElementChild === last)
+      && (!second || last.previousElementSibling === second);
+    if (!ordered) { if (cl) body.appendChild(cl); if (bl) body.appendChild(bl); }
+  }
   return el;
 }
 
@@ -2569,6 +2578,66 @@ function refreshSendBusy() {
   setSendBusy(on);
   showBusyLine(on);
 }
+// ---------- 余额 / 花费（features.cost 开着才有）----------
+//
+//   两个数字（对应服务端 /api/cost）：
+//     · **余额** —— DeepSeek 账户余额。服务端 5 分钟缓存；**没配 key 就是 null**
+//     · **本次** —— 这一轮花了多少。服务端从 dsh 的会话文件里按增量算，不需要额外配置
+//
+//   ⚠️ 余额拿不到时**不整块消失**（生产版 2026-09-18 修的坑）：
+//      原来返回空串 ⇒ 那行只剩「本次 ¥0.02」，看起来像"柱状图坏了"。
+//      现在降级成「余额 --」+ 空心条，**位置和形状不变** ——
+//      一眼能看出是"暂时没查到"，而不是"这个功能没了"。
+let balTotal = 300;                  // 进度条分母（= 你充了多少）；服务端会给真实值
+// 五档「平均分」配色：偏灰、掺白多一点（纯色在白底上太跳）
+const BAL_STOPS = [
+  { min: 0.80, c: '#62c4a9' },
+  { min: 0.60, c: '#82c08f' },
+  { min: 0.40, c: '#d1c380' },
+  { min: 0.20, c: '#d6a980' },
+  { min: -1,   c: '#d1908d' },
+];
+function balColor(ratio) {
+  for (const st of BAL_STOPS) if (ratio >= st.min) return st.c;
+  return '#d1908d';
+}
+function balHtml(bal) {
+  if (bal == null || !isFinite(bal)) {
+    return '余额 <b class="balna">--</b>'
+      + '<span class="balbar balna-bar" title="余额没查到了：没配 DeepSeek key，或网络抖动">'
+      + '<i style="width:0%"></i></span>';
+  }
+  const r = Math.max(0, Math.min(1, Number(bal) / balTotal));
+  const pct = (r * 100).toFixed(0);
+  return '余额 <b>¥' + Number(bal).toFixed(2) + '</b>'
+    + '<span class="balbar" title="' + pct + '% / ¥' + balTotal + '"><i style="width:'
+    + pct + '%;background:' + balColor(r) + '"></i></span>';
+}
+async function refreshCostLine() {
+  const costEl = document.getElementById('chCostLine');
+  if (!costEl) return;
+  try {
+    const j = await (await fetch(API + '/api/cost', { cache: 'no-store' })).json();
+    if (Number(j.balanceTotal) > 0) balTotal = Number(j.balanceTotal);
+    const bits = [balHtml(j.balance)];
+    if (j.turnCNY != null) {
+      bits.push('本次 <b>¥' + Number(j.turnCNY).toFixed(2) + '</b>' + (j.peak ? '（高峰×2）' : ''));
+    }
+    costEl.innerHTML = bits.join(' &nbsp;·&nbsp; ');
+  } catch (e) { /* 网络抖动就算了，下一轮再试 */ }
+}
+// 轮询两档（都常驻，只是频率不同）：生成中 4 秒（花费在涨），空闲 60 秒（余额不会突变）
+let costTimer = null, costFast = null;
+function startCostPoll(active) {
+  if (!featOn('cost')) return;
+  refreshCostLine();
+  const want = active ? 4000 : 60000;
+  if (costTimer === want) return;                     // 频率没变就不重开
+  if (costFast) { clearInterval(costFast); costFast = null; }
+  costTimer = want;
+  costFast = setInterval(refreshCostLine, want);
+}
+
 function showBusyLine(on) {
   const body = $('chBody');
   if (!body) return;
@@ -2579,7 +2648,28 @@ function showBusyLine(on) {
     el.className = 'chbusy';
     el.textContent = '生成中…';
   }
-  if (body.lastElementChild !== el) body.appendChild(el);   // 永远钉在末尾
+  // ★ 花费行：位置在「生成中…」**上面**
+  let costEl = null;
+  if (featOn('cost')) {
+    costEl = document.getElementById('chCostLine');
+    if (!costEl) {
+      costEl = document.createElement('div');
+      costEl.id = 'chCostLine';
+      costEl.className = 'chcost';
+    }
+  }
+  // 两行一起保持在 #chBody 末尾（新消息插进来会被 placeMsg 挪回去）
+  if (costEl) {
+    if (body.lastElementChild !== el || costEl.nextElementSibling !== el) {
+      body.appendChild(costEl); body.appendChild(el);
+    }
+    // ★ 余额行**常驻**（生产版主人原话：「要常驻的，笨蛋」）——
+    //   原来它跟「生成中…」绑一起 ⇒ 一答完余额也消失，而"我还有多少钱"是随时想知道的
+    costEl.style.display = '';
+    startCostPoll(on);
+  } else if (body.lastElementChild !== el) {
+    body.appendChild(el);
+  }
   el.style.display = on ? '' : 'none';
 }
 function streamBegin(id) {

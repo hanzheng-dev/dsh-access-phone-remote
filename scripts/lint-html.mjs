@@ -85,9 +85,13 @@ console.log('\n[4] 已删除的 API 引用')
 //    /api/busy /api/effort）：**会话层已回归开源版**，这些路由都在 src/routes/chat.js
 //    实现、被页面合法引用（第一步接线 + 第二步逐字流 + features.effort 的档位切换）。
 //    ⇒ 别再往这个清单里加它们，否则 lint 会把正常功能当"死引用"报错、卡发布自检。
+//
+// ⚠️ 2026-10-07 移出 `/api/cost`：**余额 / 花费已回归开源版**
+//    （服务端 src/routes/cost.js + src/cost.js；页面侧在 showBusyLine 里建 #chCostLine）。
+//    移植时漏过它 —— 页面上只剩 CSS 残骸（.chcost / .balbar 在、JS 没跟过来）。
+//    这条 lint 正好把这种"CSS 在、接口没了"的半截状态挡住了，说明它有用。
 //    剩下的是真·已裁剪、开源版不提供的接口。
 const DEAD_API = [
-  '/api/cost',
   '/api/op/', '/api/op-return', '/api/ask-answer',
   '/api/adb', '/api/phone-', '/api/screen-state',
   '/api/proxy-state', '/api/toggle-states',

@@ -63,5 +63,11 @@
     "model": "deepseek-v4-flash",
     "reasoningEffort": "high",
     "agentPreset": ""
+  },
+  "_说明_cost": "对话页「生成中…」上面那一行。本轮花费一定能算（从 dsh 的会话文件读增量，见 src/cost.js，要 Node 22+）；余额要 DeepSeek 的 API key 才查得到，没配就显示「余额 --」。",
+  "cost": {
+    "balanceKey": "",
+    "balanceKeyFile": "",
+    "total": 300
   }
 }

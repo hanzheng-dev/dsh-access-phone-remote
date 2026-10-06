@@ -29,6 +29,7 @@ const http = require('http');
 const zlib = require('zlib');
 const { spawn, execFileSync } = require('child_process');
 const { config } = require('../config');
+const cost = require('../cost');
 const {
   addMessage, addMessageCore, insertMessage, messages,
   streams, sseSend, json, readBody, log, saveStore, scheduleSave,
@@ -577,6 +578,10 @@ async function handle(req, res, url, p) {
     // ⭐ 新回合开始 ⇒ 清掉上一轮按停留下的丢包窗口 —— 否则本轮的 delta 会被全丢，
     //    屏幕上什么都不会出（生产版踩过的坑，见 clearAbortWindow 注释）。
     clearAbortWindow();
+
+    // ⭐ 新回合开始 ⇒ 记下「本轮花钱从哪个字节算起」（供 /api/cost 用）。
+    //    放在 spawn 之前：桥一起来就会往会话文件里写，游标必须在那之前定格。
+    try { cost.markTurnStart(); } catch (e) { /* 记不上就算不出本轮花费，不影响对话 */ }
 
     try {
       const child = spawn(process.execPath, [BRIDGE, text, hitchImgPath], {

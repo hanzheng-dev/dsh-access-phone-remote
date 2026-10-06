@@ -27,6 +27,8 @@ const push = require('./routes/push');
 const file = require('./routes/file');
 const addresses = require('./routes/addresses');
 const chat = require('./routes/chat');
+const costRoute = require('./routes/cost');
+const cost = require('./cost');
 const { printTerminalQR } = require('./terminal-qr');
 const discover = require('./discover');
 
@@ -166,6 +168,19 @@ addresses.register(server, config);
 // 会话页（在手机上跟电脑的 AI 对话）—— 受 config.dsh.enabled 控制，
 // 没开时它的全部接口一律 404，前端也据此隐藏入口。
 chat.register(server, config);
+// 余额 / 花费（对话页「生成中…」上面那一行）
+costRoute.register(server);
+
+// ⭐ 把 sessions 目录告诉 cost.js —— **不要硬编码**，跟着配置走。
+//   config.dsh.home 留空时走自动探测（跟桥用的是同一套 resolveDshHome）。
+try {
+  const dshHome = config.dsh.home || require('./dsh/auth').resolveDshHome();
+  if (dshHome) cost.setSessRoot(require('path').join(dshHome, 'sessions'));
+} catch (e) { /* 探测不到就算了：花费会显示 0，不影响其它功能 */ }
+
+// ⚠️ 启动时先把「本轮起点」游标对到**现在** —— 否则它是 0，
+//    readSince(0) 会把整个会话文件解一遍，页面看到「本次 ¥104」这种历史总花费的假数字。
+try { cost.markTurnStart(); } catch (e) { /* 忽略 */ }
 
 module.exports = { server, config };
 
