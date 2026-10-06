@@ -170,7 +170,36 @@ setTimeout(() => {
     console.error('  —— Previewer 日志末尾 25 行 ——');
     console.error(log.split('\n').slice(-25).map((l) => '    ' + l).join('\n'));
   }
+
+  // 清理本次的临时布局。
+  // 失败时**保留**：那时日志和 frame 是唯一的证据，删了就查不下去了。
+  // 顺手把上次失败残留的目录也收掉（只动本脚本自己建的 ohos-smoke-*）。
+  if (ok) {
+    try { fs.rmSync(T, { recursive: true, force: true }); } catch (e) {}
+    sweepOldRuns();
+  } else {
+    console.error('');
+    console.error('  （临时目录保留着，供排查：' + T + '）');
+  }
+
   setTimeout(() => process.exit(ok ? 0 : 1), 200);
 }, DUR * 1000);
 
 function readAll(p) { try { return fs.readFileSync(p, 'utf8'); } catch (e) { return ''; } }
+
+// 清掉 1 小时前的 ohos-smoke-* 残留（失败的运行会留下它们）
+function sweepOldRuns() {
+  const base = os.tmpdir();
+  const cutoff = Date.now() - 3600 * 1000;
+  let n = 0;
+  try {
+    for (const e of fs.readdirSync(base, { withFileTypes: true })) {
+      if (!e.isDirectory() || !e.name.startsWith('ohos-smoke-')) continue;
+      const p = path.join(base, e.name);
+      try {
+        if (fs.statSync(p).mtimeMs < cutoff) { fs.rmSync(p, { recursive: true, force: true }); n++; }
+      } catch (err) {}
+    }
+  } catch (err) {}
+  if (n) console.log('  （顺手清掉 ' + n + ' 个 1 小时前的自检残留）');
+}
