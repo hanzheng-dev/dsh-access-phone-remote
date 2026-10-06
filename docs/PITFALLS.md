@@ -3,7 +3,7 @@
 > **这份文件是给 AI 助手读的。** 当用户遇到问题时，先在这里查。
 >
 > **全部来自真实踩坑记录**（一手，非推测）。每条都标注了**症状 → 根因 → 解法**。
-> 更新：2026-10-06 · 共 82 条
+> 更新：2026-10-06 · 共 83 条
 
 ---
 
@@ -1252,7 +1252,55 @@ const items = (lval.items || []).filter((s) => s && s.sessionId && s.origin !== 
   **元数据对了，内容还是旧的。**
 - 换签名密钥这类操作，**发完一定要从下载链接验一次签名** ——
   否则你以为换了，用户拿到的还是旧钥匙签的包。
+---
+
+## P83 · ★ 以为鸿蒙开发必须登录华为账号 —— 其实整条命令行链公开可下
+
+**症状**：想给项目加个鸿蒙客户端，第一反应是"得装 DevEco Studio"；
+而 DevEco 的下载页要**登录华为开发者账号**（后续签名还要实名认证）
+⇒ 判定为「做不到」，准备放弃。
+
+**根因**：结论下得太早。DevEco **确实是**要账号的 IDE 分发 ——
+但**它干活用的工具全是公开的**。华为云镜像站可以匿名浏览、匿名下载：
+
+| 需要什么 | 地址 | 大小 |
+|---|---|---|
+| OpenHarmony SDK（含全部编译器） | `repo.huaweicloud.com/openharmony/os/7.0-Release/ohos-sdk-windows_linux-public.tar.gz` | 3.15 GB |
+| Windows 命令行工具（ohpm） | `repo.huaweicloud.com/harmonyos/ohpm/5.0.2/oh-command-line-tools-20240715.zip` | 58 MB |
+| HAP 签名 / 打包 | `repo.huaweicloud.com/harmonyos/develop_tools/` 下的 `hapsigntoolv2.jar`、`hmos_app_packing_tool.jar` | 9.4 MB / 57 KB |
+| 社区签名证书 | 随 SDK：`toolchains/lib/OpenHarmony.p12`、`OpenHarmonyProfileDebug.pem`、`UnsgnedDebugProfileTemplate.json` | — |
+
+**构建链每一环（逐个实测过能跑）**：
+
+```
+.ets ──ets-loader──► JS ──es2abc.exe──► .abc ──┐
+resources ──restool.exe──► 资源索引 ───────────┼─app_packing_tool.jar─► .hap ─hap-sign-tool.jar─► 签名 .hap
+```
+
+**`hvigor` 只是个编排器** —— 它实际干的活全在 SDK 里。
+而 `@ohos/hvigor` 在**任何公开仓库都是 404**（npm 官方源、华为云 npm 镜像、
+ohpm 官方仓库 `ohpm.openharmony.cn/ohpm/` 都查过）—— 它只随 DevEco 分发。
+**所以别去找它，直接手搓链**（跟 `android/build.sh` 手搓安卓链是同一件事）。
+
+**两个实测细节**：
+
+- `es2abc.exe` **吃的是纯 JS**。喂带类型注解的 `.ets` 会直接报
+  `SyntaxError: Unexpected token` —— **类型剥离是 `ets-loader` 干的**，别搞反顺序。
+- 编出来的 `.abc` 头 8 字节是 `50 41 4E 44 41 00 00 00`（ASCII 的 `PANDA`），
+  用 `toolchains/ark_disasm.exe` 能反汇编，可以拿来自检产物是不是合法字节码。
+
+**教训**：
+
+- **「官方 IDE 要登录」不等于「这件事要登录」。**
+  IDE 是给人用的外壳，真正干活的编译器/打包器/签名器常常独立分发。
+  **先找工具，再判断可行性。**
+- **判断「做不到」之前，把「卡在哪一步」拆开。**
+  这次卡的是"下载 IDE"，而 IDE 只是外壳 —— 一拆就发现整条链是通的。
+  （这个项目里已经栽过两次同类错误：一次是"以为 dsh 不支持子目录安装"，
+  其实是少写了 `#path:/`；这次是"以为鸿蒙要账号"。）
+- **别装 winget 上那个 `Huawei.DevEco`** —— 版本 `3.1.0.501` 是 2023 年的，
+  面向老鸿蒙（HarmonyOS 3.x，还兼容安卓 APK），**打不了纯血鸿蒙的 HAP**。白占几 GB。
 
 ---
 
-**END（82 条）**
+**END（83 条）**

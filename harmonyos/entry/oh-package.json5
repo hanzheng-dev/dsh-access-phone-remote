@@ -1,0 +1,10 @@
+// entry 模块依赖清单
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "dsh-access-phone-remote entry HAP",
+  "main": "",
+  "author": "hanzhengdev",
+  "license": "MIT",
+  "dependencies": {}
+}

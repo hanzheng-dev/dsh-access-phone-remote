@@ -1,0 +1,10 @@
+// 工程根依赖清单
+// ⚠️ 待验证：modelVersion 需与安装的 SDK 对应（API 12 通常为 "5.0.0"）。
+{
+  "modelVersion": "5.0.0",
+  "description": "dsh-access-phone-remote HarmonyOS client (thin Web shell + native bridge + push)",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.19"
+  }
+}

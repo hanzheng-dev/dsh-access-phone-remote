@@ -1,0 +1,13 @@
+// 应用级配置
+// 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/app-configuration-file
+{
+  "app": {
+    // bundleName 沿用了安卓端的包名，便于两端对得上；鸿蒙要求反向域名写法，此处合法。
+    "bundleName": "io.github.hanzhengdev.phoneaccess",
+    "vendor": "hanzhengdev",
+    "versionCode": 1000000,
+    "versionName": "1.0.0",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}

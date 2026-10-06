@@ -121,7 +121,7 @@ dsh plugin --profile web add github:hanzheng-dev/dsh-access-phone-remote#path:/p
 
 Windows 的 `.bat` 必须是 **CRLF**。LF 会让 `cmd.exe` 解析错乱。
 
-**完整的坑清单（82 条，症状 → 根因 → 解法）在服务端仓库的
+**完整的坑清单（83 条，症状 → 根因 → 解法）在服务端仓库的
 [`docs/PITFALLS.md`](https://github.com/hanzheng-dev/dsh-access-phone-remote/blob/main/docs/PITFALLS.md)。**
 
 ---

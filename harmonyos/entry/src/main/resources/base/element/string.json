@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "dsh-access-phone-remote phone client"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "dsh-access-phone-remote"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "dsh-access-phone-remote"
+    },
+    {
+      "name": "reason_location",
+      "value": "用于「位置」页按需获取当前位置、打开地图与导航"
+    },
+    {
+      "name": "reason_background",
+      "value": "保持与电脑端的长连接，实时接收提醒与推送"
+    }
+  ]
+}

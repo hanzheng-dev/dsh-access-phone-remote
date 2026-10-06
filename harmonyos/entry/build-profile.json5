@@ -1,0 +1,11 @@
+// 模块级构建配置
+// 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ide-hvigor-build-profile
+{
+  "apiType": "stageMode",
+  "buildOption": {},
+  "targets": [
+    {
+      "name": "default"
+    }
+  ]
+}

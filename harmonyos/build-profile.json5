@@ -1,0 +1,41 @@
+// 工程级构建配置（DevEco Studio / hvigor 读取）
+// ⚠️ 待验证：compatibleSdkVersion / runtimeOS 需与本机安装的 SDK 一致。
+//     本机 SDK 尚未下载（主人正在下 3.15GB），此处按 API 12（HarmonyOS 5.0.0）填写，
+//     若装的不是这一版，编译时会报版本不匹配 —— 按 DevEco 提示改这里即可。
+// 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ide-hvigor-build-profile
+{
+  "app": {
+    // 签名配置留空：本机用 DevEco 自动签名即可，或自行补 signingConfigs。
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      { "name": "debug" },
+      { "name": "release" }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": ["default"]
+        }
+      ]
+    }
+  ]
+}

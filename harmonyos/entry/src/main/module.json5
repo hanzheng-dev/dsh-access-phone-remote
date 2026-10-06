@@ -1,0 +1,71 @@
+// 模块配置（Stage 模型）
+// 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/module-configuration-file
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    // 手机为主；平板可选
+    "deviceTypes": ["phone", "tablet"],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:app_icon",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        // 长时任务类型：数据传输。对应安卓的 foregroundServiceType="dataSync"。
+        // 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/continuous-task
+        "backgroundModes": ["dataTransfer"],
+        "skills": [
+          {
+            "entities": ["entity.system.home"],
+            "actions": ["ohos.want.action.home"]
+          }
+        ]
+      }
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.GET_NETWORK_INFO"
+      },
+      {
+        // 长时任务必需；参考 continuous-task.md「需要申请 ohos.permission.KEEP_BACKGROUND_RUNNING」
+        "name": "ohos.permission.KEEP_BACKGROUND_RUNNING",
+        "reason": "$string:reason_background",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
+      },
+      {
+        // 定位（按需触发）。必须先申请模糊权限，再申请精确定位。
+        // 参考：https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-geoLocationManager
+        "name": "ohos.permission.APPROXIMATELY_LOCATION",
+        "reason": "$string:reason_location",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.LOCATION",
+        "reason": "$string:reason_location",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
+      }
+    ]
+  }
+}

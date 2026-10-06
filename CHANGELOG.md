@@ -86,7 +86,7 @@
 
 **文档**
 - `AGENTS.md` —— 给 AI 助手的部署剧本（含配置向导问答树）
-- `docs/PITFALLS.md` —— **82 条实测坑**
+- `docs/PITFALLS.md` —— **83 条实测坑**
 - `docs/TROUBLESHOOT.md` —— 排障决策树
 - `docs/ONBOARDING.md` —— 上手引导
 - `docs/FOR-AI-EXTEND.md` —— 给 AI 的扩展指南
