@@ -1,4 +1,4 @@
-构建产物（不进仓库）
+# 构建产物（不进仓库）
 *.hap
 *.hap.idsig
 build/
@@ -6,3 +6,6 @@ build/
 oh_modules/
 *.abc
 
+# 跑起来的过程性素材（截图 / 中间 json / 临时脚本），不进仓库。
+# 结论与可复现的步骤写进 RUN-NOTES.md，要长期留的脚本整理到 tools/。
+run-artifacts/

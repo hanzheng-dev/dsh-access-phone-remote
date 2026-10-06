@@ -3,7 +3,7 @@
 > **这份文件是给 AI 助手读的。** 当用户遇到问题时，先在这里查。
 >
 > **全部来自真实踩坑记录**（一手，非推测）。每条都标注了**症状 → 根因 → 解法**。
-> 更新：2026-10-06 · 共 83 条
+> 更新：2026-10-07 · 共 86 条
 
 ---
 
@@ -28,6 +28,12 @@
 | 装 `github:` 依赖连不上 GitHub | **P78** |
 | 投稿 dsh 插件列表被 CI 拒 | **P79** |
 | 提交推上去了但贡献图是空的 | **P80** |
+| 手机上突然跳到别的会话 | **P81** |
+| 换了 Release 附件，下载还是旧文件 | **P82** |
+| 以为鸿蒙开发必须登录华为账号 | **P83** |
+| `git push` 突然连不上 GitHub | **P84** |
+| 推了文件，手机上却没有卡片 | **P85** |
+| 手机上网页的抽屉默认就是开着的 | **P86** |
 
 ---
 
@@ -1303,4 +1309,188 @@ ohpm 官方仓库 `ohpm.openharmony.cn/ohpm/` 都查过）—— 它只随 DevEc
 
 ---
 
-**END（83 条）**
+## P84 · ★ `git config` 里的 proxy 是"粘住"的 —— 清环境变量清不掉它
+
+**症状**：`git push` 连续失败：
+
+```
+fatal: unable to access 'https://github.com/...git/':
+Failed to connect to github.com port 443 via 127.0.0.1 after 2014 ms: Could not connect to server
+```
+
+报错里那个 `via 127.0.0.1` 是关键 —— 它在走本地代理。
+但 Clash Verge 的**界面进程还活着**（PID 在），于是第一反应是"代理软件没开，去重启它"。
+
+**根因**（两层，第二层才是坑）：
+
+1. Clash 的**内核**（真正监听 7897 的那个）已经退出，只剩 GUI 空壳。
+   `Get-NetTCPConnection -State Listen` 里 7897 根本不存在，`Test-NetConnection 127.0.0.1 -Port 7897` → False。
+2. **`http.proxy` 被写进了 git config**（P78 那次为了走代理配的，见上文）。
+   git 的取值优先级是 **`--config` > 仓库/全局 config > 环境变量**，
+   所以 `Remove-Item Env:HTTP_PROXY`、`$env:HTTPS_PROXY=''` **一点用都没有** ——
+   config 里写着，git 就永远走那个死代理。
+
+**怎么一眼确诊**（两条命令，10 秒）：
+
+```powershell
+git config --get-regexp 'proxy'          # → http.proxy http://127.0.0.1:7897  ← 元凶在这
+Invoke-WebRequest https://api.github.com/zen -UseBasicParsing   # → 200  ← 直连本来是通的
+```
+
+**直连通、只有 git 不通 ⇒ 100% 是 git 自己的配置，跟网络、跟代理软件都无关。**
+（这一步是这次没白折腾的关键：先证明"路是通的"，就不用去动主人的网络栈了。）
+
+**解法**：**按次覆盖**，别改全局配置：
+
+```powershell
+git -c http.proxy= -c https.proxy= -c http.https://github.com.proxy= push origin main
+```
+
+```sh
+# 临时（当前 shell）
+git config --local http.proxy ""     # 只影响这个仓库
+# 永久清掉（会影响所有仓库，主人机器上慎用）
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+**教训**：
+
+- **"代理没开"和"代理软件没开"是两回事。** 看 GUI 进程在不在判断不了内核起没起 ——
+  **要问端口在不在听**（`Get-NetTCPConnection -State Listen` / `Test-NetConnection`）。
+- **排"连不上"先分清是谁在连。**（P78 的教训是这个的正面）
+  P78 是"git 不读 `.npmrc` 的 proxy"，这次正好反过来：
+  **"git 的 proxy 也不会被环境变量顶掉"** —— 同一枚硬币的两面，
+  合起来就是一句话：**git 的代理只认 git 自己的配置，加要加在这、减也要减在这。**
+- **改别人机器的全局配置之前，先试按次覆盖。**
+  `-c http.proxy=` 立即生效、零副作用；`--global --unset` 会在下次需要代理时又坑一次。
+- 这个坑还有个**延迟发作**属性：**配的时候是对的**（当时确实靠它才连上），
+  **三天后代理一死就变成阻塞**，而且报错信息（`via 127.0.0.1`）很容易被读成"代理该重启了"。
+
+---
+
+## P85 · ★ `/api/push` 的附件被拒时照样回 `{ok:true}` —— 卡片凭空消失
+
+**症状**：往手机推一个附件：
+
+```sh
+curl -X POST http://127.0.0.1:3099/api/push \
+  -H 'Content-Type: application/json' -H 'x-auth: <口令>' \
+  -d '{"text":"报告在这","file":{"path":"D:\\某处\\报告.pdf"}}'
+# → {"ok":true,"message":{...}}
+```
+
+接口**回 200 + `ok:true`**，日志里也有一条像模像样的"推送成功"。
+但手机上只有一句"报告在这"，**没有附件卡片**，`message.extra.file` 是 `undefined`。
+
+**根因**：`file.path` 不是"给了就存"，它必须过 `fileRef()` 的四道校验
+（**目录白名单 + 后缀 + 敏感文件名 + 大小**）：
+
+```js
+let fileMeta = null;
+if (body.file && body.file.path) {
+  const fp = String(body.file.path);
+  const ref = fileRef(fp);        // ← 四道校验都在这
+  if (ref) { fileMeta = ref; ... }
+  else { log(`⚠ 附件被拒（目录/后缀/敏感名/大小）: ${fp}`); }   // ← 只写日志，不中断
+}
+...
+if (fileMeta) extra.file = fileMeta;    // ← 被拒 ⇒ 这行不执行 ⇒ 消息里没有卡片
+...
+return json(res, 200, { ok: true, message: m });   // ← 无论如何都回 ok
+```
+
+**被拒不是错误，是"降级"**：附件悄悄没了，文字照发，HTTP 状态照样 200。
+唯一的痕迹是**服务端那行 `⚠ 附件被拒` 日志**。
+
+**顺带一个同源的坑**：`image`（内联显示在消息里的图）只认 `/shots/` 下、图片扩展名。
+而 CLI 侧判断"这是张图"用的是**白名单正则**，**不匹配就把它拼进 `text`**：
+
+```js
+const IMG_RE = /^\/shots\/[\w.\-]+\.(png|jpe?g|webp|gif)$/i;
+for (const a of rest) if (!image && IMG_RE.test(a)) { image = a; continue; }
+const text = rest.filter((a) => a !== image).join(' ').trim();   // ← 兜底进正文
+```
+
+于是"发个文件"变成"把路径当成一句话说了一遍"——
+**正文里赫然写着那个路径**，扫一眼完全不觉得出错。
+
+**解法**：
+
+| 想发什么 | 用哪个字段 | 约束 |
+|---|---|---|
+| 图（内联显示在消息里） | `image` | 必须在 `/shots/` 下、扩展名是 `png/jpg/jpeg/webp/gif` |
+| 任意文件（卡片，内容按需从 `/api/file` 拉） | `file: { path }` | **绝对路径**，且必须在目录白名单内、后缀允许、不是敏感名、不超大小上限 |
+
+**验收方式**：看**接收端**（手机页面上有没有卡片 / `message.extra.file` 存不存在），
+或去服务端日志里搜 `⚠ 附件被拒`。
+
+**教训**：
+
+- **`{ok:true}` 只代表"请求被接受了"，不代表"该到的都到了"。**
+  凡是**投递**类接口，成功标准在**接收端**，不在返回码。（同 P82：元数据对了，内容还是旧的）
+- **"静默降级"比"报错"危险得多。** 报错会让人去查；降级会让人以为已经成了 ——
+  尤其当降级后的产物**"看起来还挺合理"**（正文里确实出现了那个路径）的时候。
+- **一个接口可以有多种"部分成功"。** `ok:true` 底下藏的可能是"文字发了、附件没了"。
+  **把返回体拆成每一部分的成败**，比一个大 `ok` 有用得多。
+
+---
+
+## P86 · Android 9 的 WebView 内核 ≈ Chrome 70 —— 一个 `inset` 简写让抽屉"默认开着"
+
+**症状**：手机网页版的主页抽屉（从左侧滑出、默认收起、`translateX(-100%)` 藏在屏幕外），
+**一进页面就是摊开的**，盖住会话页，暗罩也在。
+
+**根因**：抽屉的定位原来写的是简写：
+
+```css
+#home{ position:fixed; inset:0 auto 0 0; ... }
+```
+
+`inset` 是 **Chrome 87+** 才有的属性，而 **Android 9 系统 WebView 约等于 Chrome 70**。
+不认识的属性，CSS 的做法是**丢弃整条声明** ⇒ 这元素等于**没写 `top/bottom/left`**：
+
+```css
+position:fixed;            /* 只剩这个 */
+-webkit-transform:translateX(-100%);
+```
+
+`transform` 把元素整体左移，但**父级/视口定位缺失**让它落在文档流该在的位置上 ——
+于是算出来的可见区域和"藏在屏幕外"的预期完全不是一回事，看起来就是**抽屉默认开着**。
+
+**解法**：**老老实实展开成长写**：
+
+```css
+#home{
+  /* ⚠️ 这里**不能**用 `inset:0 auto 0 0` 简写 —— Android 9 的 WebView 内核约等于
+     Chrome 70，而 `inset` 是 Chrome 87+ 才有的。写了它整条会被丢弃，抽屉定位失效、
+     直接摊在屏幕上（实测：模拟器上抽屉"默认就是开着的"，就是这么来的）。
+     ⇒ 老老实实写 top/bottom/left。 */
+  position:fixed;top:0;bottom:0;left:0;z-index:62;
+  ...
+}
+```
+
+**顺带一提**：`env(safe-area-inset-*)` 在同一份 CSS 里是**可以用的**（本文件用了十几处）——
+它虽然也是新东西，但**不认识 `env()` 时整条 `padding` 只是失效，元素照样在正确位置**，
+不会像 `inset` 那样把**定位**打掉。**"新属性"的风险等级不一样，看它坏掉时影响什么。**
+
+**教训**：
+
+- **"现代 CSS 简写"在这个项目里是负资产。** 实测机是 **Android 9（API 28，WebView ≈ Chrome 70）**，
+  写前端时要按 2018 年的内核要求来：`inset` / `gap`(flex) / `:is()` / `aspect-ratio` 之类
+  都得先查 Can I use。
+  ⚠️ 而且 **`build.sh` 声明的是 `--min-sdk-version 24`（Android 7.0）** ——
+  比实测机还老两级，**它的 WebView 比 Chrome 70 更老**。
+  `target-sdk-version 33` 只影响"按哪版规则运行"，**不提升任何设备上的 WebView 版本**。
+  ⇒ **声明支持到哪，就得按那个最老的内核写；拿手里的模拟器当基线是自欺欺人。**
+- **"坏了但没报错"的 CSS 最难查**：没有控制台报错、没有网络错误，
+  只是**视觉上完全不符合预期**。所以这个项目的验收标准是
+  **用无头 Edge 截图 + `read_image` 亲眼看**，而不是"代码看着对"。
+- **模拟器不是真机，但模拟器上的错也是真错。** 这条正是在模拟器上发现的 ——
+  真机上（Android 版本更高）**反而不会复现**，属于"只在最差环境暴露"的那类 bug。
+  **要按"最老的、最差的客户端"来定基线**，否则就是在给自己埋雷。
+
+---
+
+**END（86 条）**

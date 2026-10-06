@@ -7,48 +7,94 @@
 
 ## 一、这份源码的状态（先看这里）
 
-> **未编译、未运行、未验证。**
+> **已构建、已签名、验签通过 —— 但还没在任何设备上跑起来过。**
 >
-> 写这份源码的机器上**还没有鸿蒙 SDK**（主人正在别处下，约 3.15 GB，尚未就绪），
-> 所以这里**一行 ArkTS 都没被编译过**，也没在真机/模拟器上跑过。
+> | 环节 | 状态 |
+> |---|---|
+> | ArkTS 编译（`ets-loader` + `es2abc`） | ✅ 通过，产出合法字节码（`.abc` 头是 `PANDA`） |
+> | 资源编译（`restool`）+ 打包（`app_packing_tool`） | ✅ 通过 |
+> | 签名（`hap-sign-tool`，社区证书） | ✅ 通过，产物 133,716 B |
+> | 验签（`verify-app`） | ✅ success |
+> | **装到真机 / 模拟器上启动** | ❌ **没做过** |
 >
-> 能做到的「准确」只到这一步：
+> 所以：**构建链是通的，运行时接受度未知。**
+> 已知的具体风险：`ets/modules.abc` 是由 4 个 webpack bundle 用 `--merge-abc`
+> 合并成 4 个 record 的，**这种"多 record 单文件"能不能被 ArkTS 运行时正常加载，没验证过**。
+> 这也是**没有发布预编译 HAP** 的原因 —— 见 `RUN-NOTES.md`（要跑起来的过程与结论都记在那里）。
+>
+> 另外，源码里有两条「准确度」线索可以帮你判读：
 > - 需要对照的**安卓行为**逐条读过源码（`android/src/...`），能力清单见 `PORTING.md`；
-> - 用到的鸿蒙 API **尽量查了官方文档**并在源码注释里写了文档 URL；
 > - 凡**拿不准**的地方，源码里都标了 `// ⚠️ 待验证：<不确定什么>`，并在下面「已知的未知项」汇总。
->
-> 请把它当作**一份待编译的骨架**，别当作已验证的成品。
 
 ---
 
 ## 二、怎么把它跑起来
 
-### 方式 A：DevEco Studio（推荐）
+### 方式 A：命令行（`build.sh`，**不需要 IDE、不需要华为账号**）
 
-1. 安装 **DevEco Studio**（含 SDK Manager / hvigor）：
-   https://developer.huawei.com/consumer/cn/download/
-2. 首次启动按向导装 **HarmonyOS SDK**（SDK Manager → 勾选对应 API 版本）。
-3. `File > Open` 打开本目录 `harmonyos/`，等待同步（会自动补 `hvigorw` 等 wrapper）。
-4. 打开 `build-profile.json5`，把 `compatibleSdkVersion` / `runtimeOS` 改成**你实际装的 SDK 版本**
-   （当前填的是 `5.0.0(12)`，见文件内注释）。
-5. **签名**：`File > Project Structure > Signing Configs` → 勾「Automatically generate signature」，
-   需要**登录华为开发者账号**（没有账号则只能在预览器/模拟器上跑，装真机必须签名）。
-6. 连真机（开 USB 调试）或启动模拟器 → 点运行。或 `Build > Build HAP(s)/APP(s) > Build HAP(s)`。
-
-### 方式 B：命令行（hvigorw）
+这是本工程**实际用来出包**的方式。**全部工具都在公开 SDK 里**，匿名可下载：
 
 ```bash
-# 在 harmonyos/ 目录下（首次需先用 DevEco 打开一次，生成 hvigor/ 与 hvigorw）
-./hvigorw --mode module -p product=default assembleHap      # ⚠️ 待验证：参数名以你本机 hvigor 版本为准
+# 1. 装 OpenHarmony SDK（3.15 GB，公开镜像，无需登录）
+curl -O https://repo.huaweicloud.com/openharmony/os/7.0-Release/ohos-sdk-windows_linux-public.tar.gz
+tar -xzf ohos-sdk-windows_linux-public.tar.gz -C D:/ohos        # 得到 D:/ohos/sdk
+
+# 2. 出包（在 harmonyos/ 目录下）。⚠️ 要在 Git Bash 里跑 —— 脚本用 cygpath 转路径
+bash build.sh
 ```
 
-- 产物通常在 `entry/build/default/outputs/default/entry-default-signed.hap`。
-- ⚠️ 命令行签名同样要配好签名证书（`build-profile.json5 > signingConfigs`），
-  或直接用 DevEco 的自动签名。
-- 不使用 DevEco、只装 SDK + hvigor 的纯命令行方式**未在本机验证过**，以官方文档为准：
-  https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ide-hvigor
+**依赖**：`node`、`java`（JDK，含 `keytool`）、以及 **Git Bash**（`cygpath`）。
+SDK 里自带的 `node_modules` 够用，**不需要 `npm install`**。
+
+**环境变量**（都可覆盖）：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `OHOS_SDK` | `D:/ohos/sdk` | 鸿蒙 SDK 根目录 |
+| `WORK` | `./build` | 临时工作目录 |
+| `OHOS_KEYSTORE_PASS` | `123456` | 社区签名库口令 |
+
+**产物**：`harmonyos/entry-default-signed.hap`（gitignore 了，得自己构建）。
+
+**签名用的是社区证书，不需要华为账号**：`OpenHarmony.p12`（口令就是公开的 `123456`）
++ `OpenHarmonyProfileRelease.pem` + `UnsgnedReleasedProfileTemplate.json`，三样都随 SDK 分发。
+
+**流水线**（`build.sh` 里的 7 步，每一层都是公开工具；`hvigor` 只是个编排器）：
+
+```
+.ets ──ets-loader──► JS ──es2abc --merge-abc──► modules.abc ──┐
+resources ──restool──► resources.index ───────────────────────┼─app_packing_tool.jar─► 未签名 .hap
+                                                              ┘        └─hap-sign-tool.jar─► 签名 .hap
+                                                                                └─verify-app─► success
+```
+
+**⚠️ 两个实测坑**（详见 `BUILD-NOTES.md`）：
+
+- `es2abc` **只吃纯 JS**，喂带类型注解的 `.ets` 会直接 `SyntaxError` ——
+  **类型剥离是 `ets-loader` 干的**，顺序别搞反。
+- `@ohos/hvigor` 在**任何公开仓库都是 404**（npm 官方源 / 华为云 npm 镜像 / ohpm 官方仓库都查过），
+  它只随 DevEco 分发。**所以别去找它，直接手搓链** —— 这正是 `build.sh` 在做的事。
+
+### 方式 B：DevEco Studio（可选，但**要登录华为账号**）
+
+只有你想要图形化预览器 / 调试器时才需要它：
+
+1. 安装 DevEco Studio（含 SDK Manager / hvigor）：
+   https://developer.huawei.com/consumer/cn/download/ —— **下载即需登录华为开发者账号**。
+2. `File > Open` 打开本目录 `harmonyos/`，等待同步（会自动补 `hvigorw` 等 wrapper）。
+3. 签名：`File > Project Structure > Signing Configs` → 勾「Automatically generate signature」，
+   同样要账号。
+4. 连真机（开 USB 调试）或启动模拟器 → 点运行。或 `Build > Build HAP(s)`。
+
+> **别装 `winget` 上那个 `Huawei.DevEco`** —— 版本 `3.1.0.501` 是 2023 年的，
+> 面向老鸿蒙（HarmonyOS 3.x，还兼容安卓 APK），**打不了纯血鸿蒙的 HAP**，白占几 GB。
 
 ### 安装到手机
+
+```bash
+# hdc 随 SDK 分发：<SDK>/tc/toolchains/hdc.exe
+hdc install entry-default-signed.hap
+```
 
 装好后首次启动会进「配置页」，把电脑上的完整地址粘进去（形如 `http://192.168.1.100:3099/?t=xxxx`）。
 
@@ -58,7 +104,10 @@
 
 ```
 harmonyos/
-├── build-profile.json5          工程构建配置（⚠️ compatibleSdkVersion 要改成你的 SDK 版本）
+├── build.sh                     ★ 手工构建链（方式 A）：ets-loader → es2abc → restool → 打包 → 签名，共 7 步
+├── BUILD-NOTES.md               构建链的实测记录（每步产物长什么样、踩过哪些坑）
+├── RUN-NOTES.md                 「想让它跑起来」的记录：预览器 / 模拟器试到哪一步、卡在哪
+├── build-profile.json5          工程构建配置（**只给 hvigor / DevEco 用，build.sh 不读它**）
 ├── oh-package.json5             工程依赖
 ├── hvigorfile.ts                工程级 hvigor 脚本
 ├── AppScope/
@@ -105,8 +154,9 @@ harmonyos/
    **没验证**。若被系统掐，替代路线是接入 **Push Kit**（云推送），但那要改电脑端。
    - 源码：`service/NotifyService.ets`；文档：https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/continuous-task
 
-2. **`compatibleSdkVersion` / `modelVersion`**：当前按 API 12（`5.0.0(12)`）填，
-   必须与你实际安装的 SDK 一致，否则 hvigor 直接报版本错。
+2. **`compatibleSdkVersion` / `modelVersion`**：只在**走 DevEco / hvigor** 时才要紧，必须与你装的 SDK 一致，
+   否则 hvigor 直接报版本错。走 `build.sh` 的话它**不读 `build-profile.json5`**，
+   SDK 版本只由 `OHOS_SDK` 指向哪个目录决定。
 
 3. **相机 / 相册**：
    - 拍照用 `cameraPicker.pick` + `PickerProfile.saveUri`（写入应用沙箱文件）。
