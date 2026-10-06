@@ -73,3 +73,7 @@ docs/shots/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 带尾空格的变体（Windows 上普通删除删不掉，会一直让 git 报警告）
+.test-run*/
+.shot-run*/
