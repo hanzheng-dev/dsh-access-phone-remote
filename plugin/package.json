@@ -1,7 +1,7 @@
 {
   "name": "dsh-access-phone-remote",
   "version": "1.0.0",
-  "description": "把手机变成你电脑的遥控器：消息推送 / 文件传输 / 位置服务。数据全部留在自己电脑上。 · Turn your phone into a remote console for your PC: push, file transfer, location. Everything stays on your own machine.",
+  "description": "在手机上跟你电脑里的 AI 对话，顺便遥控这台电脑：推送 / 传文件 / 位置 / 自定义动作。数据全留在你自己电脑上。 · Chat with the AI on your own PC from your phone, plus push, file transfer and location. Everything stays local.",
   "type": "module",
   "license": "MIT",
   "author": "Mare S. Ephemeral <hanzheng-dev@users.noreply.github.com>",
@@ -16,7 +16,11 @@
     "push",
     "tailscale",
     "phone",
-    "pc"
+    "pc",
+    "ai",
+    "chat",
+    "deepseek",
+    "remote-access"
   ],
   "repository": {
     "type": "git",
