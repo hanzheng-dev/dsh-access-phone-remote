@@ -85,6 +85,18 @@
 
 ---
 
+## 下载
+
+| 你要什么 | 拿哪个 | 必需吗 |
+|---|---|---|
+| **服务端** | 本仓库 clone 下来，`node src/server.js`。零 npm 依赖 | **必需** |
+| **Android 客户端** | [Releases](https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/latest) 里的 `dsh-access-phone-remote.apk`（约 50 KB，Android 7+） | 可选 |
+| **dsh 插件** | `dsh plugin --profile web add github:hanzheng-dev/dsh-access-phone-remote#path:/plugin`，或 npm 的 `dsh-access-phone-remote` | 可选 |
+
+**不装 APK 也能用** —— 手机浏览器打开服务端地址即可，功能一致；装 APK 才有的额外好处是系统通知推送。
+
+---
+
 ## 给 AI 用的部署向导
 
 **如果你在使用 Claude / ChatGPT / Cursor 等 AI 助手协助部署**：
