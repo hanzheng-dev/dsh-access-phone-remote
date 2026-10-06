@@ -90,7 +90,7 @@
 | 你要什么 | 拿哪个 | 必需吗 |
 |---|---|---|
 | **服务端** | 本仓库 clone 下来，`node src/server.js`。零 npm 依赖 | **必需** |
-| **Android 客户端** | [Releases](https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/latest) 里的 `dsh-access-phone-remote.apk`（约 50 KB，Android 7+） | 可选 |
+| **Android 客户端** | [Releases](https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/latest) 里的 APK（约 50 KB，Android 7+） | 可选 |
 | **dsh 插件** | `dsh plugin --profile web add github:hanzheng-dev/dsh-access-phone-remote#path:/plugin`，或 npm 的 `dsh-access-phone-remote` | 可选 |
 
 **不装 APK 也能用** —— 手机浏览器打开服务端地址即可，功能一致；装 APK 才有的额外好处是系统通知推送。
@@ -161,7 +161,7 @@ node src/doctor.js      # 或 npm run doctor
 - 给 AI：`AGENTS.md`
 - 给人：`docs/ARCHITECTURE.md`
 - **遇到问题**：`docs/TROUBLESHOOT.md`（按症状走决策树）
-- **坑清单**：`docs/PITFALLS.md`（**81 条实测坑**）
+- **坑清单**：`docs/PITFALLS.md`（**82 条实测坑**）
 
 ---
 
@@ -175,7 +175,7 @@ node src/doctor.js      # 或 npm run doctor
 
 ### 2. `docs/PITFALLS.md` 是两个月踩出来的
 
-**81 条真实坑**，每条都有**症状 → 根因 → 解法**：
+**82 条真实坑**，每条都有**症状 → 根因 → 解法**：
 
 - `adb tcpip 5555` vs Android「无线调试」的本质区别
 - Tailscale MagicDNS 把自己当 DNS → 手机上不了网
@@ -223,7 +223,7 @@ node src/doctor.js      # 或 npm run doctor
 | 文件 | 给谁 | 内容 |
 |---|---|---|
 | **`AGENTS.md`** | **AI** | **部署剧本（核心）** |
-| `docs/PITFALLS.md` | 都行 | **81 条实测坑** |
+| `docs/PITFALLS.md` | 都行 | **82 条实测坑** |
 | `docs/TROUBLESHOOT.md` | AI | 排障决策树（按症状走） |
 | `docs/ONBOARDING.md` | 人 | 上手引导 |
 | `docs/FOR-AI-EXTEND.md` | AI | 扩展指南（**含「不改代码加功能」**） |

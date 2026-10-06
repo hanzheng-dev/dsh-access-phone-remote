@@ -196,7 +196,7 @@ dsh-access-phone-remote/
 │   └── index.html      前端页面
 │
 └── docs/
-    ├── PITFALLS.md     ★ 81 条实测坑
+    ├── PITFALLS.md     ★ 82 条实测坑
     ├── ARCHITECTURE.md 本文件
     └── SECURITY.md     安全说明
 ```
@@ -282,6 +282,6 @@ dsh-access-phone-remote/
 
 ## 相关文档
 
-- **`docs/PITFALLS.md`** — 81 条实测坑（**遇到问题先看这个**）
+- **`docs/PITFALLS.md`** — 82 条实测坑（**遇到问题先看这个**）
 - **`docs/SECURITY.md`** — 安全说明
 - **`AGENTS.md`** — 给 AI 的部署剧本
