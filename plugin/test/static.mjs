@@ -31,6 +31,9 @@ try {
   pkg.name === 'dsh-access-phone-remote' ? ok('name = dsh-access-phone-remote') : bad('name 不对')
   pkg.type === 'module' ? ok('type = module') : bad('type 不是 module')
   pkg.exports?.['.'] ? ok('exports["."] 存在') : bad('缺 exports["."]')
+  // ⚠️ 少了这一行，客户端半不会进浏览器图 —— 设置页那个槽位会静默消失，
+  //    而其它检查全绿（package.json 合法、dsh.client 也声明了）。
+  pkg.exports?.['./client'] ? ok('exports["./client"] 存在（客户端半能被加载）') : bad('缺 exports["./client"] —— 设置页不会出现')
   pkg.dsh?.bundle?.patch ? ok('dsh.bundle.patch 存在') : bad('缺 dsh.bundle.patch')
   pkg.dsh?.client?.platform === 'web' ? ok('dsh.client.platform = web') : bad('platform 不对')
   pkg.files?.includes('src') ? ok('files 含 src') : bad('files 缺 src')
@@ -82,15 +85,28 @@ try {
 }
 
 // ---------- 4. client half ----------
+//
+// ⚠️ 客户端半**不是**裸 ESM。它必须是一个手写的 __ModuleLoader__ 包壳
+//    （与 dsh 已装插件 tsdown 产物的形状同构）：dsh 的浏览器侧只认
+//    window.__ModuleLoader__.load({ id, factory })，factory 返回的对象上
+//    要有 apply / inject。写成 `export function apply()` 的文件永远加载不了，
+//    而且没有任何报错 —— 设置页只是安静地少一页。参照：
+//    dsh-session-delete/src/client.js。
 console.log('\n[4] src/client.js（client half）')
 try {
   const src = readFileSync(join(pluginDir, 'src', 'client.js'), 'utf8')
-  src.includes('export const name') ? ok('有 name 导出') : bad('缺 name 导出')
-  src.includes('export function apply') ? ok('有 apply 导出') : bad('缺 apply 导出')
-  src.includes('buildPanel') ? ok('有 buildPanel') : bad('缺 buildPanel')
+  src.includes('window.__ModuleLoader__.load') ? ok('有 __ModuleLoader__ 包壳') : bad('缺 __ModuleLoader__.load 包壳')
+  const idOk = /id:\s*['"]dsh-access-phone-remote['"]/.test(src)
+  idOk ? ok('包壳 id 正确') : bad('包壳 id 不对')
+  src.includes('exports.apply') ? ok('导出 apply') : bad('缺 exports.apply')
+  src.includes('exports.inject') ? ok('导出 inject') : bad('缺 exports.inject')
+  src.includes('return module.exports') ? ok('factory 返回 module.exports') : bad('factory 没有返回 module.exports')
+  src.includes('settings.section') ? ok('注册 settings.section 槽位') : bad('没有注册 settings.section')
   // 前端半不能有 node: 导入
   const nodeImports = src.match(/from ['"]node:/g)
   !nodeImports ? ok('无 node: 导入（前端安全）') : bad('有 node: 导入：' + nodeImports.length + ' 处')
+  // 内联的二维码生成器：不得依赖外部图床（「数据不出门」是这个项目的前提）
+  !/api\.qrserver|chart\.googleapis|qrserver\.com/.test(src) ? ok('二维码本地生成（不调外部图床）') : bad('二维码依赖了外部服务')
 } catch (e) {
   bad('读不到：' + e.message)
 }

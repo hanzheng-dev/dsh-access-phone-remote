@@ -32,10 +32,13 @@
   },
   "exports": {
     ".": "./src/index.js",
+    "./client": "./src/client.js",
     "./package.json": "./package.json"
   },
   "files": [
     "src",
+    "assets",
+    "screenshots.json",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
