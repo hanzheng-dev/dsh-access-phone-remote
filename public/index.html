@@ -32,7 +32,7 @@
      开源版不带那张图 ⇒ 改成纯色打底，保留同一层结构（以后想放自己的图，
      把 background 换成 url(...) 即可）。 */
   body::before{
-    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    content:'';position:fixed;top:0;right:0;bottom:0;left:0;z-index:-1;pointer-events:none;
     background:#faf8f3;
   }
 
@@ -309,7 +309,7 @@
 
   /* ---- 结果弹窗 ---- */
   .mask{
-    position:fixed;inset:0;background:rgba(0,0,0,.42);
+    position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.42);
     display:none;align-items:center;justify-content:center;
     padding:20px;z-index:80;backdrop-filter:blur(2px);
   }
@@ -361,7 +361,7 @@
      ⚠️ 独立一层 #imgView（z-index 90 比对话页 60 / 账本 65 都高）⇒ 在哪都能弹。
      ⚠️ 缩放/平移走 transform（不重排）；`touch-action:none` 自己处理手势。 */
   #imgView{
-    position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.94);
+    position:fixed;top:0;right:0;bottom:0;left:0;z-index:90;background:rgba(0,0,0,.94);
     display:none;align-items:center;justify-content:center;overflow:hidden;
     touch-action:none;-webkit-user-select:none;user-select:none;
   }
@@ -768,7 +768,7 @@
   /* ---- ⭐⭐ 2026-09-30 op：位置页 = 站内极简导航（地图 + 附近搜索 + 四种方式时间/路线）----
      独立全屏层（照 #ledger 那套：自己那条 history + 刷新后还原），z-index 72 盖最上。
      ⛔ 默认全在站内看，不跳转；只有「↗ 开始导航」那颗小按钮才跳地图 App（语音播报只有 App 有）。 */
-  #loc{ position:fixed;inset:0;z-index:72;display:none;flex-direction:column;
+  #loc{ position:fixed;top:0;right:0;bottom:0;left:0;z-index:72;display:none;flex-direction:column;
     background:#f7f5ef;color:var(--fg);
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
   #loc.show{display:flex}
@@ -793,8 +793,8 @@
   /* 地图 */
   #loMapBox{position:relative;height:38vh;min-height:190px;border-radius:14px;overflow:hidden;
     border:1px solid var(--line);background:var(--panel);margin-bottom:10px}
-  #loMap{position:absolute;inset:0}
-  #loMapMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  #loMap{position:absolute;top:0;right:0;bottom:0;left:0}
+  #loMapMsg{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;
     font-size:13px;color:var(--dim);text-align:center;padding:16px;pointer-events:none}
   #loMapOpen{position:absolute;right:8px;bottom:8px;z-index:3;font:inherit;font-size:12px;
     padding:7px 11px;border-radius:20px;border:1px solid var(--line-hi);
@@ -872,7 +872,7 @@
   /* ---- ⭐⭐ 2026-09-30 op：全屏导航视图（点搜索结果里的「导航」进）----
      地图占满中间，顶部信息条 + 底部可滚动分段指引；返回就退回搜索/地图视图。
      ⛔ 仍然不跳转，只有底部「↗ 开始导航」才跳高德 App。 */
-  #loNav{position:fixed;inset:0;z-index:74;display:none;flex-direction:column;
+  #loNav{position:fixed;top:0;right:0;bottom:0;left:0;z-index:74;display:none;flex-direction:column;
     background:var(--bg);color:var(--fg);
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
   #loNav.show{display:flex}
@@ -896,8 +896,8 @@
   #loNvModes button.on .t{color:rgba(58,56,47,.72)}
   #loNvModes button:disabled{opacity:.45}
   #loNvMapWrap{position:relative;flex:1;min-height:0}
-  #loNvMap{position:absolute;inset:0}
-  #loNvMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  #loNvMap{position:absolute;top:0;right:0;bottom:0;left:0}
+  #loNvMsg{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;
     font-size:13px;color:var(--dim);text-align:center;padding:16px;pointer-events:none}
   #loNvSheet{flex:0 1 auto;max-height:34vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     border-top:1px solid var(--line);background:var(--panel-solid);padding:4px 0}
@@ -922,14 +922,14 @@
      #chat 是盖在主页上的全屏层（与位置页同一套 .show 开合机制）。
      ⚠️ 对话层必须**自成一体**：自己一块底色盖住下面主页（两层叠着没法看）。 */
   #chat{
-    position:fixed;inset:0;background:#faf8f3;z-index:60;
+    position:fixed;top:0;right:0;bottom:0;left:0;background:#faf8f3;z-index:60;
     display:none;flex-direction:column;
     padding:0 0 env(safe-area-inset-bottom);
   }
   #chat.show{display:flex}
   /* 对话页自己的背景层（和 body::before 同款：开源版去掉了私有背景图，用同色） */
   #chat::before{
-    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+    content:'';position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;pointer-events:none;
     background:#faf8f3;
   }
   html.dark #chat{background:#111}
