@@ -7,20 +7,30 @@
 
 ## 一、这份源码的状态（先看这里）
 
-> **已构建、已签名、验签通过 —— 但还没在任何设备上跑起来过。**
+> **能构建、能签名、能验签，而且 —— 真的能在运行时加载并画出界面。**
 >
 > | 环节 | 状态 |
 > |---|---|
 > | ArkTS 编译（`ets-loader` + `es2abc`） | ✅ 通过，产出合法字节码（`.abc` 头是 `PANDA`） |
 > | 资源编译（`restool`）+ 打包（`app_packing_tool`） | ✅ 通过 |
-> | 签名（`hap-sign-tool`，社区证书） | ✅ 通过，产物 133,716 B |
+> | 签名（`hap-sign-tool`，社区证书） | ✅ 通过，产物约 134 KB |
 > | 验签（`verify-app`） | ✅ success |
-> | **装到真机 / 模拟器上启动** | ❌ **没做过** |
+> | **运行时加载 `modules.abc` 并渲染 ArkUI** | ✅ **已在 SDK 自带 Previewer 里跑通**（配置页正常绘制） |
+> | **主界面（全屏 ArkWeb 壳）** | ❌ **预览器验不了** —— 它里面没有 ArkWeb 模块，见下 |
+> | **装到真机 / 模拟器上启动** | ❌ **没做过**（手头没有纯血鸿蒙设备） |
 >
-> 所以：**构建链是通的，运行时接受度未知。**
-> 已知的具体风险：`ets/modules.abc` 是由 4 个 webpack bundle 用 `--merge-abc`
-> 合并成 4 个 record 的，**这种"多 record 单文件"能不能被 ArkTS 运行时正常加载，没验证过**。
-> 这也是**没有发布预编译 HAP** 的原因 —— 见 `RUN-NOTES.md`（要跑起来的过程与结论都记在那里）。
+> ⚠️ **别把「验签通过」当成「能跑」。** 这两件事一开始就被证伪过一次：
+> `verify-app` 一路 `Verify success`，而预览器一跑就报
+> `Cannot find module ... which is application Entry Point` ——
+> 手工构建链把 `modules.abc` 的**记录名**拼错了。
+> 所以 `build.sh` 现在最后一步是**真的把它跑起来看一眼**（`tools/preview-smoke.js`），
+> 不过就不出包。过程与结论全在 **`RUN-NOTES.md`**。
+>
+> ⚠️ **`pages/Index` 在预览器里注定白屏**：它是全屏 ArkWeb 壳，
+> 而 Previewer 里没有 ArkWeb（`@kit.ArkWeb` 是 `undefined`），
+> `new webview.WebviewController()` 一构造就抛异常。
+> **这是预览器的能力边界，不是构建缺陷** —— 别为此去调构建参数。
+> 也正因为如此：**配置页能起 ≠ 客户端能用**，这个 App 的全部 UI 都在那个还没验过的 Web 壳里。
 >
 > 另外，源码里有两条「准确度」线索可以帮你判读：
 > - 需要对照的**安卓行为**逐条读过源码（`android/src/...`），能力清单见 `PORTING.md`；
@@ -53,27 +63,39 @@ SDK 里自带的 `node_modules` 够用，**不需要 `npm install`**。
 | `OHOS_SDK` | `D:/ohos/sdk` | 鸿蒙 SDK 根目录 |
 | `WORK` | `./build` | 临时工作目录 |
 | `OHOS_KEYSTORE_PASS` | `123456` | 社区签名库口令 |
+| `SKIP_SMOKE` | `0` | 设成 `1` 跳过第 8 步运行期自检（**不建议 —— 跳过它，产物的"能跑"就没有证据了**） |
+| `SMOKE_SECONDS` | `25` | 自检里预览器跑多久 |
 
 **产物**：`harmonyos/entry-default-signed.hap`（gitignore 了，得自己构建）。
 
 **签名用的是社区证书，不需要华为账号**：`OpenHarmony.p12`（口令就是公开的 `123456`）
 + `OpenHarmonyProfileRelease.pem` + `UnsgnedReleasedProfileTemplate.json`，三样都随 SDK 分发。
 
-**流水线**（`build.sh` 里的 7 步，每一层都是公开工具；`hvigor` 只是个编排器）：
+**流水线**（`build.sh` 里的 8 步，每一层都是公开工具；`hvigor` 只是个编排器）：
 
 ```
 .ets ──ets-loader──► JS ──es2abc --merge-abc──► modules.abc ──┐
 resources ──restool──► resources.index ───────────────────────┼─app_packing_tool.jar─► 未签名 .hap
                                                               ┘        └─hap-sign-tool.jar─► 签名 .hap
-                                                                                └─verify-app─► success
+                                                                                │
+                              ┌── [7] verify-app（格式合法 + 签名有效）◄────────┘
+                              └── [8] preview-smoke（**运行时真的接受了**）◄───── 不过就不出包
 ```
 
-**⚠️ 两个实测坑**（详见 `BUILD-NOTES.md`）：
+**为什么要第 8 步**：`verify-app` 只证明"文件格式合法 + 签名有效"，
+**不证明运行时会加载这份字节码** —— 这两件事在本工程里真的分叉过（见 §一）。
+第 8 步会把产物喂给 SDK 自带的 Previewer，抓到非空首帧才算过，
+截图落在 `build/stage/smoke-frame.jpg`（**部署前自己看一眼**）。
+
+**⚠️ 三个实测坑**（详见 `BUILD-NOTES.md` 与 `RUN-NOTES.md`）：
 
 - `es2abc` **只吃纯 JS**，喂带类型注解的 `.ets` 会直接 `SyntaxError` ——
   **类型剥离是 `ets-loader` 干的**，顺序别搞反。
 - `@ohos/hvigor` 在**任何公开仓库都是 404**（npm 官方源 / 华为云 npm 镜像 / ohpm 官方仓库都查过），
   它只随 DevEco 分发。**所以别去找它，直接手搓链** —— 这正是 `build.sh` 在做的事。
+- `modules.abc` 里每条记录的**名字**必须是归一化 ohmurl
+  `<bundleName>&<模块名>/<模块内路径>&<版本>`，随便拼一个路径运行时会找不到 ——
+  这是本工程栽过的最大一个坑，详见 `RUN-NOTES.md` §1.1。
 
 ### 方式 B：DevEco Studio（可选，但**要登录华为账号**）
 
@@ -104,9 +126,11 @@ hdc install entry-default-signed.hap
 
 ```
 harmonyos/
-├── build.sh                     ★ 手工构建链（方式 A）：ets-loader → es2abc → restool → 打包 → 签名，共 7 步
+├── build.sh                     ★ 手工构建链（方式 A）：ets-loader → es2abc → restool → 打包 → 签名 → 验签 → **运行期自检**，共 8 步
+├── tools/
+│   └── preview-smoke.js         ★ 第 8 步：把产物喂给 Previewer，抓到非空首帧才算过（零依赖）
 ├── BUILD-NOTES.md               构建链的实测记录（每步产物长什么样、踩过哪些坑）
-├── RUN-NOTES.md                 「想让它跑起来」的记录：预览器 / 模拟器试到哪一步、卡在哪
+├── RUN-NOTES.md                 ★ 「怎么让它真的跑起来」：三个致命缺陷、Previewer 的启动参数、判定标准
 ├── build-profile.json5          工程构建配置（**只给 hvigor / DevEco 用，build.sh 不读它**）
 ├── oh-package.json5             工程依赖
 ├── hvigorfile.ts                工程级 hvigor 脚本
