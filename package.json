@@ -16,7 +16,10 @@
     "test:discover": "node test/discover-test.mjs",
     "test:stress": "node test/stress.mjs",
     "stats": "node scripts/stats.mjs",
-    "test:transfer": "node test/transfer.mjs"
+    "test:transfer": "node test/transfer.mjs",
+    "publish:npm": "node scripts/publish-npm.mjs",
+    "verify:npm": "node scripts/publish-npm.mjs --verify-only",
+    "pack:npm": "node scripts/publish-npm.mjs --dry-run"
   },
   "keywords": [
     "self-hosted",
