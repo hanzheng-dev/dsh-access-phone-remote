@@ -124,6 +124,6 @@
 
 ## 相关文档
 
-- `docs/PITFALLS.md` — 87 条实测坑
+- `docs/PITFALLS.md` — 88 条实测坑
 - `docs/ARCHITECTURE.md` — 架构说明
 - `AGENTS.md` — 给 AI 的部署剧本
