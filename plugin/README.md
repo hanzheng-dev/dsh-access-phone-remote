@@ -1,4 +1,4 @@
-# dsj-open
+# dsh-access-phone-remote
 
 **把手机变成你电脑的遥控器** —— 消息推送 / 文件传输 / 位置服务。
 
@@ -21,7 +21,7 @@
 ### 第 1 步：装插件
 
 ```sh
-dsh plugin --profile web add dsj-open
+dsh plugin --profile web add dsh-access-phone-remote
 ```
 
 ### 第 2 步：装服务端
@@ -29,14 +29,14 @@ dsh plugin --profile web add dsj-open
 这个插件是**管理壳** —— 服务端本体要另外放：
 
 ```sh
-git clone <仓库地址> D:\dsj-open
+git clone <仓库地址> D:\dsh-access-phone-remote
 ```
 
 ### 第 3 步：在 dsh 里配置
 
-打开 **设置 → 插件 → 插件配置 → dsj-open**：
+打开 **设置 → 插件 → 插件配置 → dsh-access-phone-remote**：
 
-1. **填项目目录**：`D:\dsj-open`
+1. **填项目目录**：`D:\dsh-access-phone-remote`
 2. **点「保存配置」**
 3. **点「启动服务」**
 

@@ -1,4 +1,4 @@
-package io.github.hanzhengdev.dsjopen;
+package io.github.hanzhengdev.phoneaccess;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -46,8 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     ↓ App 的 SSE（NotifyService）收到带 file 的消息
  *     ↓ 本类排队下载  GET /api/file?path=…&raw=1（带 X-Auth）
  *     ↓ 按类型保存：
- *         图片/视频（jpg/png/gif/webp/mp4/mov…）→ 相册（DCIM/dsj-open）
- *         其他（pdf/docx/zip…）                → 下载（Download/dsj-open）
+ *         图片/视频（jpg/png/gif/webp/mp4/mov…）→ 相册（DCIM/dsh-access-phone-remote）
+ *         其他（pdf/docx/zip…）                → 下载（Download/dsh-access-phone-remote）
  *     ↓ 完成/失败都弹通知（失败必带原因 —— PITFALLS P66:别静默吞）
  *
  * 两条保存路（按系统版本）：
@@ -70,7 +70,7 @@ public class FileReceiver {
     static final int KIND_VIDEO = 2;
     static final int KIND_OTHER = 3;
 
-    private static final String OPEN_DIR = "dsj-open";
+    private static final String OPEN_DIR = "dsh-access-phone-remote";
     private static final long MAX_BYTES = 100L * 1024 * 1024;   // 保险丝（服务端本身 ≤50MB）
     private static final int CONNECT_TIMEOUT_MS = 15000;
     private static final int READ_TIMEOUT_MS = 60000;
@@ -352,7 +352,7 @@ public class FileReceiver {
                 ? new Notification.Builder(ctx, NotifyService.NORMAL_CH)   // 沿用服务的"普通"渠道
                 : new Notification.Builder(ctx);
         b.setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("dsj-open · 文件")
+                .setContentTitle("dsh-access-phone-remote · 文件")
                 .setContentText(text)
                 .setOnlyAlertOnce(true)
                 .setOngoing(ongoing)

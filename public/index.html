@@ -8,7 +8,7 @@
      放 <meta> 里、页面从 DOM 读 —— 因为服务端是**全局替换**，哨兵写在 JS 里会被一起换掉
      （判断里的哨兵被换成真版本号 ⇒ 判断恒为 false ⇒ 永不重载）。 -->
 <meta name="app-ver" content="__DSJ_VER__">
-<title>dsj-open</title>
+<title>dsh-access-phone-remote</title>
 <script>
   // ★ 尽早恢复主题（必须是 <head> 里第一个脚本）：
   //   放到下面那个大脚本里就太晚了 —— 页面会先按浅色画一遍再切深色，**闪一下白**。
@@ -974,12 +974,12 @@
 </head>
 <body>
 
-<!-- dsj-open 主页：顶栏（状态点 / 深浅色 / 刷新）+ 控制台（#app，按钮由 render() 按 /api/commands 生成）
+<!-- dsh-access-phone-remote 主页：顶栏（状态点 / 深浅色 / 刷新）+ 控制台（#app，按钮由 render() 按 /api/commands 生成）
      + 上手引导（#guide）+ 消息流（#chBody，接收 /api/push 推送）。 -->
 <div id="home">
 <header>
   <span class="dot" id="dot"></span>
-  <h1>dsj-open</h1>
+  <h1>dsh-access-phone-remote</h1>
   <span class="st" id="st">连接中</span>
   <!-- 深色/浅色开关：图标——浅色显示月亮、深色显示太阳 -->
   <button id="themeBtn" title="切换深色/浅色" aria-label="切换深色浅色">
@@ -1398,7 +1398,7 @@ function renderGuide() {
     } else {
       // 电脑端：他在电脑前，所以要告诉他"去手机上做什么"
       box.innerHTML = '<div class="guide">'
-        + '<div class="guide-h">dsj-open 已启动</div>'
+        + '<div class="guide-h">dsh-access-phone-remote 已启动</div>'
         + '<div class="guide-addr">手机访问：<b>' + escapeHtml(addr) + '</b></div>'
         + '<div class="guide-sub">下一步：</div>'
         + '<ul class="guide-list">'

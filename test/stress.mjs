@@ -28,7 +28,7 @@ const testRoot = join(ROOT, '.stress-run')
 if (existsSync(testRoot)) rmSync(testRoot, { recursive: true, force: true })
 mkdirSync(testRoot, { recursive: true })
 
-console.log('\n=== dsj-open 压力测试 ===')
+console.log('\n=== dsh-access-phone-remote 压力测试 ===')
 console.log(`消息数 ${N} · 并发 ${CONCURRENCY} · 临时端口 ${PORT}\n`)
 
 // ---------- 起服务 ----------

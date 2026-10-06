@@ -29,7 +29,7 @@ if (!user) {
 }
 
 const author = arg('author', `${user} <${user}@users.noreply.github.com>`)
-const web = `https://github.com/${user}/dsj-open`
+const web = `https://github.com/${user}/dsh-access-phone-remote`
 const repo = `git+${web}.git`
 
 let n = 0
@@ -71,7 +71,7 @@ function walk(dir) {
     try { s = readFileSync(p, 'utf8') } catch { continue }
     let out = s
     out = out.split('<GitHub 链接>').join(web)
-    out = out.split('https://github.com/REPLACE_WITH_USERNAME/dsj-open').join(web)
+    out = out.split('https://github.com/REPLACE_WITH_USERNAME/dsh-access-phone-remote').join(web)
     if (out !== s) {
       writeFileSync(p, out)
       console.log(`  ✓ ${p.replace(ROOT + '/', '')}`)

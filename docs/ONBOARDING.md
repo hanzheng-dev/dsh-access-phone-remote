@@ -102,7 +102,7 @@ r.write(body); r.end();
 
 **解法**（Windows 计划任务）：
 ```bash
-schtasks /Create /TN "dsj-open" /TR "node D:\path\to\src\server.js" /SC ONLOGON /RL HIGHEST /F
+schtasks /Create /TN "dsh-access-phone-remote" /TR "node D:\path\to\src\server.js" /SC ONLOGON /RL HIGHEST /F
 ```
 
 **⚠️ 千万不要**：
@@ -159,7 +159,7 @@ schtasks /Create /TN "dsj-open" /TR "node D:\path\to\src\server.js" /SC ONLOGON 
 
 **怎么装**：
 ```bash
-adb install dsj-open.apk
+adb install dsh-access-phone-remote.apk
 ```
 
 **⚠️ 装完要**：

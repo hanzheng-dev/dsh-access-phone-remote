@@ -36,10 +36,10 @@ function sendLoginPage(res) {
     'Cache-Control': 'no-store',
   });
   res.end('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>dsj-open</title>'
+    + '<title>dsh-access-phone-remote</title>'
     + '<body style="font-family:system-ui;padding:2em;background:#14130f;color:#eee;line-height:1.7;margin:0">'
     + '<div style="max-width:420px;margin:8vh auto 0">'
-    + '<h2 style="margin:0 0 .4em">dsj-open</h2>'
+    + '<h2 style="margin:0 0 .4em">dsh-access-phone-remote</h2>'
     + '<p style="color:#aaa;margin:0 0 1.2em">请输入口令</p>'
     + '<form method="GET" action="/api/auth" style="display:flex;gap:8px">'
     + '<input name="pwd" type="password" autofocus autocomplete="current-password" '

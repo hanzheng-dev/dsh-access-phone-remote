@@ -71,7 +71,7 @@ function createServer() {
       if (p === '/api/ping') {
         // product 字段用来区分「本服务」和「别的 hub」—— 自检脚本靠它判断
         return json(res, 200, {
-          ok: true, product: 'dsj-open', service: 'hub', version: 2, ts: Date.now(),
+          ok: true, product: 'dsh-access-phone-remote', service: 'hub', version: 2, ts: Date.now(),
         });
       }
       if (p === '/favicon.ico') {                                  // 浏览器自动请求，别留 404
@@ -120,7 +120,7 @@ function createServer() {
 
       // ---------- 后端状态页（给电脑看） ----------
       if (p === '/status-page') {
-        const html = `<!doctype html><meta charset="utf-8"><title>dsj-open · 电脑端</title>
+        const html = `<!doctype html><meta charset="utf-8"><title>dsh-access-phone-remote · 电脑端</title>
 <style>
 body{font-family:system-ui,-apple-system;background:#111;color:#ddd;padding:24px;line-height:1.8;max-width:720px}
 h1{font-size:19px;font-weight:600;letter-spacing:.5px}
@@ -128,7 +128,7 @@ h1{font-size:19px;font-weight:600;letter-spacing:.5px}
 .card{border:1px solid #333;border-radius:10px;padding:14px 16px;margin:12px 0}
 code{background:#1c1c1c;border:1px solid #2a2a2a;padding:1px 6px;border-radius:4px;font-size:12px}
 </style>
-<h1>📱 dsj-open · 电脑端服务</h1>
+<h1>📱 dsh-access-phone-remote · 电脑端服务</h1>
 <p class="ok">● 运行中　<span class="dim">监听 ${config.listenHost}:${config.port}</span></p>
 <div class="card">
 <p>功能数：<b>${COMMANDS.length}</b>　消息数：${messages.length}</p>
@@ -172,7 +172,7 @@ module.exports = { server, config };
 // ⛔ 只有直接运行时才监听；被 require（自动化测试）时不占端口。
 if (require.main === module) {
   server.listen(config.port, config.listenHost, () => {
-    log(`===== dsj-open 启动，监听 ${config.listenHost}:${config.port}，功能 ${COMMANDS.length} 个 =====`);
+    log(`===== dsh-access-phone-remote 启动，监听 ${config.listenHost}:${config.port}，功能 ${COMMANDS.length} 个 =====`);
     log(`本机: http://127.0.0.1:${config.port}/`);
 
     // ---- 给手机用的地址 + 终端二维码 ----

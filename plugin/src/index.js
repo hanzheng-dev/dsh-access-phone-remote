@@ -1,7 +1,7 @@
 /**
- * dsj-open — dsh 插件（Host half）
+ * dsh-access-phone-remote — dsh 插件（Host half）
  *
- * 作用：把 dsj-open 服务端接进 DeepSeek Harness。
+ * 作用：把 dsh-access-phone-remote 服务端接进 DeepSeek Harness。
  *
  * 设计：
  *   · 服务端本体保持独立（src/server.js，不属于 dsh 也能跑）
@@ -9,14 +9,14 @@
  *   · 用户可以在 dsh 里启动/停止/查看状态
  *
  * 暴露的接口（走 dsh 的 webServer，本机回环）：
- *   GET  /api/dsj-open/status    服务状态
- *   POST /api/dsj-open/start     启动服务
- *   POST /api/dsj-open/stop      停止服务
- *   POST /api/dsj-open/restart   重启服务
- *   GET  /api/dsj-open/config    读配置
- *   POST /api/dsj-open/config    写配置
- *   GET  /api/dsj-open/url       拿到手机访问地址（含二维码数据）
- *   GET  /api/dsj-open/log       读服务端日志（尾部 N 行）
+ *   GET  /api/dsh-access-phone-remote/status    服务状态
+ *   POST /api/dsh-access-phone-remote/start     启动服务
+ *   POST /api/dsh-access-phone-remote/stop      停止服务
+ *   POST /api/dsh-access-phone-remote/restart   重启服务
+ *   GET  /api/dsh-access-phone-remote/config    读配置
+ *   POST /api/dsh-access-phone-remote/config    写配置
+ *   GET  /api/dsh-access-phone-remote/url       拿到手机访问地址（含二维码数据）
+ *   GET  /api/dsh-access-phone-remote/log       读服务端日志（尾部 N 行）
  */
 
 import { spawn } from 'node:child_process'
@@ -26,11 +26,11 @@ import { homedir, networkInterfaces, arch } from 'node:os'
 import { request as httpRequest } from 'node:http'
 
 // ---------- 插件标识 ----------
-export const name = 'dsj-open'
+export const name = 'dsh-access-phone-remote'
 export const inject = ['webServer']
 
 // ---------- 常量 ----------
-const PREFIX = '/api/dsj-open'
+const PREFIX = '/api/dsh-access-phone-remote'
 /** 自定义头防跨站 POST（同 dsh-session-delete 的做法）。 */
 const PLUGIN_HEADER = 'x-dsh-plugin'
 
@@ -56,7 +56,7 @@ function log(line) {
  * 用 dsh 家目录，跟别的插件保持一致。
  */
 function configDir() {
-  return join(process.env.DSH_HOME || join(homedir(), '.dsh'), 'dsj-open')
+  return join(process.env.DSH_HOME || join(homedir(), '.dsh'), 'dsh-access-phone-remote')
 }
 
 function configFile() {
@@ -68,7 +68,7 @@ function readConfig() {
     return JSON.parse(readFileSync(configFile(), 'utf8'))
   } catch {
     return {
-      /** dsj-open 项目目录 */
+      /** dsh-access-phone-remote 项目目录 */
       projectDir: '',
       /** 自动启动 */
       autoStart: false,
@@ -117,7 +117,7 @@ async function probeRunning(port) {
 function startService() {
   const cfg = readConfig()
   if (!cfg.projectDir) {
-    return { ok: false, error: '还没配置项目目录，请先在设置里填 dsj-open 的路径' }
+    return { ok: false, error: '还没配置项目目录，请先在设置里填 dsh-access-phone-remote 的路径' }
   }
   const entry = join(cfg.projectDir, 'src', 'server.js')
   if (!existsSync(entry)) {
@@ -217,7 +217,7 @@ function json(res, code, obj) {
 /** 校验跨站：非 GET 必须带自定义头。 */
 function guard(req, res) {
   if (req.method === 'GET') return true
-  if (req.headers[PLUGIN_HEADER] === 'dsj-open') return true
+  if (req.headers[PLUGIN_HEADER] === 'dsh-access-phone-remote') return true
   json(res, 403, { ok: false, error: '缺少自定义头' })
   return false
 }
@@ -233,7 +233,7 @@ async function readBody(req) {
 // ---------- 插件入口 ----------
 
 export function apply(ctx, pluginConfig) {
-  log('dsj-open 插件已加载')
+  log('dsh-access-phone-remote 插件已加载')
 
   // 可选：按配置自动启动
   const cfg = readConfig()
@@ -325,7 +325,7 @@ export function apply(ctx, pluginConfig) {
       ok: true,
       /** 这段文本用户可以直接复制给 AI */
       text: [
-        '【dsj-open 诊断信息】',
+        '【dsh-access-phone-remote 诊断信息】',
         `运行状态: ${running ? '在跑' : '没跑'}`,
         `项目目录: ${c.projectDir || '(未配置)'}`,
         `端口: ${c.port}`,

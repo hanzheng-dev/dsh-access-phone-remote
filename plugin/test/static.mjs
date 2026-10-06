@@ -22,13 +22,13 @@ let fail = 0
 function ok(msg) { console.log('  ✅ ' + msg); pass++ }
 function bad(msg) { console.log('  ❌ ' + msg); fail++ }
 
-console.log('\n=== dsj-open 插件静态测试 ===\n')
+console.log('\n=== dsh-access-phone-remote 插件静态测试 ===\n')
 
 // ---------- 1. package.json ----------
 console.log('[1] package.json')
 try {
   const pkg = JSON.parse(readFileSync(join(pluginDir, 'package.json'), 'utf8'))
-  pkg.name === 'dsj-open' ? ok('name = dsj-open') : bad('name 不对')
+  pkg.name === 'dsh-access-phone-remote' ? ok('name = dsh-access-phone-remote') : bad('name 不对')
   pkg.type === 'module' ? ok('type = module') : bad('type 不是 module')
   pkg.exports?.['.'] ? ok('exports["."] 存在') : bad('缺 exports["."]')
   pkg.dsh?.bundle?.patch ? ok('dsh.bundle.patch 存在') : bad('缺 dsh.bundle.patch')
@@ -44,7 +44,7 @@ console.log('\n[2] cordis.patch.yml')
 try {
   const yml = readFileSync(join(pluginDir, 'cordis.patch.yml'), 'utf8')
   yml.includes('insert:') ? ok('含 insert:') : bad('缺 insert:')
-  yml.includes('dsj-open') ? ok('含插件 id') : bad('缺插件 id')
+  yml.includes('dsh-access-phone-remote') ? ok('含插件 id') : bad('缺插件 id')
 } catch (e) {
   bad('读不到：' + e.message)
 }
@@ -54,7 +54,7 @@ console.log('\n[3] src/index.js（host half）')
 try {
   const { pathToFileURL } = await import('node:url')
   const mod = await import(pathToFileURL(join(pluginDir, 'src', 'index.js')).href)
-  mod.name === 'dsj-open' ? ok(`导出 name = ${mod.name}`) : bad('name 导出不对')
+  mod.name === 'dsh-access-phone-remote' ? ok(`导出 name = ${mod.name}`) : bad('name 导出不对')
   Array.isArray(mod.inject) ? ok(`导出 inject = [${mod.inject}]`) : bad('inject 不是数组')
   typeof mod.apply === 'function' ? ok('导出 apply 函数') : bad('apply 不是函数')
 

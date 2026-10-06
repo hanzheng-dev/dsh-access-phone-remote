@@ -1,31 +1,31 @@
 /**
- * dsj-open — dsh 插件（Client half）
+ * dsh-access-phone-remote — dsh 插件（Client half）
  *
- * 作用：在 dsh 设置页里给 dsj-open 一个管理界面。
+ * 作用：在 dsh 设置页里给 dsh-access-phone-remote 一个管理界面。
  *
  * 设计原则：
  *   · 不用 React（降低依赖，避免版本冲突）
  *   · 用一个自包含的 DOM 面板
- *   · 所有数据走 /api/dsj-open/* 接口
+ *   · 所有数据走 /api/dsh-access-phone-remote/* 接口
  *
  * 如果 dsh 的客户端插件 API 需要特定导出，这里按最小假设写：
  *   apply(ctx) —— 和 host half 同签名
  */
 
-export const name = 'dsj-open'
+export const name = 'dsh-access-phone-remote'
 
 /** 声明依赖客户端服务（如果有）。放空数组最安全。 */
 export const inject = []
 
 // ---------- 工具 ----------
-const PREFIX = '/api/dsj-open'
+const PREFIX = '/api/dsh-access-phone-remote'
 
 async function api(path, opts = {}) {
   const r = await fetch(PREFIX + path, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
-      'x-dsh-plugin': 'dsj-open',
+      'x-dsh-plugin': 'dsh-access-phone-remote',
       ...(opts.headers || {}),
     },
   })
@@ -57,7 +57,7 @@ function buildPanel() {
   })
 
   const title = el('div', {
-    text: 'dsj-open',
+    text: 'dsh-access-phone-remote',
     style: { fontWeight: '600', fontSize: '15px', marginBottom: '4px' },
   })
   const sub = el('div', {
@@ -129,7 +129,7 @@ function buildPanel() {
 
   const dirInput = el('input', {
     type: 'text',
-    placeholder: 'dsj-open 项目目录，例如 D:\\dsj-open',
+    placeholder: 'dsh-access-phone-remote 项目目录，例如 D:\\dsh-access-phone-remote',
     style: {
       width: '100%',
       padding: '8px 10px',
@@ -246,8 +246,8 @@ export function apply(ctx) {
   const settings = ctx.settings || ctx.settingsService
   if (settings && typeof settings.registerPanel === 'function') {
     settings.registerPanel({
-      id: 'dsj-open',
-      title: 'dsj-open',
+      id: 'dsh-access-phone-remote',
+      title: 'dsh-access-phone-remote',
       render: () => buildPanel(),
     })
     return

@@ -1,5 +1,5 @@
 {
-  "name": "dsj-open",
+  "name": "dsh-access-phone-remote",
   "version": "1.0.0",
   "description": "把手机变成你电脑的遥控器：消息推送 / 文件传输 / 位置服务。数据全部留在自己电脑上。 · Turn your phone into a remote console for your PC: push, file transfer, location. Everything stays on your own machine.",
   "type": "module",
@@ -20,11 +20,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hanzheng-dev/dsj-open.git"
+    "url": "git+https://github.com/hanzheng-dev/dsh-access-phone-remote.git"
   },
-  "homepage": "https://github.com/hanzheng-dev/dsj-open#readme",
+  "homepage": "https://github.com/hanzheng-dev/dsh-access-phone-remote#readme",
   "bugs": {
-    "url": "https://github.com/hanzheng-dev/dsj-open/issues"
+    "url": "https://github.com/hanzheng-dev/dsh-access-phone-remote/issues"
   },
   "exports": {
     ".": "./src/index.js",

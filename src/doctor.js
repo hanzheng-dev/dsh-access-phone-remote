@@ -57,7 +57,7 @@ function probeSelf(port) {
         let b = '';
         res.on('data', (c) => (b += c));
         res.on('end', () => {
-          try { resolve(JSON.parse(b).product === 'dsj-open'); } catch { resolve(false); }
+          try { resolve(JSON.parse(b).product === 'dsh-access-phone-remote'); } catch { resolve(false); }
         });
       },
     );
@@ -68,7 +68,7 @@ function probeSelf(port) {
 }
 
 async function main() {
-  console.log('\n\x1b[1mdsj-open 环境自检\x1b[0m');
+  console.log('\n\x1b[1mdsh-access-phone-remote 环境自检\x1b[0m');
   console.log('='.repeat(52) + '\n');
 
   // ---- 1. Node 版本 ----

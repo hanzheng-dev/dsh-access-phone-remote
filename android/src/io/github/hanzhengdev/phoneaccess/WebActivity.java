@@ -1,4 +1,4 @@
-package io.github.hanzhengdev.dsjopen;
+package io.github.hanzhengdev.phoneaccess;
 
 import android.app.Activity;
 import android.content.Context;

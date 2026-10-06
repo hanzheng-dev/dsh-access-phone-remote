@@ -1,4 +1,4 @@
-package io.github.hanzhengdev.dsjopen;
+package io.github.hanzhengdev.phoneaccess;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -21,7 +21,7 @@ import java.util.Locale;
  *
  * 为什么需要它：
  *   Android 9 及以下（API < 29）没有分区存储，FileReceiver 收来的文件写在传统路径
- *   （DCIM/dsj-open、Download/dsj-open）。通知里"点开文件"如果直接用 file:// 发
+ *   （DCIM/dsh-access-phone-remote、Download/dsh-access-phone-remote）。通知里"点开文件"如果直接用 file:// 发
  *   ACTION_VIEW，本工程 targetSdk 33 ⇒ 触发 FileUriExposedException（API 24+ 对
  *   file:// 外泄的硬检查）——我们 App 自己会崩。
  *
@@ -29,13 +29,13 @@ import java.util.Locale;
  *   它的核心本来就只是一个几十行的 ContentProvider ⇒ 自己写一个。
  *
  * 用法：
- *   FileProviderMini.uriFor(file) → content://io.github.hanzhengdev.dsjopen.files/open?p=<绝对路径>
+ *   FileProviderMini.uriFor(file) → content://io.github.hanzhengdev.phoneaccess.files/open?p=<绝对路径>
  *   随 Intent 带 FLAG_GRANT_READ_URI_PERMISSION 发给系统应用（看图 / 打开方式）。
  *
  * 安全：
  *   · manifest 里 exported=false、grantUriPermissions=true —— 只有本 App 或拿到
  *     临时授权的应用能访问
- *   · openFile 只放行 DCIM/dsj-open 与 Download/dsj-open 两棵树（canonical 前缀
+ *   · openFile 只放行 DCIM/dsh-access-phone-remote 与 Download/dsh-access-phone-remote 两棵树（canonical 前缀
  *     判断，防 ../ 穿越）
  *   · 只读（写一律拒）
  *
@@ -43,15 +43,15 @@ import java.util.Locale;
  */
 public class FileProviderMini extends ContentProvider {
 
-    static final String AUTHORITY = "io.github.hanzhengdev.dsjopen.files";
+    static final String AUTHORITY = "io.github.hanzhengdev.phoneaccess.files";
 
-    /** 保存根目录（与 FileReceiver 的保存位置保持一致：DCIM/dsj-open、Download/dsj-open） */
+    /** 保存根目录（与 FileReceiver 的保存位置保持一致：DCIM/dsh-access-phone-remote、Download/dsh-access-phone-remote） */
     static List<File> allowedRoots() {
         List<File> out = new ArrayList<File>();
         File dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         File down = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        if (dcim != null) out.add(new File(dcim, "dsj-open"));
-        if (down != null) out.add(new File(down, "dsj-open"));
+        if (dcim != null) out.add(new File(dcim, "dsh-access-phone-remote"));
+        if (down != null) out.add(new File(down, "dsh-access-phone-remote"));
         return out;
     }
 

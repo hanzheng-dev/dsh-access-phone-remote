@@ -1,4 +1,4 @@
-package io.github.hanzhengdev.dsjopen;
+package io.github.hanzhengdev.phoneaccess;
 
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -187,7 +187,7 @@ public class NotifyService extends Service {
         //   真正会把人从 B 站拉走的是①通知带 fullscreenIntent ②手滑点到横幅 ③系统开关。
         //   所以这里保持 HIGH（横幅+声+震），同时用 setFullScreenIntent(null) 明确禁掉①。
         // 重要：横幅 + 声 + 震
-        NotificationChannel alert = new NotificationChannel(ALERT_CH, "dsj-open · 重要",
+        NotificationChannel alert = new NotificationChannel(ALERT_CH, "dsh-access-phone-remote · 重要",
                 NotificationManager.IMPORTANCE_HIGH);
         alert.setDescription("吃药/待办/紧急 —— 弹横幅 + 声音 + 震动");
         alert.enableVibration(true);
@@ -195,7 +195,7 @@ public class NotifyService extends Service {
         alert.setShowBadge(true);
         nm.createNotificationChannel(alert);
         // 普通：只进通知栏（无声无震，不打扰）
-        NotificationChannel normal = new NotificationChannel(NORMAL_CH, "dsj-open · 普通",
+        NotificationChannel normal = new NotificationChannel(NORMAL_CH, "dsh-access-phone-remote · 普通",
                 NotificationManager.IMPORTANCE_DEFAULT);
         normal.setDescription("回话/完成 —— 只进通知栏，不打扰");
         normal.setSound(null, null);
@@ -230,7 +230,7 @@ public class NotifyService extends Service {
     private Notification buildFgsNotification() {
         Notification.Builder b = newBuilder(FGS_CH)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("dsj-open")
+                .setContentTitle("dsh-access-phone-remote")
                 .setContentText("服务运行中，消息实时推送")
                 .setOngoing(true);
         if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_LOW);
@@ -264,7 +264,7 @@ public class NotifyService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b = newBuilder(alert ? ALERT_CH : NORMAL_CH)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(alert ? "dsj-open · 重要" : "dsj-open")
+                .setContentTitle(alert ? "dsh-access-phone-remote · 重要" : "dsh-access-phone-remote")
                 .setContentText(text)
                 .setContentIntent(pi)               // 只"点了才跳"——绝不主动抢前台
                 // ⭐⭐ 显式清空 fullscreenIntent：它是"来电"那种直接全屏拉起 Activity 的

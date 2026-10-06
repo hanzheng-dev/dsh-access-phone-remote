@@ -1,4 +1,4 @@
-package io.github.hanzhengdev.dsjopen;
+package io.github.hanzhengdev.phoneaccess;
 
 import android.app.Activity;
 import android.content.ContentValues;
@@ -987,7 +987,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView title = new TextView(this);
-        title.setText("dsj-open");
+        title.setText("dsh-access-phone-remote");
         title.setTextColor(TXT);
         title.setTextSize(26);
         title.setGravity(Gravity.CENTER);
@@ -1205,7 +1205,7 @@ public class MainActivity extends Activity {
         // ⭐ 2026-09-22 op：铺满整屏（内容压在状态栏下面）—— 见 setupEdgeToEdge 注释
         setupEdgeToEdge();
 
-        // ⭐⭐ 2026-09-17：必须先【请求】通知权限，系统才会弹「dsj-open 想给你发送通知」。
+        // ⭐⭐ 2026-09-17：必须先【请求】通知权限，系统才会弹「dsh-access-phone-remote 想给你发送通知」。
         //   不请求 → 系统通知开关是空的，主人想开都没得开。
         if (Build.VERSION.SDK_INT >= 33) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)

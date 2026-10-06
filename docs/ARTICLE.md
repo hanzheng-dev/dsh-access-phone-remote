@@ -186,6 +186,6 @@
 
 ---
 
-**项目地址**：`https://github.com/hanzheng-dev/dsj-open`
+**项目地址**：`https://github.com/hanzheng-dev/dsh-access-phone-remote`
 
 **如果你只是想要个能用的东西**：装完之后遇到问题，把 `AGENTS.md` 丢给你自己的 AI 就行。

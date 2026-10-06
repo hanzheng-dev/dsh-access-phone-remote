@@ -45,7 +45,7 @@ async function post(path, body, headers = {}) {
   return { status: r.status, text, json }
 }
 
-console.log('\n=== dsj-open 端到端测试 ===')
+console.log('\n=== dsh-access-phone-remote 端到端测试 ===')
 console.log(`临时端口: ${PORT}（不碰生产 3099）\n`)
 
 // ---------- 起服务 ----------

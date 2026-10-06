@@ -172,7 +172,7 @@ POST /api/loc
 ## 目录结构
 
 ```
-dsj-open/
+dsh-access-phone-remote/
 ├── README.md           给人类
 ├── AGENTS.md           给 AI（部署剧本）
 ├── llms.txt            给 AI 爬虫

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>帮助 · dsj-open</title>
+<title>帮助 · dsh-access-phone-remote</title>
 <style>
   :root {
     --bg: #faf9f6;
@@ -239,7 +239,7 @@
       <p>另外：<b>不要用「后台运行」的方式起服务</b>（比如直接 <code>start</code> 或 <code>nohup</code>），
         那样起的进程会随终端关闭而死。</p>
       <p>Windows 上正确做法是<b>计划任务</b>：</p>
-      <pre><code>schtasks /Create /TN "dsj-open" /TR "node D:\path\to\src\server.js" /SC ONLOGON /RL HIGHEST /F</code></pre>
+      <pre><code>schtasks /Create /TN "dsh-access-phone-remote" /TR "node D:\path\to\src\server.js" /SC ONLOGON /RL HIGHEST /F</code></pre>
     </div>
   </details>
 

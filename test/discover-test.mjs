@@ -24,7 +24,7 @@ const listener = dgram.createSocket({ type: 'udp4', reuseAddr: true })
 listener.on('message', (msg, rinfo) => {
   try {
     const j = JSON.parse(msg.toString('utf8'))
-    if (j.magic !== 'dsj-open/1') return
+    if (j.magic !== 'dsh-access-phone-remote/1') return
     discoveries.push({ ...j, from: rinfo.address })
   } catch { }
 })
@@ -64,7 +64,7 @@ if (discoveries.length) {
   pass++
 
   // 校验字段
-  if (d.magic === 'dsj-open/1') { console.log('  ✓ magic 标识正确'); pass++ } else { console.log('  ✗ magic 不对'); fail++ }
+  if (d.magic === 'dsh-access-phone-remote/1') { console.log('  ✓ magic 标识正确'); pass++ } else { console.log('  ✗ magic 不对'); fail++ }
   if (d.port === PORT) { console.log(`  ✓ 端口匹配（${PORT}）`); pass++ } else { console.log(`  ✗ 端口不匹配：期望 ${PORT}，收到 ${d.port}`); fail++ }
   if (d.token === 'discovery-token-123') { console.log('  ✓ token 正确传递'); pass++ } else { console.log(`  ✗ token 不对（收到: ${JSON.stringify(d.token)}）`); fail++ }
 

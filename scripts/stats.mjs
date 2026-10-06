@@ -58,7 +58,7 @@ function countChars(files) {
 }
 
 // ---------- 统计 ----------
-console.log('\n\x1b[1mdsj-open 项目统计\x1b[0m')
+console.log('\n\x1b[1mdsh-access-phone-remote 项目统计\x1b[0m')
 console.log('='.repeat(56) + '\n')
 
 // 代码

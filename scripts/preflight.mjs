@@ -47,7 +47,7 @@ function sh(cmd, opts = {}) {
   }
 }
 
-console.log('\n\x1b[1mdsj-open 发布前检查\x1b[0m');
+console.log('\n\x1b[1mdsh-access-phone-remote 发布前检查\x1b[0m');
 console.log('='.repeat(52));
 
 // ---------- 1. 敏感信息 ----------
@@ -197,7 +197,7 @@ if (err === 0) {
   } catch { /* 忽略 */ }
 
   const branch = (sh('git branch --show-current').out || 'main').trim() || 'main';
-  const slug = repoUrl || 'https://github.com/<你>/dsj-open';
+  const slug = repoUrl || 'https://github.com/<你>/dsh-access-phone-remote';
 
   if (repoUrl) pass(`作者信息已填：${repoUrl}`);
   else note('作者信息还没填 —— 跑 node scripts/set-identity.mjs --user <你的用户名>');

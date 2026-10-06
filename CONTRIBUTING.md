@@ -22,7 +22,7 @@
 
 ```sh
 git clone <仓库地址>
-cd dsj-open
+cd dsh-access-phone-remote
 node src/server.js
 ```
 

@@ -179,7 +179,7 @@ module.exports = { config, ensureAuthToken };
 
 // 直接运行 `node src/config.js` 时打印加载结果，便于确认能读到配置。
 if (require.main === module) {
-  console.log('[dsj-open] 配置加载自:', config.usingExample ? 'config.example.json（未找到 config.json）' : 'config.json');
+  console.log('[dsh-access-phone-remote] 配置加载自:', config.usingExample ? 'config.example.json（未找到 config.json）' : 'config.json');
   console.log(JSON.stringify({
     port: config.port,
     listenHost: config.listenHost,

@@ -1,6 +1,6 @@
-# dsj-open · Android 客户端
+# dsh-access-phone-remote · Android 客户端
 
-dsj-open 的安卓客户端：**全屏 WebView 套壳 + 原生增强**。
+dsh-access-phone-remote 的安卓客户端：**全屏 WebView 套壳 + 原生增强**。
 
 - 页面 UI 全在电脑端（改 UI 不用重装 APK）
 - 首次启动填一次地址（含口令），之后自动连
@@ -61,17 +61,17 @@ bash build.sh
 
 | 文件 | 说明 |
 |---|---|
-| `dsj-open.apk` | 装到手机的安装包（本目录下） |
+| `dsh-access-phone-remote.apk` | 装到手机的安装包（本目录下） |
 | `dsjiang.keystore` | 首次构建自动生成的签名密钥（**别提交到仓库**；发正式版请换成自己的） |
 | `build/` | 中间产物（可随时删） |
 
 ### 安装
 
 ```bash
-adb install -r dsj-open.apk
+adb install -r dsh-access-phone-remote.apk
 ```
 
-或者把 `dsj-open.apk` 传到手机（微信/网盘/数据线都行）手动点击安装。
+或者把 `dsh-access-phone-remote.apk` 传到手机（微信/网盘/数据线都行）手动点击安装。
 ⚠️ 如果手机上已装过旧版、且签名密钥不同，需要先卸载旧版。
 
 ---
@@ -141,7 +141,7 @@ App 会自动拆开：
 
 - **口令只存在手机本地**（`SharedPreferences`，App 私有目录），不经过任何第三方
 - 首次进站用 `/?t=口令` 换 180 天 Cookie，之后原生请求走 `X-Auth` 头
-- `dsjiang.keystore`（签名密钥）和 `dsj-open.apk` 都不要提交到仓库（已在本目录 `.gitignore` 里）
+- `dsjiang.keystore`（签名密钥）和 `dsh-access-phone-remote.apk` 都不要提交到仓库（已在本目录 `.gitignore` 里）
 
 ---
 
@@ -153,7 +153,7 @@ android/
 ├── build.sh                 # 手工构建链（aapt2 → javac → d8 → 7z → zipalign → 签名）
 ├── make-icons.js            # 零依赖生成 App 图标到 res/
 ├── res/                     # 图标资源（由 make-icons.js 生成）
-└── src/io/github/hanzhengdev/dsjopen/
+└── src/io/github/hanzhengdev/phoneaccess/
     ├── MainActivity.java    # 主界面：WebView 壳 + 首次配置页 + JS 桥
     ├── NotifyService.java   # 前台服务：SSE 通知（断线补发 + 心跳看门狗）
     ├── FileReceiver.java    # 接收电脑推来的文件：下载 → 相册/下载目录 → 通知可点开

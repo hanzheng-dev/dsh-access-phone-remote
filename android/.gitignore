@@ -4,5 +4,5 @@ build/
 *.apk.idsig
 *.keystore
 
-dsj-open.apk
-dsj-open.apk.idsig
+dsh-access-phone-remote.apk
+dsh-access-phone-remote.apk.idsig

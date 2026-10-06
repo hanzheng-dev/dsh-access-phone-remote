@@ -29,7 +29,7 @@ const os = require('os');
 const DISCOVERY_PORT = 30991;
 
 /** 服务标识（客户端靠它过滤，避免认错别的广播） */
-const MAGIC = 'dsj-open/1';
+const MAGIC = 'dsh-access-phone-remote/1';
 
 let socket = null;
 let timer = null;
