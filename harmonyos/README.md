@@ -113,6 +113,11 @@ resources ──restool──► resources.index ──────────�
 
 ### 安装到手机
 
+> **预编译产物**（预览版，未上真机）：
+> https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/tag/harmonyos-0.1.0-preview
+> —— ⚠️ 签名用的是 OpenHarmony 社区证书，商业版 HarmonyOS NEXT 真机可能不认。
+> 想自己构建就照上面的方式 A。
+
 ```bash
 # hdc 随 SDK 分发：<SDK>/tc/toolchains/hdc.exe
 hdc install entry-default-signed.hap

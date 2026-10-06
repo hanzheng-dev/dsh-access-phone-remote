@@ -91,9 +91,19 @@
 |---|---|---|
 | **服务端** | 本仓库 clone 下来，`node src/server.js`。零 npm 依赖 | **必需** |
 | **Android 客户端** | [Releases](https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/latest) 里的 APK（约 50 KB，Android 7+） | 可选 |
+| **HarmonyOS 客户端** | [预发布](https://github.com/hanzheng-dev/dsh-access-phone-remote/releases/tag/harmonyos-0.1.0-preview) 里的 HAP —— **⚠️ 见下面的说明，别当成品用** | 可选 |
 | **dsh 插件** | `dsh plugin --profile web add github:hanzheng-dev/dsh-access-phone-remote#path:/plugin`，或 npm 的 `dsh-access-phone-remote` | 可选 |
 
 **不装 APK 也能用** —— 手机浏览器打开服务端地址即可，功能一致；装 APK 才有的额外好处是系统通知推送。
+
+> **⚠️ 关于 HarmonyOS 那个 HAP：它是预览版，不是成品。**
+> 它证到的是「**不用 IDE、不用华为账号，纯命令行链能产出运行时真的会加载的 HAP**」——
+> 已在 SDK 自带 Previewer 里跑通并渲染出配置页。
+> 但**从没在真机/模拟器上验过**（手头没有纯血鸿蒙设备），
+> 而且签名用的是 **OpenHarmony 社区证书**，商业版 HarmonyOS NEXT 真机可能不认。
+> 这个 App 的全部 UI 又都在全屏 Web 壳里，而那个壳恰好是预览器验不了的部分。
+> **所以：装不上、或起来白屏，都属于已知的未知，欢迎开 issue。**
+> 全过程（三个致命缺陷 + 判定标准）在 [`harmonyos/RUN-NOTES.md`](harmonyos/RUN-NOTES.md)。
 
 ---
 
@@ -230,6 +240,9 @@ node src/doctor.js      # 或 npm run doctor
 | `docs/ARCHITECTURE.md` | 人 | 架构说明 |
 | `docs/SECURITY.md` | 人 | 安全说明 |
 | [`android/README.md`](android/README.md) | 人 | 安卓客户端（APK）—— 构建与配置 |
+| [`harmonyos/README.md`](harmonyos/README.md) | 人 | 鸿蒙客户端（HAP）—— 构建与配置（**不需要 IDE / 华为账号**） |
+| [`harmonyos/RUN-NOTES.md`](harmonyos/RUN-NOTES.md) | 人 + AI | ★ 鸿蒙产物「怎么才真的跑起来」：三个致命缺陷、Previewer 启动参数、判定标准 |
+| [`harmonyos/BUILD-NOTES.md`](harmonyos/BUILD-NOTES.md) | 人 | 鸿蒙手工构建链的逐步实测记录 |
 | `llms.txt` | AI 爬虫 | 索引 |
 
 ---
