@@ -3,7 +3,7 @@
 > **这份文件是给 AI 助手读的。** 当用户遇到问题时，先在这里查。
 >
 > **全部来自真实踩坑记录**（一手，非推测）。每条都标注了**症状 → 根因 → 解法**。
-> 更新：2026-10-05 · 共 57 条
+> 更新：2026-10-06 · 共 80 条
 
 ---
 
@@ -24,6 +24,10 @@
 | 杀进程杀过头了 | P50 |
 | 服务卡死不响应 | P51 |
 | 局域网不通但 Tailscale 通 | **P53** |
+| 插件装了但设置页没有那一页 | **P75, P76** |
+| 装 `github:` 依赖连不上 GitHub | **P78** |
+| 投稿 dsh 插件列表被 CI 拒 | **P79** |
+| 提交推上去了但贡献图是空的 | **P80** |
 
 ---
 
@@ -927,7 +931,236 @@ public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGest
 先修好了 P74，页面**仍然**点不动，才挖出 P73。
 别在第一个假设上收工。
 
+
 ---
 
-**END（74 条）**
+# 八、dsh 插件与上架发布（2026-10-06 新增）
 
+这一节是「把这套东西做成一个 dsh 插件、再投到 awesome-dsh-plugin 列表」时踩出来的。
+**共同特征：全是静默失败** —— 没有报错、没有崩溃、CI 全绿，只是东西不出现。
+
+## P75 · ★ dsh 客户端半必须是 `__ModuleLoader__` 包壳，裸 ESM 等于没写
+
+**症状**：插件装上了，`package.json` 里 `dsh.client` 也声明了，但设置页里
+**根本没有那一页**。控制台不报错、dsh 不报错、静态检查全过。
+
+**根因**：dsh 浏览器侧**只认** `window.__ModuleLoader__.load({ id, factory })` 这个包壳
+（与 tsdown 产物同构）。写成 `export function apply()` 的裸 ES module 文件
+**不会被当作模块加载** —— 它不是"加载失败"，是"根本没被尝试加载"。
+
+**解法**：照真实已装插件的形状写。权威参照：
+`<DSH_HOME>/profiles/web/node_modules/dsh-session-delete/src/client.js`
+
+```js
+window.__ModuleLoader__.load({
+  id: 'your-plugin-id',
+  factory: (require) => {
+    const module = { exports: {} }
+    const exports = module.exports
+    const React = require('react')
+    const h = React.createElement
+    // ... 定义 apply(ctx)
+    exports.apply = apply
+    exports.inject = ['slots']
+    return module.exports          // ← 必须返回
+  },
+})
+```
+
+**槽位注册**（设置页加一页）：
+
+```js
+ctx.effect(() =>
+  ctx.slots.inject('settings.section', () =>
+    ctx.slots.register(
+      { name: 'settings.section', id: 'your-plugin-id', order: 30, label: () => '你的页名' },
+      YourComponent,
+    ),
+  ),
+)
+```
+
+**教训**：**「静默失效」比报错难查十倍。**
+一个语法正确、字段齐全、测试全绿的插件包，可以完全不工作而没有任何提示。
+
+---
+
+## P76 · `exports["./client"]` 漏了，形状对了也进不了浏览器图
+
+**症状**：客户端半已经按 P75 写成包壳了，**还是不加载**。
+
+**根因**：dsh 靠 `package.json` 的 `exports["./client"]` 找客户端入口。
+只声明 `dsh.client.platform` 是不够的 —— 那条只说明"有客户端半"，
+`exports` 才说明"它在哪个文件"。
+
+**解法**：
+
+```json
+"exports": {
+  ".": "./src/index.js",
+  "./client": "./src/client.js",
+  "./package.json": "./package.json"
+}
+```
+
+三个真实插件（`dsh-session-delete` / `dsh-unrestricted` / `dshmarket`）
+的 `exports` **全都带 `"./client"`**。
+
+**教训**：**「该有的字段」要对着真实产物抄，不要靠推断。**
+`dsh.client` 和 `exports["./client"]` 只差一行，效果是"完全不工作"和"正常工作"。
+
+---
+
+## P77 · `dsh plugin add` 装 monorepo 子目录，必须写 `#path:/<子目录>`
+
+**症状**：仓库根是独立应用、插件在 `plugin/` 子目录。
+装上去的是**根包**，不是插件（根包里没有 `dsh.bundle`）。
+
+**根因**：`dsh plugin add` 只是把参数**原样转给 pnpm**
+（`@deepseek-ai/dsh/lib/plugin-*.js` 的 `runPlugin`，只有 `./` `../` 会被
+`anchorPathSpec` 改写）。`github:owner/repo` 指向仓库根。
+
+**解法**：用 pnpm 的 git 子目录语法：
+
+```sh
+dsh plugin --profile web add github:owner/repo#path:/plugin
+```
+
+实测（pnpm 11.22.0）装出来的确实是子目录包，含 `cordis.patch.yml` 和 `dsh.bundle`。
+
+**顺带**：awesome-dsh-plugin 列表里的安装命令就是这么生成的
+（`scripts/build-site.mjs`）：
+```js
+? `dsh plugin --profile web add github:${e.repo}#path:/${e.sub}`
+: `dsh plugin --profile web add github:${e.repo}`
+```
+
+**教训**：**「不支持」这个结论要验证到源码级。**
+之前因为一次安装失败就认定"dsh 不支持子目录"，于是多建了一个仓库来放插件 ——
+实际上只是少写了 `#path:/`。
+
+---
+
+## P78 · pnpm 解析 git 依赖不读 `.npmrc` 的 proxy（curl 能通 ≠ git 能通）
+
+**症状**：`npm ci` 走代理一切正常，但 `pnpm add github:owner/repo` 报：
+
+```
+[ERR_PNPM_GIT_RESOLVE_FAILED] ... git ls-remote failed:
+fatal: unable to access 'https://github.com/owner/repo.git/':
+Failed to connect to github.com port 443
+```
+
+**根因**：pnpm 解析 git 依赖时**起的是 git 进程**。
+而 **git 不读 Windows 系统代理**，也**不读 `.npmrc` 的 `proxy`/`https-proxy`**。
+
+**解法**（任选）：
+
+```sh
+git config http.proxy  http://127.0.0.1:7897     # 给 git 自己配
+git config https.proxy http://127.0.0.1:7897
+# 或只对当前进程生效：
+$env:HTTP_PROXY="http://127.0.0.1:7897"; $env:HTTPS_PROXY="http://127.0.0.1:7897"
+```
+
+`git push` 报 `Recv failure: Connection was reset` 是同一个根因。
+
+**教训**：**代理是分层的。**
+浏览器、curl、npm、pnpm、git 各自读各自的配置，**一个通不代表另一个通**。
+排"连不上"的时候，先问"这是哪个进程在连"。
+
+---
+
+## P79 · ★ awesome-dsh-plugin 的投稿方式已经改成 `data/plugins/*.yml`
+
+**症状**：照着几个月前的文档，在 README 的插件列表里加了一行，提 PR。
+CI 判失败。
+
+**根因**：列表早就改成**一个插件一个 YAML 文件**了，两份 README 由
+`scripts/generate-readme.mjs` 从 `data/plugins/*.yml` **生成**。
+理由是以前所有人往同一处追加，**合并一个 PR 就撞掉下一个**。
+
+CI 里有一道专门的门（`.github/workflows/pr-check.yml`）：
+
+> **A generated README row that lists nothing is not a submission**
+> —— 只改了 README 里的插件行、却没动 `data/plugins/` 下任何文件 → **直接失败**
+
+**解法**：新增 `data/plugins/<owner>__<repo>.yml`。
+
+```yaml
+url: https://github.com/owner/repo/tree/main/plugin    # monorepo 子包要指到子目录
+name: owner/repo#plugin
+category: remote
+description:
+  en: '...只说功能、不带营销词、且必须与代码一致...'
+  zh: '...可选...'
+```
+
+文件名规则：monorepo 子包是 `owner__repo--<子目录，斜杠换成短横>.yml`。
+**不要手工改 README** —— 让它自己生成。
+
+**还要知道的几条 CI 门**：
+
+| 门 | 内容 |
+|---|---|
+| 条目数 | 一个 PR **最多 3 条** |
+| `dsh.bundle` | 从**条目 url 对应的那个 `package.json`** 取（所以 url 指哪很关键） |
+| **仓库年龄** | **满 1 天**。这条不用重开 PR —— `regate.yml` 每 6 小时重跑，到点自己变绿 |
+| fork 陈旧 | 删掉超过 2 个既有条目文件 → 判 fork 太旧 |
+| 扩展名 / 路径 | 必须正好是 `data/plugins/*.yml`，放错层级会被**静默跳过**（其它检查全绿） |
+
+**教训**：**「照文档做」之前，先确认文档还是不是当前的。**
+对上游仓库，**源码（CI 脚本）比 CONTRIBUTING 的示例更权威** ——
+示例会滞后，CI 不会。
+
+---
+
+## P80 · ★ GitHub 贡献图不认自造邮箱（提交推上去了，格子一片空白）
+
+**症状**：53 次提交全部推上去了，仓库里都看得到，
+但 **GitHub 个人主页的贡献图一片空白**。
+
+**根因**：commit 的 **author email 必须关联到 GitHub 账号**，才会被计入贡献图。
+本机 git 没配 `user.email` 时，git 会按 `用户名@主机名` 自动造一个 ——
+比如 `dsj-open@local`。这种邮箱**永远不关联任何账号**。
+
+**怎么验证**（不用猜，API 直接告诉你）：
+
+```sh
+GET https://api.github.com/repos/<owner>/<repo>/commits
+```
+
+每条提交里，`commit.author.email` 是提交里写的邮箱，
+**`author.login` 是 GitHub 匹配到的账号** —— 匹配不上时 `author` 字段整个是 `null`。
+
+实测：
+
+```
+hanzheng-dev@users.noreply.github.com  → author.login = hanzheng-dev   ✅
+dsj-open@local                         → author.login = (null)          ❌
+```
+
+**解法**：全量改写历史署名后强推。
+
+```sh
+git config --local user.name  "hanzheng-dev"
+git config --local user.email "hanzheng-dev@users.noreply.github.com"
+
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --env-filter '
+  export GIT_AUTHOR_NAME="hanzheng-dev"
+  export GIT_AUTHOR_EMAIL="hanzheng-dev@users.noreply.github.com"
+  export GIT_COMMITTER_NAME="hanzheng-dev"
+  export GIT_COMMITTER_EMAIL="hanzheng-dev@users.noreply.github.com"
+' HEAD
+
+git push --force-with-lease origin main
+```
+
+**⚠️ 强推会改写历史** —— 先记下旧 HEAD 备用；仓库已经被别人 fork/clone 过就要慎重。
+
+**教训**：**"推上去了"和"算你的"是两件事。**
+`git log` 里名字对不代表 GitHub 认；只有 `author.login` 有值才算。
+
+---
+
+**END（80 条）**
