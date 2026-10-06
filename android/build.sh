@@ -109,18 +109,33 @@ echo "[6/8] zipalign"
 "$BT/zipalign.exe" -p -f 4 "$(w $OUT/base.apk)" "$(w $OUT/aligned.apk)"
 
 echo "[7/8] 签名密钥"
-if [ ! -f "$ROOT/dsjiang.keystore" ]; then
-  "$KEYTOOL" -genkeypair -keystore "$(w $ROOT/dsjiang.keystore)" -alias dsjiang \
-    -keyalg RSA -keysize 2048 -validity 10000 \
-    -storepass dsjiang123 -keypass dsjiang123 \
-    -dname "CN=dsjiang, OU=hz, O=hz, L=Shanghai, S=Shanghai, C=CN" 2>&1 | tail -2
-  echo "      ⚠ 首次构建已生成签名密钥 dsjiang.keystore（自用够；发正式版请换成自己的）"
+# ⚠️ 口令**不写在这个文件里** —— 它是被 git 跟踪的，写进来等于公开。
+#    取自环境变量 DSH_KEYSTORE_PASS，或本机的 android/.keystore-pass（已 gitignore）。
+KEYSTORE="${DSH_KEYSTORE:-$ROOT/dsh-release.keystore}"
+KEY_ALIAS="${DSH_KEY_ALIAS:-dsh-release}"
+if [ -z "$DSH_KEYSTORE_PASS" ] && [ -f "$ROOT/.keystore-pass" ]; then
+  DSH_KEYSTORE_PASS="$(tr -d '\r\n' < "$ROOT/.keystore-pass")"
+fi
+if [ ! -f "$KEYSTORE" ]; then
+  echo "      ❌ 找不到签名密钥：$KEYSTORE"
+  echo "         要自己发版就先生成一个（口令自己定，别提交）："
+  echo "           keytool -genkeypair -keystore \"$KEYSTORE\" -alias $KEY_ALIAS \\"
+  echo "             -keyalg RSA -keysize 2048 -validity 10000 \\"
+  echo "             -storepass \"\$DSH_KEYSTORE_PASS\" -keypass \"\$DSH_KEYSTORE_PASS\" \\"
+  echo "             -dname \"CN=你的项目, OU=Release, O=你的项目, C=CN\""
+  exit 1
+fi
+if [ -z "$DSH_KEYSTORE_PASS" ]; then
+  echo "      ❌ 没拿到签名口令。"
+  echo "         本机：写进 $ROOT/.keystore-pass（已 gitignore）"
+  echo "         或者：DSH_KEYSTORE_PASS=xxx ./build.sh"
+  exit 1
 fi
 
 echo "[8/8] apksigner"
 java -jar "$(w $BT/lib/apksigner.jar)" sign \
-  --ks "$(w $ROOT/dsjiang.keystore)" \
-  --ks-pass pass:dsjiang123 --key-pass pass:dsjiang123 \
+  --ks "$(w $KEYSTORE)" \
+  --ks-pass "pass:$DSH_KEYSTORE_PASS" --key-pass "pass:$DSH_KEYSTORE_PASS" \
   --out "$(w $ROOT/$APKNAME)" \
   "$(w $OUT/aligned.apk)"
 

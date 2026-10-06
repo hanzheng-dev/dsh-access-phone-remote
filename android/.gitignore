@@ -6,3 +6,4 @@ build/
 
 dsh-access-phone-remote.apk
 dsh-access-phone-remote.apk.idsig
+.keystore-pass
