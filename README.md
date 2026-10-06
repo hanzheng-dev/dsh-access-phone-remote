@@ -8,8 +8,9 @@
 
 ## 简介
 
-这个项目让手机连回自己的电脑。其中真正构成差异的有四项能力，
-其余属于常规远程控制范畴，列于本节末尾。
+这个项目让手机连回自己的电脑。作者已在自己电脑上自用两个多月，2026 年 10 月开源。
+
+其中真正构成差异的有四项能力，其余属于常规远程控制范畴，列于本节末尾。
 
 ### 一、在手机上延续电脑上的 AI 会话
 
@@ -24,6 +25,11 @@
 
 > 该能力默认关闭。将 `config.json` 中的 `dsh.enabled` 改为 `true` 并配置 `dsh.base`
 > 之后入口才会出现；未安装 dsh 可跳过本节，其余功能不受影响。
+
+<p align="center">
+  <img src="docs/images/screenshot-chat.png" width="260" alt="在手机上继续电脑上的 AI 会话，推理与工具调用折叠显示">
+</p>
+<p align="center"><sub>会话页：正文逐字返回，推理与工具调用折叠在侧</sub></p>
 
 ### 二、搭便车：图片与消息在同一轮送达
 
@@ -45,6 +51,19 @@
 
 消息正文里的明文链接同样会自动生成一张可折叠的网页卡片，原文保持不变。
 
+推送也可以携带**文本附件**：它折叠成一行，点开即在对话里显示全文；
+右上角的「编辑」可以当场修改，保存后**写回电脑上的原文件**（写前自动备份）。
+
+<p align="center">
+  <img src="docs/images/screenshot-push-card.png" width="230" alt="推送卡片：正文、网页卡与两个交互按钮">
+  <img src="docs/images/screenshot-webview.png" width="230" alt="网页卡在应用内置的 WebView 浮层中打开">
+</p>
+<p align="center">
+  <img src="docs/images/screenshot-attach-expanded.png" width="230" alt="文本附件展开后的正文与「编辑」按钮">
+  <img src="docs/images/screenshot-attach-edit.png" width="230" alt="在手机上直接编辑文本附件，保存后写回电脑">
+</p>
+<p align="center"><sub>推送卡片（正文 · 网页卡 · 交互按钮） · 内置 WebView 浮层 · 文本附件展开 · 在手机上直接编辑并写回</sub></p>
+
 ### 四、无需配置 IP 与端口
 
 服务端每 3 秒在局域网内广播一次，手机客户端自动发现电脑，无需手动填写地址。
@@ -56,19 +75,13 @@
 任务完成与提醒的通知推送、双向文件传输、周边搜索与路线规划、一键截图与显示桌面，
 以及自定义指令（修改 `config.json` 即可新增按钮，无需改动代码）。
 
-**与云服务的区别**：所有数据保留在本地电脑，不经过任何第三方。
-
----
-
-## 截图
-
 <p align="center">
-  <img src="docs/images/screenshot-chat.png" width="230" alt="在手机上跟电脑里的 AI 对话">
   <img src="docs/images/screenshot-home.png" width="230" alt="主页抽屉：传文件 / 位置 / 截图 / 自定义按钮">
-  <img src="docs/images/screenshot-help.png" width="230" alt="内置帮助">
+  <img src="docs/images/screenshot-help.png" width="230" alt="内置帮助页">
 </p>
+<p align="center"><sub>主页抽屉（传文件 · 位置 · 截图 · 自定义按钮） · 内置帮助页</sub></p>
 
-<p align="center"><sub>会话页（在手机上跟电脑里的 AI 对话） · 主页抽屉（传文件 / 位置 / 截图） · 内置帮助</sub></p>
+**与云服务的区别**：所有数据保留在本地电脑，不经过任何第三方。
 
 ---
 
